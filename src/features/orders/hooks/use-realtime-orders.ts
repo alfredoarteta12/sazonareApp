@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { OrderStatus } from '@prisma/client';
 
@@ -14,10 +14,15 @@ export interface Pedido {
   updatedAt: string;
 }
 
-export function useRealtimeOrders() {
+export function useRealtimeOrders(onNuevoPedido?: (pedido: Pedido) => void) {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const onNuevoPedidoRef = useRef(onNuevoPedido);
+  useEffect(() => {
+    onNuevoPedidoRef.current = onNuevoPedido;
+  }, [onNuevoPedido]);
 
   useEffect(() => {
     // Carga inicial de pedidos activos
@@ -43,7 +48,9 @@ export function useRealtimeOrders() {
         { event: '*', schema: 'public', table: 'Pedido' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            setPedidos((prev) => [payload.new as Pedido, ...prev]);
+            const nuevo = payload.new as Pedido;
+            setPedidos((prev) => [nuevo, ...prev]);
+            onNuevoPedidoRef.current?.(nuevo);
           } else if (payload.eventType === 'UPDATE') {
             setPedidos((prev) =>
               prev

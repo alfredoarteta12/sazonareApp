@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { signInWithGoogle, signInWithEmail, signUpWithEmail } from '../actions/oauth';
+import { signInWithEmail, signUpWithEmail } from '../actions/oauth';
+import { supabase } from '@/lib/supabase';
 
 export function AuthForm() {
   const [modo, setModo] = useState<'login' | 'registro'>('login');
@@ -28,6 +29,33 @@ export function AuthForm() {
         }
       }
     });
+  };
+
+  const handleGoogleLogin = async () => {
+    setErrorMsg(null);
+    try {
+      const redirectOrigin =
+        typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${redirectOrigin}/auth/callback`,
+        },
+      });
+
+      if (error) {
+        if (error.message.includes('not enabled') || error.message.includes('Unsupported provider')) {
+          setErrorMsg('⚠️ Google OAuth aún no está activado en Supabase. Debes habilitar el proveedor Google en Authentication > Providers con tu Client ID y Secret.');
+        } else {
+          setErrorMsg(`Error de Google: ${error.message}`);
+        }
+      } else if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Error al conectar con Google.');
+    }
   };
 
   return (
@@ -61,7 +89,7 @@ export function AuthForm() {
       </div>
 
       {errorMsg && (
-        <div className="rounded-xl border border-red-900/50 bg-red-950/50 p-3 text-xs font-semibold text-red-400">
+        <div className="rounded-xl border border-red-900/50 bg-red-950/50 p-3.5 text-xs font-semibold text-red-300 leading-relaxed">
           {errorMsg}
         </div>
       )}
@@ -134,7 +162,7 @@ export function AuthForm() {
       {/* Botón de Google OAuth */}
       <button
         type="button"
-        onClick={() => signInWithGoogle()}
+        onClick={handleGoogleLogin}
         className="flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-6 py-3 text-sm font-semibold text-zinc-200 shadow-sm transition-all hover:bg-zinc-800 active:scale-95"
       >
         <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">

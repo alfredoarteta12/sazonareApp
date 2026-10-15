@@ -92,11 +92,22 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
               )}
               <div className="flex justify-between">
                 <span className="text-zinc-600">Estado:</span>
-                <span className="font-bold uppercase tracking-wider text-[10px]">
-                  {pedido.estado}
+                <span className={`font-bold uppercase tracking-wider text-[10px] ${
+                  pedido.estado === 'PAGADO' ? 'text-emerald-700 font-black' : ''
+                }`}>
+                  {pedido.estado} {pedido.metodoPago ? `(${pedido.metodoPago})` : ''}
                 </span>
               </div>
             </div>
+
+            {/* Sello de Pago si la orden ya está pagada */}
+            {pedido.estado === 'PAGADO' && (
+              <div className="my-2 rounded border-2 border-dashed border-emerald-600 bg-emerald-50/70 p-2 text-center text-emerald-800">
+                <p className="text-xs font-black uppercase tracking-widest">★ CUENTA PAGADA ★</p>
+                <p className="text-[10px] font-bold">MÉTODO: {pedido.metodoPago || 'EFECTIVO'}</p>
+              </div>
+            )}
+
 
             {/* Lista Desglosada de Platillos */}
             <div className="py-3 border-b border-dashed border-zinc-400">

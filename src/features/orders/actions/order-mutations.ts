@@ -67,6 +67,48 @@ export async function marcarComoEntregado(pedidoId: string) {
   }
 }
 
+/**
+ * Cobra el pedido (Efectivo o Transferencia) y libera la mesa dejándola disponible nuevamente
+ */
+export async function cobrarPedidoYLiberarMesa(
+  pedidoId: string,
+  metodoPago: 'EFECTIVO' | 'TRANSFERENCIA',
+  montoRecibido?: number
+) {
+  try {
+    const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId } });
+    if (!pedido) return { success: false, error: 'Pedido no encontrado.' };
+
+    const cambio =
+      metodoPago === 'EFECTIVO' && montoRecibido && montoRecibido >= pedido.total
+        ? montoRecibido - pedido.total
+        : 0;
+
+    const notaPago =
+      metodoPago === 'EFECTIVO' && montoRecibido
+        ? `[PAGADO: EFECTIVO | Pagó con: $${montoRecibido.toFixed(2)} | Cambio: $${cambio.toFixed(2)}]`
+        : `[PAGADO: TRANSFERENCIA]`;
+
+    const actualizado = await prisma.pedido.update({
+      where: { id: pedidoId },
+      data: {
+        estado: 'PAGADO',
+        metodoPago,
+        detalle: `${notaPago} ${pedido.detalle}`,
+      },
+    });
+
+    revalidatePath('/mesero');
+    revalidatePath('/cocina');
+    revalidatePath('/admin');
+    return { success: true, pedido: actualizado, cambio };
+  } catch (error) {
+    console.error('Error al cobrar y liberar mesa:', error);
+    return { success: false, error: 'No se pudo registrar el cobro.' };
+  }
+}
+
+
 
 /**
  * Avanza el estado de un pedido al siguiente paso

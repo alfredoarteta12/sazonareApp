@@ -29,10 +29,17 @@ export function CroquisTerraza({
     pedido: Pedido;
   } | null>(null);
 
-  // Obtener el pedido más reciente activo de cada mesa
+  // Obtener el pedido activo actual de cada mesa (excluye CANCELADO y PAGADO)
   const getPedidoMesa = (numeroMesa: number) => {
     return pedidosActivos.find(
-      (p) => p.mesa === numeroMesa && p.estado !== 'CANCELADO'
+      (p) => p.mesa === numeroMesa && p.estado !== 'CANCELADO' && p.estado !== 'PAGADO'
+    );
+  };
+
+  // Obtener el último pedido pagado de la mesa (para reimprimir ticket si lo necesitan)
+  const getUltimoPedidoPagado = (numeroMesa: number) => {
+    return pedidosActivos.find(
+      (p) => p.mesa === numeroMesa && p.estado === 'PAGADO'
     );
   };
 
@@ -63,6 +70,7 @@ export function CroquisTerraza({
       setMesaSeleccionadaDetalle({ numero: numeroMesa, pedido });
     }
   };
+
 
   return (
     <div className="flex h-full flex-col space-y-4 sm:space-y-6 overflow-y-auto pr-1">
@@ -233,12 +241,28 @@ export function CroquisTerraza({
                     </div>
                   ) : (
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-zinc-500 text-[11px]">Mesa disponible</span>
+                      <div className="flex flex-col">
+                        <span className="text-emerald-400 font-bold text-[11px]">🟢 Disponible</span>
+                        {getUltimoPedidoPagado(mesa.id) && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const pagado = getUltimoPedidoPagado(mesa.id);
+                              if (pagado) setMesaSeleccionadaDetalle({ numero: mesa.id, pedido: pagado });
+                            }}
+                            className="text-[10px] text-zinc-500 hover:text-orange-400 underline text-left transition-colors"
+                          >
+                            Último ticket 🧾
+                          </button>
+                        )}
+                      </div>
                       <span className="rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 text-[11px] font-bold text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
                         Tomar Orden ➕
                       </span>
                     </div>
                   )}
+
                 </div>
               </div>
             );

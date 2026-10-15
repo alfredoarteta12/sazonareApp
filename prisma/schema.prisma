@@ -19,6 +19,7 @@ enum OrderStatus {
   PREPARANDO
   HECHO
   ENTREGADO
+  PAGADO
   CANCELADO
 }
 
@@ -48,12 +49,14 @@ model Producto {
 }
 
 model Pedido {
-  id        String      @id @default(uuid())
-  mesa      Int
-  detalle   String      // Descripción textual (Ej: "2x Hamburguesa, 1x Papas")
-  total     Float
-  estado    OrderStatus @default(PENDIENTE)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  id         String      @id @default(uuid())
+  mesa       Int
+  detalle    String      // Descripción textual (Ej: "2x Hamburguesa, 1x Papas")
+  total      Float
+  metodoPago String?     // EFECTIVO | TRANSFERENCIA
+  estado     OrderStatus @default(PENDIENTE)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }
+
 

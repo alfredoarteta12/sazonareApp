@@ -36,7 +36,14 @@ const ESTADO_CONFIG = {
     badge: 'bg-rose-400',
     badgeText: 'bg-rose-950/60 text-rose-300 border-rose-800/50',
   },
+  PAGADO: {
+    label: '💰 Pagado',
+    color: 'bg-emerald-950/25 text-emerald-200 border-emerald-800/70',
+    badge: 'bg-emerald-400',
+    badgeText: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/50',
+  },
 };
+
 
 const BOTON_AVANZAR = {
   PENDIENTE: '🔥 Iniciar Preparación',

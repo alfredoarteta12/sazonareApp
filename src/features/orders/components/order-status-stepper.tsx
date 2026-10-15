@@ -11,7 +11,8 @@ const PASOS = [
   { key: 'PENDIENTE', label: 'Recibido', icon: '⏳', desc: 'Comanda en cola' },
   { key: 'PREPARANDO', label: 'En Cocina', icon: '🔥', desc: 'Chef preparando' },
   { key: 'HECHO', label: 'Listo', icon: '🍽️', desc: '¡Listo para servir!' },
-  { key: 'ENTREGADO', label: 'Servido', icon: '✅', desc: 'En la mesa' },
+  { key: 'ENTREGADO', label: 'Servido', icon: '🍷', desc: 'En la mesa' },
+  { key: 'PAGADO', label: 'Pagado', icon: '💰', desc: 'Mesa liberada' },
 ] as const;
 
 export function OrderStatusStepper({ estado, size = 'md' }: OrderStatusStepperProps) {
@@ -47,7 +48,6 @@ export function OrderStatusStepper({ estado, size = 'md' }: OrderStatusStepperPr
         {PASOS.map((paso, idx) => {
           const esCompletado = idx < indexActual;
           const esActual = idx === indexActual;
-          const esFuturo = idx > indexActual;
 
           return (
             <div key={paso.key} className="relative z-10 flex flex-col items-center">
@@ -93,16 +93,21 @@ export function OrderStatusStepper({ estado, size = 'md' }: OrderStatusStepperPr
               ? 'bg-blue-950/80 text-blue-300 border border-blue-800'
               : estado === 'PENDIENTE'
               ? 'bg-amber-950/80 text-amber-300 border border-amber-800'
+              : estado === 'PAGADO'
+              ? 'bg-emerald-950 text-emerald-300 border border-emerald-500'
               : 'bg-zinc-900 text-zinc-400 border border-zinc-800'
           }`}
         >
           {estado === 'HECHO' && '🍽️ ¡La comida está lista! Llevar a la mesa.'}
           {estado === 'PREPARANDO' && '🔥 El cocinero está preparando la orden.'}
           {estado === 'PENDIENTE' && '⏳ En espera de ser tomado por cocina.'}
-          {estado === 'ENTREGADO' && '✅ Comanda servida en la mesa.'}
+          {estado === 'ENTREGADO' && '🍷 Comanda servida en la mesa. Lista para cobrar.'}
+          {estado === 'PAGADO' && '💰 Cuenta pagada con éxito. Mesa liberada.'}
         </span>
       </div>
     </div>
   );
 }
+
+
 

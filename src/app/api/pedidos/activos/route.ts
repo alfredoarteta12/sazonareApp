@@ -11,9 +11,10 @@ export async function GET(request: NextRequest) {
 
     let whereClause: Record<string, unknown> = {
       estado: {
-        notIn: ['ENTREGADO', 'CANCELADO'],
+        notIn: ['ENTREGADO', 'CANCELADO', 'PAGADO'],
       },
     };
+
 
     if (todosHoy) {
       const inicioHoy = new Date();

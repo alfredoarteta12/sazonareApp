@@ -24,8 +24,10 @@ async function TablaOrdenesHoy() {
     PREPARANDO: 'bg-blue-950 text-blue-300 border border-blue-800',
     HECHO: 'bg-emerald-950 text-emerald-300 border border-emerald-800',
     ENTREGADO: 'bg-zinc-900 text-zinc-400 border border-zinc-800',
+    PAGADO: 'bg-emerald-950 text-emerald-300 border border-emerald-600 font-bold',
     CANCELADO: 'bg-rose-950 text-rose-300 border border-rose-800',
   };
+
 
   return (
     <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">

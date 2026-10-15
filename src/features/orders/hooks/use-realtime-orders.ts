@@ -9,6 +9,7 @@ export interface Pedido {
   mesa: number;
   detalle: string;
   total: number;
+  metodoPago?: string | null;
   estado: OrderStatus;
   createdAt: string;
   updatedAt: string;
@@ -64,7 +65,7 @@ export function useRealtimeOrders(
                 .filter((p) =>
                   incluirEntregados
                     ? p.estado !== 'CANCELADO'
-                    : p.estado !== 'ENTREGADO' && p.estado !== 'CANCELADO'
+                    : p.estado !== 'ENTREGADO' && p.estado !== 'CANCELADO' && p.estado !== 'PAGADO'
                 )
             );
           }
@@ -76,6 +77,7 @@ export function useRealtimeOrders(
       supabase.removeChannel(canal);
     };
   }, [incluirEntregados]);
+
 
 
   return { pedidos, cargando, error };

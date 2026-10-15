@@ -1,0 +1,59 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  MESERO
+  COCINA
+}
+
+enum OrderStatus {
+  PENDIENTE
+  PREPARANDO
+  HECHO
+  ENTREGADO
+  CANCELADO
+}
+
+model Perfil {
+  id        String   @id // Vinculado al UUID de Supabase Auth
+  email     String   @unique
+  nombre    String
+  role      Role     @default(MESERO)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model Categoria {
+  id        String     @id @default(uuid())
+  nombre    String     @unique
+  productos Producto[]
+}
+
+model Producto {
+  id          String    @id @default(uuid())
+  nombre      String
+  precio      Float
+  imagen      String?
+  disponible  Boolean   @default(true)
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+}
+
+model Pedido {
+  id        String      @id @default(uuid())
+  mesa      Int
+  detalle   String      // Descripción textual (Ej: "2x Hamburguesa, 1x Papas")
+  total     Float
+  estado    OrderStatus @default(PENDIENTE)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+

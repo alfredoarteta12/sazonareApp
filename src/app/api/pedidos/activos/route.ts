@@ -1,18 +1,31 @@
 import { prisma } from '@/lib/prisma';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-// API Route para obtener pedidos activos (usado por el hook useRealtimeOrders)
-// Esta ruta no requiere autenticación para que el monitor de cocina pueda accederla
-export async function GET() {
+// API Route para obtener pedidos activos (usado por cocina y mesero)
+export async function GET(request: NextRequest) {
   try {
-    const pedidos = await prisma.pedido.findMany({
-      where: {
-        estado: {
-          notIn: ['ENTREGADO', 'CANCELADO'],
-        },
+    const searchParams = request.nextUrl.searchParams;
+    const todosHoy = searchParams.get('todosHoy') === 'true';
+
+    let whereClause: Record<string, unknown> = {
+      estado: {
+        notIn: ['ENTREGADO', 'CANCELADO'],
       },
+    };
+
+    if (todosHoy) {
+      const inicioHoy = new Date();
+      inicioHoy.setHours(0, 0, 0, 0);
+      whereClause = {
+        createdAt: { gte: inicioHoy },
+        estado: { not: 'CANCELADO' },
+      };
+    }
+
+    const pedidos = await prisma.pedido.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -25,4 +38,5 @@ export async function GET() {
     );
   }
 }
+
 

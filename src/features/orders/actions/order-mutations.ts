@@ -25,7 +25,7 @@ export async function crearPedido(mesa: number, items: ItemCarrito[]) {
 
   try {
     const detalle = items
-      .map((item) => `${item.cantidad}x ${item.nombre}`)
+      .map((item) => `${item.cantidad}x ${item.nombre} ($${item.precio.toFixed(2)})`)
       .join(', ');
     const total = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
 
@@ -39,12 +39,34 @@ export async function crearPedido(mesa: number, items: ItemCarrito[]) {
     });
 
     revalidatePath('/admin');
+    revalidatePath('/cocina');
+    revalidatePath('/mesero');
     return { success: true, pedido };
   } catch (error) {
     console.error('Error al crear pedido:', error);
     return { success: false, error: 'No se pudo crear el pedido.' };
   }
 }
+
+/**
+ * Marca directamente un pedido como ENTREGADO
+ */
+export async function marcarComoEntregado(pedidoId: string) {
+  try {
+    const pedido = await prisma.pedido.update({
+      where: { id: pedidoId },
+      data: { estado: 'ENTREGADO' },
+    });
+    revalidatePath('/cocina');
+    revalidatePath('/admin');
+    revalidatePath('/mesero');
+    return { success: true, pedido };
+  } catch (error) {
+    console.error('Error al marcar pedido como entregado:', error);
+    return { success: false, error: 'No se pudo actualizar el pedido.' };
+  }
+}
+
 
 /**
  * Avanza el estado de un pedido al siguiente paso

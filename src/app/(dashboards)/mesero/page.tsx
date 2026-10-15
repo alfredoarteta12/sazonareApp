@@ -82,8 +82,9 @@ export default async function MeseroPage() {
 
       {/* Panel de comandas táctil */}
       <main className="flex-1 overflow-hidden p-3 sm:p-6 bg-black">
-        <MeseroGrid productos={productos} />
+        <MeseroGrid productos={productos} nombreMesero={perfil?.nombre || user.email?.split('@')[0]} />
       </main>
+
     </div>
   );
 }

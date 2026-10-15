@@ -5,6 +5,8 @@ import { signOut } from '@/features/auth/actions/oauth';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import { BotonRecibo } from '@/features/stats/components/boton-recibo';
+
 
 export const dynamic = 'force-dynamic';
 
@@ -40,6 +42,7 @@ async function TablaOrdenesHoy() {
               <th className="px-6 py-3 text-left">Detalle</th>
               <th className="px-6 py-3 text-right">Total</th>
               <th className="px-6 py-3 text-center">Estado</th>
+              <th className="px-6 py-3 text-center">Ticket</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-900">
@@ -58,10 +61,20 @@ async function TablaOrdenesHoy() {
                     {pedido.estado}
                   </span>
                 </td>
+                <td className="px-6 py-3 text-center">
+                  <BotonRecibo
+                    pedido={{
+                      ...pedido,
+                      createdAt: pedido.createdAt.toISOString(),
+                      updatedAt: pedido.updatedAt.toISOString(),
+                    }}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+
 
         {pedidos.length === 0 && (
           <div className="py-12 text-center text-zinc-500">

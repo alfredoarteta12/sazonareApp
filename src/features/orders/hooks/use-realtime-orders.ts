@@ -14,7 +14,10 @@ export interface Pedido {
   updatedAt: string;
 }
 
-export function useRealtimeOrders(onNuevoPedido?: (pedido: Pedido) => void) {
+export function useRealtimeOrders(
+  onNuevoPedido?: (pedido: Pedido) => void,
+  options?: { incluirEntregados?: boolean }
+) {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,9 +27,12 @@ export function useRealtimeOrders(onNuevoPedido?: (pedido: Pedido) => void) {
     onNuevoPedidoRef.current = onNuevoPedido;
   }, [onNuevoPedido]);
 
+  const incluirEntregados = options?.incluirEntregados ?? false;
+
   useEffect(() => {
-    // Carga inicial de pedidos activos
-    fetch('/api/pedidos/activos')
+    // Carga inicial de pedidos
+    const url = incluirEntregados ? '/api/pedidos/activos?todosHoy=true' : '/api/pedidos/activos';
+    fetch(url)
       .then((res) => {
         if (!res.ok) throw new Error('Error al cargar pedidos');
         return res.json();
@@ -42,7 +48,7 @@ export function useRealtimeOrders(onNuevoPedido?: (pedido: Pedido) => void) {
 
     // Suscripción en tiempo real a cambios en la tabla Pedido
     const canal = supabase
-      .channel('cambios-comandas')
+      .channel(incluirEntregados ? 'cambios-mesas-terraza' : 'cambios-comandas')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'Pedido' },
@@ -55,7 +61,11 @@ export function useRealtimeOrders(onNuevoPedido?: (pedido: Pedido) => void) {
             setPedidos((prev) =>
               prev
                 .map((p) => (p.id === (payload.new as Pedido).id ? (payload.new as Pedido) : p))
-                .filter((p) => p.estado !== 'ENTREGADO' && p.estado !== 'CANCELADO')
+                .filter((p) =>
+                  incluirEntregados
+                    ? p.estado !== 'CANCELADO'
+                    : p.estado !== 'ENTREGADO' && p.estado !== 'CANCELADO'
+                )
             );
           }
         }
@@ -65,7 +75,8 @@ export function useRealtimeOrders(onNuevoPedido?: (pedido: Pedido) => void) {
     return () => {
       supabase.removeChannel(canal);
     };
-  }, []);
+  }, [incluirEntregados]);
+
 
   return { pedidos, cargando, error };
 }

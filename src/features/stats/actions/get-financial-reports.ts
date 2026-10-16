@@ -90,6 +90,11 @@ export interface ReportePeriodoData {
   pedidos: {
     id: string;
     mesa: number;
+    tipoPedido?: string | null;
+    cliente?: string | null;
+    telefono?: string | null;
+    direccion?: string | null;
+    notas?: string | null;
     detalle: string;
     total: number;
     metodoPago: string | null;
@@ -132,6 +137,11 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
       select: {
         id: true,
         mesa: true,
+        tipoPedido: true,
+        cliente: true,
+        telefono: true,
+        direccion: true,
+        notas: true,
         detalle: true,
         total: true,
         metodoPago: true,

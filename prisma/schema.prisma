@@ -50,7 +50,12 @@ model Producto {
 
 model Pedido {
   id         String      @id @default(uuid())
-  mesa       Int
+  mesa       Int         @default(0)
+  tipoPedido String      @default("MESA") // MESA | LLEVAR | DOMICILIO
+  cliente    String?
+  telefono   String?
+  direccion  String?
+  notas      String?
   detalle    String      // Descripción textual (Ej: "2x Hamburguesa, 1x Papas")
   total      Float
   metodoPago String?     // EFECTIVO | TRANSFERENCIA

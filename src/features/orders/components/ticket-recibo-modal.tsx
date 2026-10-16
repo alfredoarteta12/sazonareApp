@@ -71,9 +71,38 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
                 <span className="font-bold">#{pedido.id.slice(0, 8).toUpperCase()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-zinc-600">Mesa:</span>
-                <span className="font-bold">Mesa {pedido.mesa} (Terraza)</span>
+                <span className="text-zinc-600">Tipo:</span>
+                <span className="font-bold">
+                  {pedido.tipoPedido === 'LLEVAR' || pedido.detalle.includes('[PARA LLEVAR')
+                    ? '🛍️ PARA LLEVAR'
+                    : pedido.tipoPedido === 'DOMICILIO' || pedido.detalle.includes('[DOMICILIO')
+                    ? '🛵 DOMICILIO'
+                    : `🍽️ Mesa ${pedido.mesa} (Terraza)`}
+                </span>
               </div>
+              {pedido.cliente && (
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">Cliente:</span>
+                  <span className="font-bold truncate max-w-[170px]">{pedido.cliente}</span>
+                </div>
+              )}
+              {pedido.telefono && (
+                <div className="flex justify-between">
+                  <span className="text-zinc-600">Tel:</span>
+                  <span className="font-medium">{pedido.telefono}</span>
+                </div>
+              )}
+              {pedido.direccion && (
+                <div className="flex flex-col pt-0.5 border-t border-dotted border-zinc-200">
+                  <span className="text-zinc-600 font-semibold">Dirección de Entrega:</span>
+                  <span className="font-bold text-[10px] leading-tight break-words">{pedido.direccion}</span>
+                </div>
+              )}
+              {pedido.notas && (
+                <div className="flex flex-col pt-0.5 text-zinc-500 italic text-[10px]">
+                  <span>Nota: {pedido.notas}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-zinc-600">Fecha:</span>
                 <span>{fechaFormateada} - {horaFormateada}</span>

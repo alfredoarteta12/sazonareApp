@@ -4,9 +4,16 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { OrderStatus } from '@prisma/client';
 
+export type TipoPedido = 'MESA' | 'LLEVAR' | 'DOMICILIO';
+
 export interface Pedido {
   id: string;
   mesa: number;
+  tipoPedido?: TipoPedido | string | null;
+  cliente?: string | null;
+  telefono?: string | null;
+  direccion?: string | null;
+  notas?: string | null;
   detalle: string;
   total: number;
   metodoPago?: string | null;

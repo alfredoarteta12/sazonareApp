@@ -42,13 +42,21 @@ export function MesaDetalleModal({
   const cambio = valorEfectivo >= pedido.total ? valorEfectivo - pedido.total : 0;
   const dineroInsuficiente = metodoPago === 'EFECTIVO' && valorEfectivo > 0 && valorEfectivo < pedido.total;
 
+  const esLlevar = pedido.tipoPedido === 'LLEVAR' || pedido.detalle.includes('[PARA LLEVAR');
+  const esDomicilio = pedido.tipoPedido === 'DOMICILIO' || pedido.detalle.includes('[DOMICILIO');
+
   const handleMarcarEntregado = () => {
     startTransition(async () => {
       const res = await marcarComoEntregado(pedido.id);
       if (res.success && res.pedido) {
         setPedido(res.pedido as unknown as Pedido);
         setModoCobro(true); // Abrir directamente apartado de cobro
-        setMensaje({ tipo: 'exito', texto: '✅ Comanda servida en la mesa. Lista para cobro.' });
+        const textoExito = esLlevar
+          ? '✅ Pedido entregado al cliente en mostrador.'
+          : esDomicilio
+          ? '✅ Domicilio despachado y entregado con éxito.'
+          : '✅ Comanda servida en la mesa. Lista para cobro.';
+        setMensaje({ tipo: 'exito', texto: textoExito });
         setTimeout(() => setMensaje(null), 3500);
       } else {
         setMensaje({ tipo: 'error', texto: res.error || 'Error al actualizar' });
@@ -68,9 +76,14 @@ export function MesaDetalleModal({
 
       if (res.success && res.pedido) {
         setPedido(res.pedido as unknown as Pedido);
+        const textoCobro = esLlevar
+          ? `🎉 ¡Pedido Para Llevar cobrado (${metodoPago}) con éxito!`
+          : esDomicilio
+          ? `🎉 ¡Domicilio cobrado (${metodoPago}) con éxito!`
+          : `🎉 ¡Mesa ${mesa} cobrada (${metodoPago}) y liberada con éxito!`;
         setMensaje({
           tipo: 'exito',
-          texto: `🎉 ¡Mesa ${mesa} cobrada (${metodoPago}) y liberada con éxito!`,
+          texto: textoCobro,
         });
         // Esperamos 1.5s para que vea el mensaje y cerramos modal para ver la mesa libre
         setTimeout(() => {
@@ -101,23 +114,41 @@ export function MesaDetalleModal({
         <div className="flex items-center justify-between pb-3.5 border-b border-zinc-800 shrink-0">
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-orange-500/10 border border-orange-500/30 text-2xl">
-              🌿
+              {esLlevar ? '🛍️' : esDomicilio ? '🛵' : '🌿'}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-black text-white">Mesa {mesa}</h3>
-                <span className="rounded-full bg-orange-500/20 px-2 py-0.5 text-[10px] font-bold text-orange-400 border border-orange-500/30">
-                  Terraza
+                <h3 className="text-lg font-black text-white">
+                  {esLlevar
+                    ? 'Para Llevar'
+                    : esDomicilio
+                    ? 'Domicilio'
+                    : `Mesa ${mesa}`}
+                </h3>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold border ${
+                  esLlevar
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                    : esDomicilio
+                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                    : 'bg-orange-500/20 text-orange-400 border-orange-500/30'
+                }`}>
+                  {esLlevar ? 'Mostrador' : esDomicilio ? 'Envío' : 'Terraza'}
                 </span>
                 {pedido.estado === 'PAGADO' && (
                   <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
-                    ✓ Pagada
+                    ✓ Pagado
                   </span>
                 )}
               </div>
               <p className="text-xs text-zinc-400">
-                Orden iniciada hace {minutosTranscurridos} {minutosTranscurridos === 1 ? 'minuto' : 'minutos'}
+                {pedido.cliente ? `Cliente: ${pedido.cliente} • ` : ''}
+                Orden de hace {minutosTranscurridos} {minutosTranscurridos === 1 ? 'min' : 'mins'}
               </p>
+              {esDomicilio && pedido.direccion && (
+                <p className="text-[11px] text-cyan-300/90 truncate max-w-[280px]">
+                  📍 {pedido.direccion} {pedido.telefono ? `• 📞 ${pedido.telefono}` : ''}
+                </p>
+              )}
             </div>
           </div>
 
@@ -330,7 +361,14 @@ export function MesaDetalleModal({
                   : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
               }`}
             >
-              <span>🍽️</span> {isPending ? 'Actualizando...' : 'Confirmar Comanda Servida en Mesa'}
+              <span>{esLlevar ? '🛍️' : esDomicilio ? '🛵' : '🍽️'}</span>{' '}
+              {isPending
+                ? 'Actualizando...'
+                : esLlevar
+                ? 'Confirmar Entrega en Mostrador'
+                : esDomicilio
+                ? 'Confirmar Despacho / Entrega Domicilio'
+                : 'Confirmar Comanda Servida en Mesa'}
             </button>
           )}
 

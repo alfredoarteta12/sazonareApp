@@ -261,7 +261,17 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
                     {formatearFechaColombia(pedido.createdAt)} • {formatearHoraColombia(pedido.createdAt)}
                   </td>
                   <td className="px-6 py-3 font-semibold text-white whitespace-nowrap">
-                    Mesa {pedido.mesa}
+                    {pedido.tipoPedido === 'LLEVAR' || pedido.detalle.includes('[PARA LLEVAR') ? (
+                      <span className="inline-flex items-center gap-1 rounded-lg bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-xs font-bold text-amber-300">
+                        🛍️ Llevar
+                      </span>
+                    ) : pedido.tipoPedido === 'DOMICILIO' || pedido.detalle.includes('[DOMICILIO') ? (
+                      <span className="inline-flex items-center gap-1 rounded-lg bg-cyan-500/15 border border-cyan-500/30 px-2 py-0.5 text-xs font-bold text-cyan-300">
+                        🛵 Domicilio
+                      </span>
+                    ) : (
+                      <span>Mesa {pedido.mesa}</span>
+                    )}
                   </td>
                   <td className="max-w-xs px-6 py-3 text-zinc-300 truncate">{pedido.detalle}</td>
                   <td className="px-6 py-3 text-xs whitespace-nowrap">
@@ -316,3 +326,4 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
     </div>
   );
 }
+

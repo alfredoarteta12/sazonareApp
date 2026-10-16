@@ -5,33 +5,86 @@ import { revalidatePath } from 'next/cache';
 import { OrderStatus } from '@prisma/client';
 
 // Tipos para las acciones
-interface ItemCarrito {
+export interface ItemCarrito {
   productoId: string;
   nombre: string;
   precio: number;
   cantidad: number;
 }
 
+export interface ParametrosCrearPedido {
+  tipoPedido?: 'MESA' | 'LLEVAR' | 'DOMICILIO';
+  mesa?: number;
+  cliente?: string;
+  telefono?: string;
+  direccion?: string;
+  notas?: string;
+  items: ItemCarrito[];
+}
+
 /**
- * Crea un nuevo pedido desde la estación de mesero
+ * Crea un nuevo pedido desde la estación de mesero (Mesa, Para Llevar o Domicilio)
  */
-export async function crearPedido(mesa: number, items: ItemCarrito[]) {
-  if (!mesa || mesa < 1) {
+export async function crearPedido(
+  paramsOmesa: number | ParametrosCrearPedido,
+  itemsLegacy?: ItemCarrito[]
+) {
+  let tipoPedido: 'MESA' | 'LLEVAR' | 'DOMICILIO' = 'MESA';
+  let mesa = 1;
+  let cliente: string | undefined;
+  let telefono: string | undefined;
+  let direccion: string | undefined;
+  let notas: string | undefined;
+  let items: ItemCarrito[] = [];
+
+  if (typeof paramsOmesa === 'number') {
+    mesa = paramsOmesa;
+    items = itemsLegacy || [];
+    tipoPedido = 'MESA';
+  } else {
+    tipoPedido = paramsOmesa.tipoPedido || 'MESA';
+    mesa = paramsOmesa.mesa || 0;
+    cliente = paramsOmesa.cliente?.trim();
+    telefono = paramsOmesa.telefono?.trim();
+    direccion = paramsOmesa.direccion?.trim();
+    notas = paramsOmesa.notas?.trim();
+    items = paramsOmesa.items || [];
+  }
+
+  if (tipoPedido === 'MESA' && (!mesa || mesa < 1)) {
     return { success: false, error: 'Número de mesa inválido.' };
+  }
+  if (tipoPedido === 'DOMICILIO' && (!direccion || direccion.length < 3)) {
+    return { success: false, error: 'Debes indicar una dirección válida para el domicilio.' };
   }
   if (!items || items.length === 0) {
     return { success: false, error: 'El carrito está vacío.' };
   }
 
   try {
-    const detalle = items
+    const detalleItems = items
       .map((item) => `${item.cantidad}x ${item.nombre} ($${item.precio.toFixed(2)})`)
       .join(', ');
     const total = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
 
+    // Prefijo descriptivo en detalle para compatibilidad universal
+    let prefijo = '';
+    if (tipoPedido === 'LLEVAR') {
+      prefijo = `[PARA LLEVAR${cliente ? ` - Cliente: ${cliente}` : ''}] `;
+    } else if (tipoPedido === 'DOMICILIO') {
+      prefijo = `[DOMICILIO - ${cliente ? `Cliente: ${cliente} | ` : ''}Dir: ${direccion}${telefono ? ` | Tel: ${telefono}` : ''}] `;
+    }
+
+    const detalle = `${prefijo}${detalleItems}${notas ? ` (Nota: ${notas})` : ''}`;
+
     const pedido = await prisma.pedido.create({
       data: {
-        mesa,
+        mesa: tipoPedido === 'MESA' ? mesa : 0,
+        tipoPedido,
+        cliente: cliente || null,
+        telefono: telefono || null,
+        direccion: direccion || null,
+        notas: notas || null,
         detalle,
         total,
         estado: 'PENDIENTE',
@@ -47,6 +100,7 @@ export async function crearPedido(mesa: number, items: ItemCarrito[]) {
     return { success: false, error: 'No se pudo crear el pedido.' };
   }
 }
+
 
 /**
  * Marca directamente un pedido como ENTREGADO

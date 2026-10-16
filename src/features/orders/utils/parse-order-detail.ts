@@ -12,8 +12,11 @@ export interface ItemDetallePedido {
 export function parseDetallePedido(detalle: string, total: number): ItemDetallePedido[] {
   if (!detalle || !detalle.trim()) return [];
 
-  // Si tiene notas de cancelación, las ignoramos para la lista de productos
-  const textoLimpio = detalle.replace(/\[CANCELADO[^\]]*\]\s*/i, '').trim();
+  // Si tiene notas de auditoría o tipo de pedido entre corchetes, las limpiamos para listar productos
+  const textoLimpio = detalle
+    .replace(/\[(CANCELADO|PAGADO|PARA LLEVAR|DOMICILIO)[^\]]*\]\s*/gi, '')
+    .replace(/\s*\(Nota:[^)]*\)/gi, '')
+    .trim();
   const partes = textoLimpio.split(', ').filter(Boolean);
 
   const items: ItemDetallePedido[] = [];

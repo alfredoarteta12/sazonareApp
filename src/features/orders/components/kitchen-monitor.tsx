@@ -65,7 +65,11 @@ function TarjetaPedido({ pedido, esNuevo }: { pedido: Pedido; esNuevo?: boolean 
   };
 
   // Separa cada platillo (ej: "2x Hamburguesa, 1x Papas")
-  const items = pedido.detalle.split(', ');
+  const textoLimpio = pedido.detalle
+    .replace(/\[(CANCELADO|PAGADO|PARA LLEVAR|DOMICILIO)[^\]]*\]\s*/gi, '')
+    .replace(/\s*\(Nota:[^)]*\)/gi, '')
+    .trim();
+  const items = textoLimpio.split(', ').filter(Boolean);
 
   return (
     <div
@@ -84,15 +88,58 @@ function TarjetaPedido({ pedido, esNuevo }: { pedido: Pedido; esNuevo?: boolean 
 
       <div>
         {/* Cabecera de la comanda */}
-        <div className="mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className={`h-3 w-3 rounded-full ${config.badge} ${esNuevo ? 'animate-ping' : 'animate-pulse'}`} />
-            <span className="text-xl font-black text-white">Mesa {pedido.mesa}</span>
+        <div className="mb-3 flex items-start justify-between gap-2">
+          <div className="flex items-start gap-2 min-w-0">
+            <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${config.badge} ${esNuevo ? 'animate-ping' : 'animate-pulse'}`} />
+            <div className="min-w-0">
+              {pedido.tipoPedido === 'LLEVAR' || pedido.detalle.includes('[PARA LLEVAR') ? (
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-xs font-black text-amber-300">
+                    🛍️ PARA LLEVAR
+                  </span>
+                  <p className="text-sm font-bold text-white mt-0.5 truncate">
+                    {pedido.cliente ? `Cliente: ${pedido.cliente}` : 'Mostrador / Barra'}
+                  </p>
+                </div>
+              ) : pedido.tipoPedido === 'DOMICILIO' || pedido.detalle.includes('[DOMICILIO') ? (
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/40 px-2 py-0.5 text-xs font-black text-cyan-300">
+                    🛵 DOMICILIO
+                  </span>
+                  <p className="text-sm font-bold text-white mt-0.5 truncate">
+                    {pedido.cliente ? `${pedido.cliente}` : 'Domicilio'}
+                  </p>
+                  {pedido.direccion && (
+                    <p className="text-xs text-zinc-300 font-medium truncate">
+                      📍 {pedido.direccion}
+                    </p>
+                  )}
+                  {pedido.telefono && (
+                    <p className="text-[11px] text-zinc-400">
+                      📞 {pedido.telefono}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <span className="text-xl font-black text-white">Mesa {pedido.mesa}</span>
+                  <p className="text-[11px] text-zinc-400">Terraza</p>
+                </div>
+              )}
+            </div>
           </div>
-          <span className={`rounded-full border px-3 py-1 text-xs font-bold ${config.badgeText}`}>
+          <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${config.badgeText}`}>
             {config.label}
           </span>
         </div>
+
+        {/* Nota especial de preparación si existe */}
+        {pedido.notas && (
+          <div className="mb-3 rounded-xl bg-amber-950/40 border border-amber-700/60 p-2 text-xs text-amber-200 flex items-start gap-1.5">
+            <span className="shrink-0">⚠️</span>
+            <span className="font-semibold">{pedido.notas}</span>
+          </div>
+        )}
 
         {/* Lista visual de platillos */}
         <div className="mb-4 space-y-1.5">

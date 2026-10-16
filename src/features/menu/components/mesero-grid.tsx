@@ -2,9 +2,15 @@
 
 import { useState, useTransition, useCallback, useEffect } from 'react';
 import { crearPedido } from '@/features/orders/actions/order-mutations';
-import { useRealtimeOrders, Pedido } from '@/features/orders/hooks/use-realtime-orders';
+import { useRealtimeOrders, Pedido, TipoPedido } from '@/features/orders/hooks/use-realtime-orders';
 import { CroquisTerraza } from '@/features/orders/components/croquis-terraza';
 import { TicketReciboModal } from '@/features/orders/components/ticket-recibo-modal';
+import { MesaDetalleModal } from '@/features/orders/components/mesa-detalle-modal';
+import { PedidosExternosPanel } from '@/features/orders/components/pedidos-externos-panel';
+import {
+  DatosPedidoExternoModal,
+  DatosPedidoExterno,
+} from '@/features/orders/components/datos-pedido-externo-modal';
 import { waiterAudio } from '@/features/orders/utils/audio-alerts';
 
 interface Producto {
@@ -28,9 +34,28 @@ interface MeseroGridProps {
 }
 
 export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
-  // Vista principal: 'croquis' por defecto para que el mesero primero elija la mesa de la terraza
-  const [vista, setVista] = useState<'croquis' | 'menu'>('croquis');
+  // Vistas disponibles: 'croquis' (Terraza) | 'llevar' | 'domicilio' | 'menu'
+  const [vista, setVista] = useState<'croquis' | 'llevar' | 'domicilio' | 'menu'>('croquis');
+  const [tipoPedido, setTipoPedido] = useState<TipoPedido>('MESA');
   const [mesa, setMesa] = useState<number>(1);
+
+  // Datos del cliente para pedidos externos (Llevar y Domicilio)
+  const [datosExternos, setDatosExternos] = useState<DatosPedidoExterno>({
+    tipoPedido: 'LLEVAR',
+    cliente: '',
+    telefono: '',
+    direccion: '',
+    notas: '',
+  });
+
+  const [modalDatosExternos, setModalDatosExternos] = useState<{
+    abierto: boolean;
+    tipo: 'LLEVAR' | 'DOMICILIO';
+  } | null>(null);
+
+  // Modal para ver y cobrar cualquier pedido seleccionado (Terraza, Llevar o Domicilio)
+  const [pedidoDetalleSeleccionado, setPedidoDetalleSeleccionado] = useState<Pedido | null>(null);
+
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
   const [categoriaActiva, setCategoriaActiva] = useState<string>('todas');
   const [carritoAbiertoEnMovil, setCarritoAbiertoEnMovil] = useState(false);
@@ -38,12 +63,12 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
   const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [pedidoRecienteRecibo, setPedidoRecienteRecibo] = useState<Pedido | null>(null);
 
-  // Estados para alertas de cocina lista (Visual y Sonido)
+  // Alertas de cocina lista (Visual y Sonido)
   const [pedidoListoAlerta, setPedidoListoAlerta] = useState<Pedido | null>(null);
   const [destelloVisual, setDestelloVisual] = useState<boolean>(false);
   const [sonidoHabilitado, setSonidoHabilitado] = useState<boolean>(() => waiterAudio.isEnabled());
 
-  // Callback cuando cocina marca un pedido como HECHO (Listo para servir)
+  // Callback cuando cocina marca un pedido como HECHO (Listo para servir o despachar)
   const handlePedidoListo = useCallback((pedido: Pedido) => {
     setPedidoListoAlerta(pedido);
     setDestelloVisual(true);
@@ -82,6 +107,38 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
     }
   };
 
+  // Contadores para insignias de pedidos activos
+  const pedidosLlevarActivos = pedidosActivos.filter(
+    (p) =>
+      (p.tipoPedido === 'LLEVAR' || p.detalle.includes('[PARA LLEVAR')) &&
+      p.estado !== 'PAGADO' &&
+      p.estado !== 'CANCELADO'
+  ).length;
+
+  const pedidosDomicilioActivos = pedidosActivos.filter(
+    (p) =>
+      (p.tipoPedido === 'DOMICILIO' || p.detalle.includes('[DOMICILIO')) &&
+      p.estado !== 'PAGADO' &&
+      p.estado !== 'CANCELADO'
+  ).length;
+
+  // Iniciar toma de pedido para llevar
+  const iniciarPedidoLlevar = () => {
+    setModalDatosExternos({ abierto: true, tipo: 'LLEVAR' });
+  };
+
+  // Iniciar toma de pedido para domicilio
+  const iniciarPedidoDomicilio = () => {
+    setModalDatosExternos({ abierto: true, tipo: 'DOMICILIO' });
+  };
+
+  // Confirmar datos del cliente y pasar al menú
+  const handleConfirmarDatosExternos = (datos: DatosPedidoExterno) => {
+    setDatosExternos(datos);
+    setTipoPedido(datos.tipoPedido);
+    setModalDatosExternos(null);
+    setVista('menu');
+  };
 
   // Categorías únicas
   const categorias = ['todas', ...new Set(productos.map((p) => p.categoria.nombre))];
@@ -129,10 +186,26 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
   const enviarPedido = () => {
     if (carrito.length === 0) return;
     startTransition(async () => {
-      const result = await crearPedido(mesa, carrito);
+      const result = await crearPedido({
+        tipoPedido,
+        mesa: tipoPedido === 'MESA' ? mesa : 0,
+        cliente: tipoPedido !== 'MESA' ? datosExternos.cliente : undefined,
+        telefono: tipoPedido !== 'MESA' ? datosExternos.telefono : undefined,
+        direccion: tipoPedido === 'DOMICILIO' ? datosExternos.direccion : undefined,
+        notas: tipoPedido !== 'MESA' ? datosExternos.notas : undefined,
+        items: carrito,
+      });
+
       if (result.success && result.pedido) {
         setCarrito([]);
-        setMensaje({ tipo: 'exito', texto: `✅ Comanda enviada a Cocina (Mesa ${mesa} - Terraza)` });
+        const destinoTexto =
+          tipoPedido === 'MESA'
+            ? `Mesa ${mesa} - Terraza`
+            : tipoPedido === 'LLEVAR'
+            ? `Para Llevar ${datosExternos.cliente ? `(${datosExternos.cliente})` : ''}`
+            : `Domicilio ${datosExternos.cliente ? `(${datosExternos.cliente})` : ''}`;
+
+        setMensaje({ tipo: 'exito', texto: `✅ Comanda enviada a Cocina (${destinoTexto})` });
         setCarritoAbiertoEnMovil(false);
         // Abrir automáticamente el ticket/recibo para que el mesero lo pueda imprimir si lo desea
         setPedidoRecienteRecibo(result.pedido as unknown as Pedido);
@@ -172,48 +245,117 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
         </button>
       </div>
 
-      {/* Indicador de Mesa */}
-      <div className="my-4 rounded-2xl bg-zinc-900 border border-zinc-800 p-3">
-        <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-            Mesa Asignada
+      {/* Indicador de Destino del Pedido (Mesa / Llevar / Domicilio) */}
+      <div className={`my-4 rounded-2xl border p-3.5 transition-all ${
+        tipoPedido === 'LLEVAR'
+          ? 'bg-amber-950/20 border-amber-800/60'
+          : tipoPedido === 'DOMICILIO'
+          ? 'bg-cyan-950/20 border-cyan-800/60'
+          : 'bg-zinc-900 border-zinc-800'
+      }`}>
+        <div className="flex items-center justify-between mb-2">
+          <span className={`text-[10px] font-black uppercase tracking-wider ${
+            tipoPedido === 'LLEVAR'
+              ? 'text-amber-400'
+              : tipoPedido === 'DOMICILIO'
+              ? 'text-cyan-400'
+              : 'text-zinc-400'
+          }`}>
+            {tipoPedido === 'LLEVAR'
+              ? '🛍️ Para Llevar (Mostrador)'
+              : tipoPedido === 'DOMICILIO'
+              ? '🛵 Pedido a Domicilio'
+              : '🍽️ Mesa de Terraza'}
           </span>
-          <button
-            type="button"
-            onClick={() => setVista('croquis')}
-            className="text-[11px] font-bold text-orange-400 hover:underline"
-          >
-            Cambiar Mesa 🌿
-          </button>
+
+          {tipoPedido === 'MESA' ? (
+            <button
+              type="button"
+              onClick={() => setVista('croquis')}
+              className="text-[11px] font-bold text-orange-400 hover:underline"
+            >
+              Cambiar Mesa 🌿
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() =>
+                setModalDatosExternos({
+                  abierto: true,
+                  tipo: tipoPedido as 'LLEVAR' | 'DOMICILIO',
+                })
+              }
+              className="text-[11px] font-bold text-orange-400 hover:underline"
+            >
+              Editar Datos ✏️
+            </button>
+          )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">⛱️</span>
-            <div>
-              <p className="text-base font-black text-white">Mesa {mesa}</p>
-              <p className="text-[11px] text-zinc-400">Terraza Exterior</p>
+        {tipoPedido === 'MESA' ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">⛱️</span>
+              <div>
+                <p className="text-base font-black text-white">Mesa {mesa}</p>
+                <p className="text-[11px] text-zinc-400">Terraza Exterior</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setMesa((m) => Math.max(1, m - 1))}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold text-white hover:bg-zinc-700"
+              >
+                -
+              </button>
+              <span className="w-8 text-center font-bold text-white">{mesa}</span>
+              <button
+                type="button"
+                onClick={() => setMesa((m) => Math.min(5, m + 1))}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold text-white hover:bg-zinc-700"
+              >
+                +
+              </button>
             </div>
           </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setMesa((m) => Math.max(1, m - 1))}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold text-white hover:bg-zinc-700"
-            >
-              -
-            </button>
-            <span className="w-8 text-center font-bold text-white">{mesa}</span>
-            <button
-              type="button"
-              onClick={() => setMesa((m) => Math.min(5, m + 1))}
-              className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold text-white hover:bg-zinc-700"
-            >
-              +
-            </button>
+        ) : tipoPedido === 'LLEVAR' ? (
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl">🛍️</span>
+            <div className="min-w-0">
+              <p className="text-sm font-black text-white truncate">
+                {datosExternos.cliente || 'Cliente Mostrador'}
+              </p>
+              {datosExternos.telefono && (
+                <p className="text-[11px] text-zinc-400 truncate">📞 {datosExternos.telefono}</p>
+              )}
+              {datosExternos.notas && (
+                <p className="text-[10px] text-amber-300/80 truncate">Nota: {datosExternos.notas}</p>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🛵</span>
+              <p className="text-sm font-black text-white truncate">
+                {datosExternos.cliente || 'Cliente Domicilio'}
+              </p>
+            </div>
+            {datosExternos.direccion && (
+              <p className="text-xs text-cyan-300 font-semibold leading-tight break-words">
+                📍 {datosExternos.direccion}
+              </p>
+            )}
+            {datosExternos.telefono && (
+              <p className="text-[11px] text-zinc-400">📞 {datosExternos.telefono}</p>
+            )}
+            {datosExternos.notas && (
+              <p className="text-[10px] text-zinc-400 italic">Nota: {datosExternos.notas}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Lista de productos en la comanda */}
@@ -293,7 +435,13 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
           type="button"
           onClick={enviarPedido}
           disabled={carrito.length === 0 || isPending}
-          className="w-full rounded-xl bg-orange-500 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+          className={`w-full rounded-xl py-3 text-sm font-bold text-white shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 ${
+            tipoPedido === 'LLEVAR'
+              ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-500/20'
+              : tipoPedido === 'DOMICILIO'
+              ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-600/20'
+              : 'bg-orange-500 hover:bg-orange-600 shadow-orange-500/20'
+          }`}
         >
           {isPending ? 'Enviando a cocina...' : '🚀 Enviar Comanda'}
         </button>
@@ -318,7 +466,13 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                 ¡Comanda Lista en Barra de Cocina!
               </p>
               <p className="text-base font-extrabold text-white truncate">
-                Mesa {pedidoListoAlerta.mesa} (Terraza) • Servir ya
+                {pedidoListoAlerta.tipoPedido === 'LLEVAR' ||
+                pedidoListoAlerta.detalle.includes('[PARA LLEVAR')
+                  ? `🛍️ Para Llevar ${pedidoListoAlerta.cliente ? `(${pedidoListoAlerta.cliente})` : ''}`
+                  : pedidoListoAlerta.tipoPedido === 'DOMICILIO' ||
+                    pedidoListoAlerta.detalle.includes('[DOMICILIO')
+                  ? `🛵 Domicilio ${pedidoListoAlerta.cliente ? `(${pedidoListoAlerta.cliente})` : ''}`
+                  : `Mesa ${pedidoListoAlerta.mesa} (Terraza)`}
               </p>
               <p className="text-xs text-zinc-300 truncate">{pedidoListoAlerta.detalle}</p>
             </div>
@@ -327,13 +481,12 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
             <button
               type="button"
               onClick={() => {
-                setMesa(pedidoListoAlerta.mesa);
-                setVista('croquis');
+                setPedidoDetalleSeleccionado(pedidoListoAlerta);
                 setPedidoListoAlerta(null);
               }}
               className="rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-extrabold text-white hover:bg-blue-500 transition-colors shadow-md shadow-blue-600/30"
             >
-              Ver Mesa 🍽️
+              Ver Pedido 🍽️
             </button>
             <button
               type="button"
@@ -346,7 +499,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
         </div>
       )}
 
-      {/* BARRA SUPERIOR DE NAVEGACIÓN ENTRE CROQUIS DE TERRAZA Y MENÚ */}
+      {/* BARRA SUPERIOR DE NAVEGACIÓN ENTRE TERRAZA, LLEVAR, DOMICILIOS Y MENÚ */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1.5 rounded-2xl bg-zinc-950 border border-zinc-800 p-1">
@@ -359,7 +512,41 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <span>🌿</span> Plano Terraza (5 Mesas)
+              <span>🌿</span> Terraza (5 Mesas)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setVista('llevar')}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                vista === 'llevar'
+                  ? 'bg-amber-500 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+              }`}
+            >
+              <span>🛍️</span> Para Llevar
+              {pedidosLlevarActivos > 0 && (
+                <span className="rounded-full bg-amber-400 text-black text-[10px] font-black px-1.5 py-0.2">
+                  {pedidosLlevarActivos}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setVista('domicilio')}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                vista === 'domicilio'
+                  ? 'bg-cyan-600 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+              }`}
+            >
+              <span>🛵</span> Domicilios
+              {pedidosDomicilioActivos > 0 && (
+                <span className="rounded-full bg-cyan-400 text-black text-[10px] font-black px-1.5 py-0.2">
+                  {pedidosDomicilioActivos}
+                </span>
+              )}
             </button>
 
             <button
@@ -371,7 +558,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <span>🍔</span> Menú (Mesa {mesa})
+              <span>🍔</span> Menú ({tipoPedido === 'MESA' ? `Mesa ${mesa}` : tipoPedido === 'LLEVAR' ? 'Para Llevar' : 'Domicilio'})
             </button>
           </div>
 
@@ -391,16 +578,21 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
         </div>
 
         {vista === 'menu' && (
-          <button
-            type="button"
-            onClick={() => setVista('croquis')}
-            className="flex items-center gap-1 rounded-xl bg-zinc-900 border border-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
-          >
-            <span>←</span> Volver a Terraza
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (tipoPedido === 'LLEVAR') setVista('llevar');
+                else if (tipoPedido === 'DOMICILIO') setVista('domicilio');
+                else setVista('croquis');
+              }}
+              className="flex items-center gap-1 rounded-xl bg-zinc-900 border border-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+            >
+              <span>←</span> Volver a {tipoPedido === 'LLEVAR' ? 'Para Llevar' : tipoPedido === 'DOMICILIO' ? 'Domicilios' : 'Terraza'}
+            </button>
+          </div>
         )}
       </div>
-
 
       {/* VISTA 1: CROQUIS DE LA TERRAZA (5 MESAS) */}
       {vista === 'croquis' && (
@@ -408,6 +600,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
           <CroquisTerraza
             pedidosActivos={pedidosActivos}
             onSeleccionarMesaParaMenu={(num) => {
+              setTipoPedido('MESA');
               setMesa(num);
               setVista('menu');
             }}
@@ -416,30 +609,90 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
         </div>
       )}
 
-      {/* VISTA 2: MENÚ PARA LA MESA SELECCIONADA */}
+      {/* VISTA 2: PANEL DE PEDIDOS PARA LLEVAR */}
+      {vista === 'llevar' && (
+        <div className="flex-1 overflow-hidden">
+          <PedidosExternosPanel
+            pedidos={pedidosActivos}
+            tipo="LLEVAR"
+            onNuevoPedido={() => iniciarPedidoLlevar()}
+            onAbrirDetalle={(p) => setPedidoDetalleSeleccionado(p)}
+          />
+        </div>
+      )}
+
+      {/* VISTA 3: PANEL DE PEDIDOS A DOMICILIO */}
+      {vista === 'domicilio' && (
+        <div className="flex-1 overflow-hidden">
+          <PedidosExternosPanel
+            pedidos={pedidosActivos}
+            tipo="DOMICILIO"
+            onNuevoPedido={() => iniciarPedidoDomicilio()}
+            onAbrirDetalle={(p) => setPedidoDetalleSeleccionado(p)}
+          />
+        </div>
+      )}
+
+      {/* VISTA 4: MENÚ DE PRODUCTOS Y CARRITO */}
       {vista === 'menu' && (
         <div className="relative flex flex-1 flex-col lg:flex-row gap-4 lg:gap-6 overflow-hidden">
           {/* PANEL DEL MENÚ */}
           <div className="flex flex-1 flex-col overflow-hidden">
-            {/* Banner indicador de Mesa en el Menú */}
-            <div className="mb-3 flex items-center justify-between rounded-2xl bg-zinc-950 border border-zinc-800 px-4 py-2.5 shrink-0">
+            {/* Banner indicador de Destino en el Menú */}
+            <div className={`mb-3 flex items-center justify-between rounded-2xl border px-4 py-2.5 shrink-0 ${
+              tipoPedido === 'LLEVAR'
+                ? 'bg-amber-950/20 border-amber-800/60'
+                : tipoPedido === 'DOMICILIO'
+                ? 'bg-cyan-950/20 border-cyan-800/60'
+                : 'bg-zinc-950 border-zinc-800'
+            }`}>
               <div className="flex items-center gap-2">
-                <span className="text-xl">⛱️</span>
+                <span className="text-xl">
+                  {tipoPedido === 'LLEVAR' ? '🛍️' : tipoPedido === 'DOMICILIO' ? '🛵' : '⛱️'}
+                </span>
                 <div>
                   <p className="text-xs font-extrabold text-white">
-                    Tomando Orden para: <span className="text-orange-400">Mesa {mesa} (Terraza)</span>
+                    Tomando Orden para:{' '}
+                    <span className={tipoPedido === 'LLEVAR' ? 'text-amber-400' : tipoPedido === 'DOMICILIO' ? 'text-cyan-400' : 'text-orange-400'}>
+                      {tipoPedido === 'MESA'
+                        ? `Mesa ${mesa} (Terraza)`
+                        : tipoPedido === 'LLEVAR'
+                        ? `Para Llevar ${datosExternos.cliente ? `(${datosExternos.cliente})` : ''}`
+                        : `Domicilio ${datosExternos.cliente ? `(${datosExternos.cliente})` : ''}`}
+                    </span>
                   </p>
-                  <p className="text-[10px] text-zinc-400">Selecciona los platillos para agregarlos a la comanda</p>
+                  <p className="text-[10px] text-zinc-400">
+                    {tipoPedido === 'DOMICILIO' && datosExternos.direccion
+                      ? `📍 ${datosExternos.direccion}`
+                      : 'Selecciona los platillos para agregarlos a la comanda'}
+                  </p>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setVista('croquis')}
-                className="text-xs font-bold text-orange-400 hover:underline"
-              >
-                Cambiar Mesa 🌿
-              </button>
+              <div className="flex items-center gap-2">
+                {tipoPedido === 'MESA' ? (
+                  <button
+                    type="button"
+                    onClick={() => setVista('croquis')}
+                    className="text-xs font-bold text-orange-400 hover:underline"
+                  >
+                    Cambiar Mesa 🌿
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setModalDatosExternos({
+                        abierto: true,
+                        tipo: tipoPedido as 'LLEVAR' | 'DOMICILIO',
+                      })
+                    }
+                    className="text-xs font-bold text-orange-400 hover:underline"
+                  >
+                    Editar Datos ✏️
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Filtro horizontal de categorías */}
@@ -530,12 +783,17 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                 >
                   {totalCantidad}
                 </span>
-                <span className="text-sm font-semibold">
-                  Mesa {mesa} • {totalCantidad > 0 ? 'Ver Comanda' : 'Abrir Comanda'}
+                <span className="text-sm font-semibold truncate">
+                  {tipoPedido === 'MESA'
+                    ? `Mesa ${mesa}`
+                    : tipoPedido === 'LLEVAR'
+                    ? 'Para Llevar'
+                    : 'Domicilio'}{' '}
+                  • {totalCantidad > 0 ? 'Ver Comanda' : 'Abrir Comanda'}
                 </span>
               </div>
-              <span className="text-sm sm:text-base font-extrabold">
-                {totalCantidad > 0 ? `$${totalCarrito.toFixed(2)} →` : 'Mesa ' + mesa}
+              <span className="text-sm sm:text-base font-extrabold shrink-0">
+                {totalCantidad > 0 ? `$${totalCarrito.toFixed(2)} →` : 'Comanda'}
               </span>
             </button>
           </div>
@@ -556,6 +814,41 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
             </div>
           )}
         </div>
+      )}
+
+      {/* MODAL PARA CAPTURAR DATOS DE CLIENTE (LLEVAR / DOMICILIO) */}
+      {modalDatosExternos?.abierto && (
+        <DatosPedidoExternoModal
+          tipoInicial={modalDatosExternos.tipo}
+          datosIniciales={datosExternos}
+          onConfirmar={handleConfirmarDatosExternos}
+          onCerrar={() => setModalDatosExternos(null)}
+        />
+      )}
+
+      {/* MODAL PARA VER DETALLE Y COBRAR CUALQUIER PEDIDO (TERRAZA, LLEVAR O DOMICILIO) */}
+      {pedidoDetalleSeleccionado && (
+        <MesaDetalleModal
+          mesa={pedidoDetalleSeleccionado.mesa}
+          pedido={pedidoDetalleSeleccionado}
+          nombreMesero={nombreMesero}
+          onCerrar={() => setPedidoDetalleSeleccionado(null)}
+          onAgregarPlatillos={() => {
+            setTipoPedido((pedidoDetalleSeleccionado.tipoPedido as TipoPedido) || 'MESA');
+            if (pedidoDetalleSeleccionado.mesa > 0) {
+              setMesa(pedidoDetalleSeleccionado.mesa);
+            }
+            setDatosExternos({
+              tipoPedido: (pedidoDetalleSeleccionado.tipoPedido as 'LLEVAR' | 'DOMICILIO') || 'LLEVAR',
+              cliente: pedidoDetalleSeleccionado.cliente || '',
+              telefono: pedidoDetalleSeleccionado.telefono || '',
+              direccion: pedidoDetalleSeleccionado.direccion || '',
+              notas: pedidoDetalleSeleccionado.notas || '',
+            });
+            setPedidoDetalleSeleccionado(null);
+            setVista('menu');
+          }}
+        />
       )}
 
       {/* MODAL DEL RECIBO RECIÉN CREADO SI EL MESERO ENVIÓ COMANDA */}

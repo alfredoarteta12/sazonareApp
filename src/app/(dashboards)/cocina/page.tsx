@@ -1,4 +1,5 @@
 import { KitchenMonitor } from '@/features/orders/components/kitchen-monitor';
+import { BotonInstalarPwa } from '@/components/boton-instalar-pwa';
 
 // Monitor de Cocina - Acceso PÚBLICO, sin login requerido
 // Diseñado para tablets o pantallas estáticas en área de preparación
@@ -15,9 +16,12 @@ export default function CocinaPage() {
               <p className="text-xs text-zinc-400">SazonareFood — Comandas en tiempo real</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-sm font-medium text-emerald-400">En vivo</span>
+          <div className="flex items-center gap-3">
+            <BotonInstalarPwa />
+            <div className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-sm font-medium text-emerald-400">En vivo</span>
+            </div>
           </div>
         </div>
       </header>

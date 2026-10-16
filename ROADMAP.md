@@ -72,19 +72,22 @@ Evitar que los meseros tomen pedidos de platos cuyos ingredientes se hayan termi
 
 ---
 
-## 4. 📱 Convertir en PWA (Instalable en Celulares y Tablets)
+## 4. 📱 Convertir en PWA (Instalable en Celulares, Tablets y PC) — ✅ COMPLETADO
 
 ### Objetivo
-Permitir que el personal instale SazonareFood directamente en sus teléfonos y tablets como una app nativa, mejorando la velocidad y el espacio en pantalla.
+Permitir que el personal instale SazonareFood directamente en sus teléfonos, tablets y computadores como una app nativa, mejorando la velocidad y el espacio en pantalla.
 
-### Funcionalidades Clave
-1. **Instalación con 1 Clic (`manifest.json`):**
-   * Configuración de iconos de alta resolución (`192x192`, `512x512`), nombre corto, tema oscuro y splash screen con el logo de Sazonare.
+### Funcionalidades Implementadas
+1. **Manifiesto Web Nativo (`src/app/manifest.ts`):**
+   - Configuración de iconos de alta resolución (`192x192`, `512x512` y maskable), nombre corto, tema oscuro (`#09090b`), color primario naranja (`#f97316`) y accesos rápidos directos (*Shortcuts*) para Mesero, Cocina y Admin.
 2. **Modo Pantalla Completa (*Standalone*):**
-   * Oculta la barra de navegación del navegador (Chrome, Safari, Edge), brindando un 15% más de área táctil útil.
-3. **Persistencia y Caché:**
-   * Carga ultrarrápida incluso si la conexión WiFi de la terraza tiene micro-cortes.
-   * Bloqueo de zoom accidental en botones táctiles para evitar desajustes durante el servicio rápido.
+   - Oculta la barra de navegación del navegador (Chrome, Safari, Edge), brindando un 15% más de área táctil útil y fijando el monitor de cocina como quiosco.
+3. **Optimización Táctil en `globals.css` y `layout.tsx`:**
+   - `touch-action: manipulation;` para eliminar el delay de 300ms y prevenir zooms accidentales.
+   - `overscroll-behavior-y: none;` para bloquear recargas involuntarias al deslizar en Android.
+   - Soporte para iOS con `apple-touch-icon` y `appleWebApp: { capable: true }`.
+4. **Botón Integrado "📲 Instalar App":**
+   - Detecta automáticamente el soporte del navegador (Chromium/Android/PC) y muestra el diálogo nativo con 1 clic. En iOS, guía amigablemente con instrucciones paso a paso.
 
 ---
 
@@ -140,7 +143,7 @@ graph TD
 | **1. Cierre de Caja / Arqueo Z** | Media | ⭐⭐⭐⭐⭐ (Control contable indispensable) | ✅ **Completado** |
 | **2. Plato Agotado en Tiempo Real** | Baja | ⭐⭐⭐⭐ (Evita reclamos en cocina) | ✅ **Completado** |
 | **3. Adiciones / Indicaciones en Comanda** | Baja-Media | ⭐⭐⭐⭐⭐ (Agilidad en cocina y meseros) | ✅ **Completado** |
-| **4. PWA Móvil Instalable** | Baja | ⭐⭐⭐⭐ (Comodidad meseros/cocina) | ⏳ Pendiente |
+| **4. PWA Móvil Instalable** | Baja | ⭐⭐⭐⭐ (Comodidad meseros/cocina) | ✅ **Completado** |
 | **5. Página Dinámica con 3D / AR** | Media-Alta | ⭐⭐⭐⭐⭐ (Experiencia interactiva WOW) | ⏳ Pendiente |
 
 

@@ -1,16 +1,20 @@
 import { AuthForm } from '@/features/auth/components/auth-form';
+import { BotonInstalarPwa } from '@/components/boton-instalar-pwa';
 
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-black px-4 py-8 text-white">
       <div className="w-full max-w-md">
         {/* Logo/Brand */}
-        <div className="mb-8 text-center">
-          <div className="mb-4 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-500 text-4xl shadow-lg shadow-orange-500/20">
+        <div className="mb-6 text-center">
+          <div className="mb-3 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-orange-500 text-4xl shadow-lg shadow-orange-500/20">
             🍔
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white">SazonareFood</h1>
-          <p className="mt-2 text-sm text-zinc-400">Sistema ERP & POS para Restaurante</p>
+          <p className="mt-1 text-sm text-zinc-400">Sistema ERP & POS para Restaurante</p>
+          <div className="mt-3 flex justify-center">
+            <BotonInstalarPwa />
+          </div>
         </div>
 
         {/* Card de acceso y registro */}

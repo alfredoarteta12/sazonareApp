@@ -248,3 +248,4 @@ export async function getHistorialCierres(limit = 30) {
     return { success: false, error: 'No se pudo obtener el historial de cierres.' };
   }
 }
+

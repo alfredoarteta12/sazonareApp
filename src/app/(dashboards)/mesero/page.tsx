@@ -4,6 +4,7 @@ import { signOut } from '@/features/auth/actions/oauth';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import { BotonInstalarPwa } from '@/components/boton-instalar-pwa';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +57,8 @@ export default async function MeseroPage() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <BotonInstalarPwa />
+
             {/* Si es Admin usando la vista de mesero, darle un botón para volver a su panel */}
             {perfil?.role === 'ADMIN' && (
               <a

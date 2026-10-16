@@ -224,3 +224,4 @@ export function TicketReporteZModal({ cierre, onCerrar }: TicketReporteZModalPro
     </div>
   );
 }
+

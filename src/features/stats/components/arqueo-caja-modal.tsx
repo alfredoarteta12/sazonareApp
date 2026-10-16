@@ -476,3 +476,4 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
     </div>
   );
 }
+

@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { formatearFechaLargaColombia } from '@/lib/date-utils';
+import { BotonInstalarPwa } from '@/components/boton-instalar-pwa';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,6 +83,8 @@ export default async function AdminPage() {
                 👥 Personal
               </a>
             </nav>
+
+            <BotonInstalarPwa />
 
             <div className="h-6 w-px bg-zinc-800" />
 

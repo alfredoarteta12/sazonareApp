@@ -164,3 +164,4 @@ export function HistorialCierresModal({ onCerrar }: HistorialCierresModalProps) 
     </div>
   );
 }
+

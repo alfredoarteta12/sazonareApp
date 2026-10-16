@@ -16,6 +16,14 @@ body {
   background: #09090b;
   color: #f4f4f5;
   font-family: Arial, Helvetica, sans-serif;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Optimización táctil para meseros y cocina: elimina delay de 300ms y zoom accidental */
+button, a, input, select, textarea {
+  touch-action: manipulation;
 }
 
 /* Ocultar barra de scroll para navegación táctil suave */

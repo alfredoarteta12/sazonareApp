@@ -2,6 +2,7 @@
 
 import { Pedido } from '../hooks/use-realtime-orders';
 import { parseDetallePedido } from '../utils/parse-order-detail';
+import { formatearFechaColombia, formatearHoraColombia } from '@/lib/date-utils';
 
 interface TicketReciboModalProps {
   pedido: Pedido;
@@ -12,17 +13,10 @@ interface TicketReciboModalProps {
 export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReciboModalProps) {
   const items = parseDetallePedido(pedido.detalle, pedido.total);
 
-  // Fecha legible
-  const fecha = new Date(pedido.createdAt);
-  const fechaFormateada = fecha.toLocaleDateString('es-MX', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-  const horaFormateada = fecha.toLocaleTimeString('es-MX', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  // Fecha y hora en horario oficial de Colombia (UTC-5)
+  const fechaFormateada = formatearFechaColombia(pedido.createdAt);
+  const horaFormateada = formatearHoraColombia(pedido.createdAt);
+
 
   // Cálculos de IVA y propinas sugeridas
   const subtotalSinIva = pedido.total / 1.16;

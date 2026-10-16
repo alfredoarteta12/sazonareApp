@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
+import { getRangoDiaColombia } from '@/lib/date-utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,15 +16,14 @@ export async function GET(request: NextRequest) {
       },
     };
 
-
     if (todosHoy) {
-      const inicioHoy = new Date();
-      inicioHoy.setHours(0, 0, 0, 0);
+      const { inicio: inicioHoy, fin: finHoy } = getRangoDiaColombia();
       whereClause = {
-        createdAt: { gte: inicioHoy },
+        createdAt: { gte: inicioHoy, lte: finHoy },
         estado: { not: 'CANCELADO' },
       };
     }
+
 
     const pedidos = await prisma.pedido.findMany({
       where: whereClause,

@@ -6,6 +6,8 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { BotonRecibo } from '@/features/stats/components/boton-recibo';
+import { formatearHoraColombia, formatearFechaLargaColombia } from '@/lib/date-utils';
+
 
 
 export const dynamic = 'force-dynamic';
@@ -51,9 +53,10 @@ async function TablaOrdenesHoy() {
             {pedidos.map((pedido) => (
               <tr key={pedido.id} className="hover:bg-zinc-900/50 transition-colors">
                 <td className="px-6 py-3 text-zinc-400">
-                  {new Date(pedido.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                  {formatearHoraColombia(pedido.createdAt)}
                 </td>
                 <td className="px-6 py-3 font-semibold text-white">Mesa {pedido.mesa}</td>
+
                 <td className="max-w-xs px-6 py-3 text-zinc-300 truncate">{pedido.detalle}</td>
                 <td className="px-6 py-3 text-right font-bold text-white">
                   ${pedido.total.toFixed(2)}
@@ -166,10 +169,11 @@ export default async function AdminPage() {
       <main className="mx-auto max-w-7xl space-y-8 p-6">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-white capitalize">
-            {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            {formatearFechaLargaColombia()}
           </h2>
-          <p className="text-sm text-zinc-400">Balance financiero y movimientos del día</p>
+          <p className="text-sm text-zinc-400">Balance financiero y movimientos del día (Colombia)</p>
         </div>
+
 
         {/* KPIs financieros */}
         <Suspense fallback={

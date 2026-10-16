@@ -1,13 +1,11 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
+import { getRangoDiaColombia } from '@/lib/date-utils';
 
 export async function getDailyFinancials() {
   try {
-    const inicioHoy = new Date();
-    inicioHoy.setHours(0, 0, 0, 0);
-    const finHoy = new Date();
-    finHoy.setHours(23, 59, 59, 999);
+    const { inicio: inicioHoy, fin: finHoy } = getRangoDiaColombia();
 
     const [ventasNetas, perdidas, pedidosPorEstado] = await Promise.all([
       prisma.pedido.aggregate({
@@ -54,15 +52,17 @@ export async function getDailyFinancials() {
  */
 export async function getDailyOrders() {
   try {
-    const inicioHoy = new Date();
-    inicioHoy.setHours(0, 0, 0, 0);
+    const { inicio: inicioHoy, fin: finHoy } = getRangoDiaColombia();
 
     const pedidos = await prisma.pedido.findMany({
-      where: { createdAt: { gte: inicioHoy } },
+      where: {
+        createdAt: { gte: inicioHoy, lte: finHoy },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
     return { success: true, data: pedidos };
+
   } catch (error) {
     console.error('Error al obtener pedidos del día:', error);
     return { success: false, error: 'No se pudieron obtener los pedidos.' };

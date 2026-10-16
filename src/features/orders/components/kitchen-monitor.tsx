@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useTransition } from 'react';
 import { useRealtimeOrders, Pedido } from '../hooks/use-realtime-orders';
 import { avanzarEstadoPedido } from '../actions/order-mutations';
 import { kitchenAudio } from '../utils/audio-alerts';
+import { formatearHoraColombia } from '@/lib/date-utils';
+
 
 const ESTADO_CONFIG = {
   PENDIENTE: {
@@ -110,8 +112,9 @@ function TarjetaPedido({ pedido, esNuevo }: { pedido: Pedido; esNuevo?: boolean 
         {/* Hora y total */}
         <div className="mb-4 flex items-center justify-between border-t border-zinc-800/60 pt-3 text-xs text-zinc-400">
           <span>
-            🕒 {new Date(pedido.createdAt).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+            🕒 {formatearHoraColombia(pedido.createdAt)}
           </span>
+
           <span className="text-base font-extrabold text-white">${pedido.total.toFixed(2)}</span>
         </div>
 

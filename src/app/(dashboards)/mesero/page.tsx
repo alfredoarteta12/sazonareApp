@@ -1,4 +1,4 @@
-import { getProductos } from '@/features/menu/actions/menu-queries';
+import { getTodosLosProductos } from '@/features/menu/actions/menu-queries';
 import { MeseroGrid } from '@/features/menu/components/mesero-grid';
 import { signOut } from '@/features/auth/actions/oauth';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
@@ -25,7 +25,7 @@ export default async function MeseroPage() {
     redirect('/login?error=cuenta_desactivada');
   }
 
-  const { data: productos, error } = await getProductos();
+  const { data: productos, error } = await getTodosLosProductos();
 
   if (error || !productos) {
     return (

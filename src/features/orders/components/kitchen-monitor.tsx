@@ -6,6 +6,8 @@ import { avanzarEstadoPedido } from '../actions/order-mutations';
 import { kitchenAudio } from '../utils/audio-alerts';
 import { formatearHoraColombia } from '@/lib/date-utils';
 import { parseDetallePedido } from '../utils/parse-order-detail';
+import { PlatosAgotadosModal } from '@/features/menu/components/platos-agotados-modal';
+import { supabase } from '@/lib/supabase';
 
 
 const ESTADO_CONFIG = {
@@ -217,6 +219,39 @@ export function KitchenMonitor() {
   const [nuevosPedidosIds, setNuevosPedidosIds] = useState<Set<string>>(new Set());
   const [sonidoHabilitado, setSonidoHabilitado] = useState(true);
   const [audioDesbloqueado, setAudioDesbloqueado] = useState(false);
+  const [modalAgotadosAbierto, setModalAgotadosAbierto] = useState(false);
+  const [conteoAgotados, setConteoAgotados] = useState(0);
+
+  // Escuchar y contar platos agotados en tiempo real
+  useEffect(() => {
+    const cargarAgotados = () => {
+      fetch('/api/productos')
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setConteoAgotados(data.filter((p: { disponible: boolean }) => !p.disponible).length);
+          }
+        })
+        .catch(() => {});
+    };
+
+    cargarAgotados();
+
+    const canal = supabase
+      .channel('cambios-cocina-agotados')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Producto' },
+        () => {
+          cargarAgotados();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, []);
 
   // Inicializar estado del sonido al montar
   useEffect(() => {
@@ -401,6 +436,26 @@ export function KitchenMonitor() {
               </button>
             </>
           )}
+
+          {/* Botón de Control de Platos Agotados */}
+          <button
+            type="button"
+            onClick={() => setModalAgotadosAbierto(true)}
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95 ${
+              conteoAgotados > 0
+                ? 'bg-rose-950/70 border-rose-600/80 text-rose-300 hover:bg-rose-900 shadow-md shadow-rose-950/50'
+                : 'border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white'
+            }`}
+            title="Marcar o reactivar productos agotados en cocina"
+          >
+            <span>🚫</span>
+            <span>Platos Agotados</span>
+            {conteoAgotados > 0 && (
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-[10px] font-black text-white">
+                {conteoAgotados}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -462,6 +517,11 @@ export function KitchenMonitor() {
             ))}
           </div>
         </section>
+      )}
+
+      {/* Modal de gestión de platos agotados */}
+      {modalAgotadosAbierto && (
+        <PlatosAgotadosModal onCerrar={() => setModalAgotadosAbierto(false)} />
       )}
     </div>
   );

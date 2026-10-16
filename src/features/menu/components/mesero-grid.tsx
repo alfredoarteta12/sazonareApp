@@ -12,11 +12,13 @@ import {
   DatosPedidoExterno,
 } from '@/features/orders/components/datos-pedido-externo-modal';
 import { waiterAudio } from '@/features/orders/utils/audio-alerts';
+import { supabase } from '@/lib/supabase';
 
 interface Producto {
   id: string;
   nombre: string;
   precio: number;
+  disponible?: boolean;
   categoriaId: string;
   categoria: { id: string; nombre: string };
 }
@@ -26,7 +28,46 @@ interface MeseroGridProps {
   nombreMesero?: string;
 }
 
-export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
+export function MeseroGrid({ productos: productosIniciales, nombreMesero }: MeseroGridProps) {
+  // Estado local reactivo de productos para sincronizar "Agotado" en tiempo real
+  const [productos, setProductos] = useState<Producto[]>(productosIniciales);
+
+  useEffect(() => {
+    setProductos(productosIniciales);
+  }, [productosIniciales]);
+
+  // Suscripción en tiempo real a cambios de disponibilidad en la tabla Producto
+  useEffect(() => {
+    const canal = supabase
+      .channel('cambios-disponibilidad-mesero')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Producto' },
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            const actualizado = payload.new as { id: string; disponible: boolean };
+            setProductos((prev) =>
+              prev.map((p) =>
+                p.id === actualizado.id ? { ...p, disponible: actualizado.disponible } : p
+              )
+            );
+          } else if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
+            fetch('/api/productos')
+              .then((res) => res.json())
+              .then((data) => {
+                if (Array.isArray(data)) setProductos(data);
+              })
+              .catch(() => {});
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, []);
+
   // Vistas disponibles: 'croquis' (Terraza) | 'llevar' | 'domicilio' | 'menu'
   const [vista, setVista] = useState<'croquis' | 'llevar' | 'domicilio' | 'menu'>('croquis');
   const [tipoPedido, setTipoPedido] = useState<TipoPedido>('MESA');
@@ -141,6 +182,15 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
 
   // Agregar cualquier producto directamente al carrito con 1 solo toque (comidas y bebidas)
   const handleClickProducto = (producto: Producto) => {
+    if (producto.disponible === false) {
+      setMensaje({
+        tipo: 'error',
+        texto: `⚠️ "${producto.nombre}" está agotado en cocina.`,
+      });
+      setTimeout(() => setMensaje(null), 3500);
+      return;
+    }
+
     setCarrito((prev) => {
       const existente = prev.find((i) => i.productoId === producto.id);
       if (existente) {
@@ -172,9 +222,21 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
   };
 
   const incrementarCantidad = (itemId: string) => {
-    setCarrito((prev) =>
-      prev.map((i) => (i.id === itemId ? { ...i, cantidad: i.cantidad + 1 } : i))
-    );
+    setCarrito((prev) => {
+      const item = prev.find((i) => i.id === itemId);
+      if (item) {
+        const prod = productos.find((p) => p.id === item.productoId);
+        if (prod?.disponible === false) {
+          setMensaje({
+            tipo: 'error',
+            texto: `⚠️ "${item.nombre}" está agotado en cocina.`,
+          });
+          setTimeout(() => setMensaje(null), 3500);
+          return prev;
+        }
+      }
+      return prev.map((i) => (i.id === itemId ? { ...i, cantidad: i.cantidad + 1 } : i));
+    });
   };
 
   const totalCantidad = carrito.reduce((acc, i) => acc + i.cantidad, 0);
@@ -190,6 +252,22 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
 
   const enviarPedido = () => {
     if (carrito.length === 0) return;
+
+    // Verificar si algún producto en la comanda está agotado en cocina
+    const itemAgotado = carrito.find((i) => {
+      const p = productos.find((prod) => prod.id === i.productoId);
+      return p?.disponible === false;
+    });
+
+    if (itemAgotado) {
+      setMensaje({
+        tipo: 'error',
+        texto: `⚠️ El platillo "${itemAgotado.nombre}" está agotado en cocina. Elimínalo de la comanda antes de enviar.`,
+      });
+      setTimeout(() => setMensaje(null), 4500);
+      return;
+    }
+
     startTransition(async () => {
       const notasFinales =
         notasComanda.trim() || (tipoPedido !== 'MESA' ? datosExternos.notas : undefined);
@@ -379,21 +457,36 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
             <p className="text-[11px] text-zinc-600 mt-1">Toca cualquier producto para agregarlo.</p>
           </div>
         ) : (
-          carrito.map((item) => (
-            <div
-              key={item.id}
-              className="rounded-2xl bg-zinc-900 border border-zinc-800/80 p-2.5 shadow-sm"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-white leading-tight truncate">{item.nombre}</p>
-                  <p className="text-xs text-orange-400 font-black mt-0.5">
-                    ${(item.precio * item.cantidad).toFixed(2)}
-                    <span className="text-zinc-500 font-normal text-[10px] ml-1">
-                      (${item.precio.toFixed(2)} c/u)
-                    </span>
-                  </p>
-                </div>
+          carrito.map((item) => {
+            const prodInfo = productos.find((p) => p.id === item.productoId);
+            const estaAgotadoEnCocina = prodInfo?.disponible === false;
+
+            return (
+              <div
+                key={item.id}
+                className={`rounded-2xl border p-2.5 shadow-sm transition-all ${
+                  estaAgotadoEnCocina
+                    ? 'bg-rose-950/30 border-rose-600/80 ring-1 ring-rose-500/40'
+                    : 'bg-zinc-900 border-zinc-800/80'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-bold text-white leading-tight truncate">{item.nombre}</p>
+                      {estaAgotadoEnCocina && (
+                        <span className="shrink-0 rounded bg-rose-600 px-1.5 py-0.5 text-[9px] font-black uppercase text-white">
+                          Agotado
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-orange-400 font-black mt-0.5">
+                      ${(item.precio * item.cantidad).toFixed(2)}
+                      <span className="text-zinc-500 font-normal text-[10px] ml-1">
+                        (${item.precio.toFixed(2)} c/u)
+                      </span>
+                    </p>
+                  </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
@@ -414,8 +507,9 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                 </div>
               </div>
             </div>
-          ))
-        )}
+          );
+        })
+      )}
       </div>
 
       {/* Indicaciones / Descripción general de la comanda para cocina */}
@@ -785,22 +879,30 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                     .filter((i) => i.productoId === producto.id)
                     .reduce((acc, i) => acc + i.cantidad, 0);
 
+                  const estaAgotado = producto.disponible === false;
+
                   return (
                     <button
                       key={producto.id}
                       type="button"
                       onClick={() => handleClickProducto(producto)}
-                      className={`relative flex flex-col justify-between rounded-2xl border p-3 sm:p-4 text-left transition-all active:scale-95 min-h-[110px] sm:min-h-[120px] ${
-                        cantidadEnCarrito > 0
-                          ? 'border-orange-500 bg-orange-950/30'
-                          : 'border-zinc-800/80 bg-zinc-950 hover:border-zinc-700'
+                      className={`relative flex flex-col justify-between rounded-2xl border p-3 sm:p-4 text-left transition-all min-h-[110px] sm:min-h-[120px] ${
+                        estaAgotado
+                          ? 'border-rose-900/40 bg-zinc-950/80 opacity-60'
+                          : cantidadEnCarrito > 0
+                          ? 'border-orange-500 bg-orange-950/30 active:scale-95'
+                          : 'border-zinc-800/80 bg-zinc-950 hover:border-zinc-700 active:scale-95'
                       }`}
                     >
-                      {cantidadEnCarrito > 0 && (
+                      {estaAgotado ? (
+                        <span className="absolute -right-1.5 -top-1.5 flex items-center gap-1 rounded-full bg-rose-600 px-2 py-0.5 text-[9px] font-black uppercase text-white shadow-md border border-rose-400/50">
+                          🚫 Agotado
+                        </span>
+                      ) : cantidadEnCarrito > 0 ? (
                         <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-md">
                           {cantidadEnCarrito}
                         </span>
-                      )}
+                      ) : null}
                       <div>
                         <span className="text-[10px] sm:text-xs text-zinc-400 font-medium line-clamp-1">
                           {producto.categoria.nombre}
@@ -813,8 +915,12 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                         <p className="text-base sm:text-lg font-bold text-orange-400">
                           ${producto.precio.toFixed(2)}
                         </p>
-                        <span className="text-[11px] font-bold text-zinc-500 hover:text-orange-300">
-                          + Agregar
+                        <span
+                          className={`text-[11px] font-bold ${
+                            estaAgotado ? 'text-rose-400' : 'text-zinc-500 hover:text-orange-300'
+                          }`}
+                        >
+                          {estaAgotado ? 'Agotado' : '+ Agregar'}
                         </span>
                       </div>
                     </button>

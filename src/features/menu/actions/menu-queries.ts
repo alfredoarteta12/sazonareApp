@@ -171,9 +171,31 @@ export async function toggleDisponibilidad(productoId: string) {
 
     revalidatePath('/admin/menu');
     revalidatePath('/mesero');
+    revalidatePath('/cocina');
     return { success: true, data: actualizado };
   } catch (error) {
     console.error('Error al cambiar disponibilidad:', error);
+    return { success: false, error: 'No se pudo actualizar el estado del producto.' };
+  }
+}
+
+/**
+ * Fija explícitamente la disponibilidad de un producto (true o false)
+ */
+export async function setDisponibilidadProducto(productoId: string, disponible: boolean) {
+  try {
+    const actualizado = await prisma.producto.update({
+      where: { id: productoId },
+      data: { disponible },
+      include: { categoria: true },
+    });
+
+    revalidatePath('/admin/menu');
+    revalidatePath('/mesero');
+    revalidatePath('/cocina');
+    return { success: true, data: actualizado };
+  } catch (error) {
+    console.error('Error al fijar disponibilidad de producto:', error);
     return { success: false, error: 'No se pudo actualizar el estado del producto.' };
   }
 }

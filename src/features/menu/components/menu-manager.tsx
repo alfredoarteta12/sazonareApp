@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import {
   crearCategoria,
   eliminarCategoria,
@@ -9,6 +9,7 @@ import {
   toggleDisponibilidad,
   eliminarProducto,
 } from '../actions/menu-queries';
+import { supabase } from '@/lib/supabase';
 
 interface Categoria {
   id: string;
@@ -35,6 +36,35 @@ export function MenuManager({
   const [categorias, setCategorias] = useState<Categoria[]>(categoriasIniciales);
   const [productos, setProductos] = useState<Producto[]>(productosIniciales);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('todas');
+
+  useEffect(() => {
+    setProductos(productosIniciales);
+  }, [productosIniciales]);
+
+  // Sincronización en tiempo real vía Supabase
+  useEffect(() => {
+    const canal = supabase
+      .channel('cambios-admin-menu-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Producto' },
+        (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            const actualizado = payload.new as { id: string; disponible: boolean };
+            setProductos((prev) =>
+              prev.map((p) =>
+                p.id === actualizado.id ? { ...p, disponible: actualizado.disponible } : p
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, []);
 
   // Estados para crear categoría
   const [nuevaCategoria, setNuevaCategoria] = useState('');

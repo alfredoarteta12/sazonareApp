@@ -292,20 +292,41 @@ export function PedidosExternosPanel({
                   )}
 
                   {/* Lista de platillos */}
-                  <div className="space-y-1.5 mb-4 max-h-36 overflow-y-auto pr-1">
+                  <div className="space-y-2 mb-4 max-h-48 overflow-y-auto pr-1">
                     {items.map((item, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between text-xs py-1 border-b border-zinc-900 last:border-0"
+                        className="rounded-xl bg-zinc-900/90 border border-zinc-800/80 p-2 text-xs space-y-1"
                       >
-                        <span className="text-zinc-300 truncate">
-                          <span className="font-bold text-orange-400">{item.cantidad}x</span>{' '}
-                          {item.nombre}
-                        </span>
-                        {item.subtotal > 0 && (
-                          <span className="font-semibold text-zinc-400 shrink-0 ml-2">
-                            ${item.subtotal.toFixed(2)}
+                        <div className="flex items-center justify-between">
+                          <span className="text-zinc-200 font-semibold truncate">
+                            <span className="font-bold text-orange-400">{item.cantidad}x</span>{' '}
+                            {item.nombre}
                           </span>
+                          {item.subtotal > 0 && (
+                            <span className="font-bold text-white shrink-0 ml-2">
+                              ${item.subtotal.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+
+                        {item.adiciones && item.adiciones.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {item.adiciones.map((adic, aIdx) => (
+                              <span
+                                key={aIdx}
+                                className="rounded bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.2 text-[10px] font-bold text-amber-300"
+                              >
+                                🥓 {adic}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {item.notas && (
+                          <p className="text-[11px] text-zinc-400 italic bg-zinc-950/60 rounded px-1.5 py-0.5 border border-zinc-800/60">
+                            📝 {item.notas}
+                          </p>
                         )}
                       </div>
                     ))}

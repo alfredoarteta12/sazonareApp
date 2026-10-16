@@ -146,6 +146,18 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
                     <span className="w-8 font-bold">{item.cantidad}x</span>
                     <div className="flex-1 px-1 leading-snug">
                       <p className="font-semibold text-zinc-900">{item.nombre}</p>
+                      {item.adiciones && item.adiciones.length > 0 && (
+                        <div className="text-[10px] text-zinc-600 font-sans pl-1">
+                          {item.adiciones.map((adic, aIdx) => (
+                            <p key={aIdx} className="italic">+ {adic.replace(/^\+\s*/, '')}</p>
+                          ))}
+                        </div>
+                      )}
+                      {item.notas && (
+                        <p className="text-[10px] text-zinc-500 font-sans italic pl-1">
+                          * Nota: {item.notas}
+                        </p>
+                      )}
                       {item.precioUnitario > 0 && (
                         <p className="text-[10px] text-zinc-500 font-sans">
                           ${item.precioUnitario.toFixed(2)} c/u

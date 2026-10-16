@@ -322,18 +322,41 @@ export function MesaDetalleModal({
               {items.map((item, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between gap-3 rounded-xl bg-zinc-900 border border-zinc-800/80 p-3"
+                  className="rounded-xl bg-zinc-900 border border-zinc-800/80 p-3 space-y-1.5"
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-500/10 text-orange-400 font-bold text-xs border border-orange-500/20">
-                      {item.cantidad}x
-                    </span>
-                    <span className="text-sm font-semibold text-white truncate">{item.nombre}</span>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-orange-500/10 text-orange-400 font-bold text-xs border border-orange-500/20">
+                        {item.cantidad}x
+                      </span>
+                      <span className="text-sm font-semibold text-white truncate">{item.nombre}</span>
+                    </div>
+                    {item.subtotal > 0 && (
+                      <span className="text-sm font-bold text-orange-400 shrink-0">
+                        ${item.subtotal.toFixed(2)}
+                      </span>
+                    )}
                   </div>
-                  {item.subtotal > 0 && (
-                    <span className="text-sm font-bold text-orange-400 shrink-0">
-                      ${item.subtotal.toFixed(2)}
-                    </span>
+
+                  {/* Adiciones seleccionadas */}
+                  {item.adiciones && item.adiciones.length > 0 && (
+                    <div className="flex flex-wrap gap-1 ml-9">
+                      {item.adiciones.map((adic, aIdx) => (
+                        <span
+                          key={aIdx}
+                          className="rounded-md bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[10px] font-bold text-amber-300"
+                        >
+                          🥓 {adic}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Nota especial */}
+                  {item.notas && (
+                    <p className="ml-9 text-[11px] text-zinc-400 italic bg-zinc-950/60 rounded px-2 py-0.5 border border-zinc-800/60">
+                      📝 {item.notas}
+                    </p>
                   )}
                 </div>
               ))}

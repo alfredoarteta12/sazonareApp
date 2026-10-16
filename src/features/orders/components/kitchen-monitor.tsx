@@ -5,6 +5,7 @@ import { useRealtimeOrders, Pedido } from '../hooks/use-realtime-orders';
 import { avanzarEstadoPedido } from '../actions/order-mutations';
 import { kitchenAudio } from '../utils/audio-alerts';
 import { formatearHoraColombia } from '@/lib/date-utils';
+import { parseDetallePedido } from '../utils/parse-order-detail';
 
 
 const ESTADO_CONFIG = {
@@ -64,12 +65,8 @@ function TarjetaPedido({ pedido, esNuevo }: { pedido: Pedido; esNuevo?: boolean 
     });
   };
 
-  // Separa cada platillo (ej: "2x Hamburguesa, 1x Papas")
-  const textoLimpio = pedido.detalle
-    .replace(/\[(CANCELADO|PAGADO|PARA LLEVAR|DOMICILIO)[^\]]*\]\s*/gi, '')
-    .replace(/\s*\(Nota:[^)]*\)/gi, '')
-    .trim();
-  const items = textoLimpio.split(', ').filter(Boolean);
+  // Parsea cada platillo con sus adiciones, notas y cantidades
+  const items = parseDetallePedido(pedido.detalle, pedido.total);
 
   return (
     <div
@@ -141,15 +138,41 @@ function TarjetaPedido({ pedido, esNuevo }: { pedido: Pedido; esNuevo?: boolean 
           </div>
         )}
 
-        {/* Lista visual de platillos */}
-        <div className="mb-4 space-y-1.5">
+        {/* Lista visual de platillos con adiciones y notas */}
+        <div className="mb-4 space-y-2">
           {items.map((item, idx) => (
             <div
               key={idx}
-              className="flex items-start gap-2 rounded-xl bg-black/40 border border-zinc-800/80 px-3 py-1.5 text-sm font-semibold text-zinc-100"
+              className="rounded-xl bg-black/50 border border-zinc-800/80 p-2.5 space-y-1"
             >
-              <span className="text-orange-400 font-bold">•</span>
-              <span className="leading-snug">{item}</span>
+              <div className="flex items-center gap-2">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-orange-500/20 text-orange-400 text-xs font-black border border-orange-500/30">
+                  {item.cantidad}x
+                </span>
+                <span className="text-sm font-bold text-white leading-snug">{item.nombre}</span>
+              </div>
+
+              {/* Adiciones destacadas para cocina */}
+              {item.adiciones && item.adiciones.length > 0 && (
+                <div className="flex flex-wrap gap-1 ml-8 pt-0.5">
+                  {item.adiciones.map((adic, aIdx) => (
+                    <span
+                      key={aIdx}
+                      className="inline-flex items-center gap-1 rounded-md bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-xs font-black text-amber-300"
+                    >
+                      🥓 {adic}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Nota o instrucción especial de preparación */}
+              {item.notas && (
+                <div className="ml-8 rounded-lg bg-zinc-900 border border-zinc-700/70 px-2 py-1 text-xs text-orange-200 flex items-center gap-1.5 font-medium">
+                  <span className="shrink-0">📝</span>
+                  <span className="italic font-semibold">{item.notas}</span>
+                </div>
+              )}
             </div>
           ))}
         </div>

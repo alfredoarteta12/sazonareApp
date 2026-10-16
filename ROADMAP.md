@@ -147,3 +147,4 @@ graph TD
 | **3. Plato Agotado en Tiempo Real**| Baja | ⭐⭐⭐⭐ (Evita reclamos en cocina) | 1 iteración |
 | **4. PWA Instalable** | Baja | ⭐⭐⭐⭐ (Comodidad meseros/cocina) | 1 iteración |
 | **5. Página Dinámica con 3D / AR** | Media-Alta | ⭐⭐⭐⭐⭐ (Factor WOW e innovación) | 2 iteraciones |
+

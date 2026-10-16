@@ -61,7 +61,7 @@ Permitir que meseros y clientes personalicen sus platillos con ingredientes extr
 
 ---
 
-## 3. 🚫 Botón Rápido de "Plato Agotado" (Disponibilidad en Tiempo Real)
+## 3. 🚫 Botón Rápido de "Plato Agotado" (Disponibilidad en Tiempo Real) — ✅ COMPLETADO
 
 ### Objetivo
 Evitar que los meseros tomen pedidos de platos cuyos ingredientes se hayan terminado en la cocina, previniendo inconformidades con los comensales.

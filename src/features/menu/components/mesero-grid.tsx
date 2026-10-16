@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useCallback, useEffect } from 'react';
 import { crearPedido } from '@/features/orders/actions/order-mutations';
 import { useRealtimeOrders, Pedido } from '@/features/orders/hooks/use-realtime-orders';
 import { CroquisTerraza } from '@/features/orders/components/croquis-terraza';
 import { TicketReciboModal } from '@/features/orders/components/ticket-recibo-modal';
+import { waiterAudio } from '@/features/orders/utils/audio-alerts';
 
 interface Producto {
   id: string;
@@ -37,8 +38,50 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
   const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [pedidoRecienteRecibo, setPedidoRecienteRecibo] = useState<Pedido | null>(null);
 
-  // Escuchamos pedidos en tiempo real para el croquis de mesas
-  const { pedidos: pedidosActivos } = useRealtimeOrders(undefined, { incluirEntregados: true });
+  // Estados para alertas de cocina lista (Visual y Sonido)
+  const [pedidoListoAlerta, setPedidoListoAlerta] = useState<Pedido | null>(null);
+  const [destelloVisual, setDestelloVisual] = useState<boolean>(false);
+  const [sonidoHabilitado, setSonidoHabilitado] = useState<boolean>(() => waiterAudio.isEnabled());
+
+  // Callback cuando cocina marca un pedido como HECHO (Listo para servir)
+  const handlePedidoListo = useCallback((pedido: Pedido) => {
+    setPedidoListoAlerta(pedido);
+    setDestelloVisual(true);
+    setTimeout(() => setDestelloVisual(false), 3000);
+
+    // Timbre metálico de mostrador de restaurante (🛎️ Ding-Ding!)
+    waiterAudio.playReadyBell();
+  }, []);
+
+  // Escuchamos pedidos en tiempo real con callback de aviso para meseros
+  const { pedidos: pedidosActivos } = useRealtimeOrders(undefined, {
+    incluirEntregados: true,
+    onPedidoListo: handlePedidoListo,
+  });
+
+  // Desbloqueo automático del AudioContext en el primer toque de pantalla
+  useEffect(() => {
+    const desbloquear = () => {
+      waiterAudio.unlock();
+    };
+    window.addEventListener('click', desbloquear, { once: true });
+    window.addEventListener('touchstart', desbloquear, { once: true });
+    return () => {
+      window.removeEventListener('click', desbloquear);
+      window.removeEventListener('touchstart', desbloquear);
+    };
+  }, []);
+
+  const toggleSonido = () => {
+    const nuevo = !sonidoHabilitado;
+    setSonidoHabilitado(nuevo);
+    waiterAudio.setEnabled(nuevo);
+    if (nuevo) {
+      waiterAudio.unlock();
+      waiterAudio.playReadyBell();
+    }
+  };
+
 
   // Categorías únicas
   const categorias = ['todas', ...new Set(productos.map((p) => p.categoria.nombre))];
@@ -259,32 +302,91 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
   );
 
   return (
-    <div className="flex h-full flex-col">
-      {/* BARRA SUPERIOR DE NAVEGACIÓN ENTRE CROQUIS DE TERRAZA Y MENÚ */}
-      <div className="mb-3 flex items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-1.5 rounded-2xl bg-zinc-950 border border-zinc-800 p-1">
-          <button
-            type="button"
-            onClick={() => setVista('croquis')}
-            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
-              vista === 'croquis'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
-            }`}
-          >
-            <span>🌿</span> Plano Terraza (5 Mesas)
-          </button>
+    <div className="relative flex h-full flex-col">
+      {/* DESTELLO VISUAL DE PANTALLA COMPLETA AL ESTAR LISTO UN PEDIDO */}
+      {destelloVisual && (
+        <div className="pointer-events-none fixed inset-0 z-50 border-8 sm:border-[12px] border-blue-400/90 bg-blue-500/15 shadow-[inset_0_0_90px_rgba(59,130,246,0.6)] transition-all duration-300 animate-pulse" />
+      )}
 
+      {/* BANNER FLOTANTE SUPERIOR CUANDO COCINA MARCA UN PEDIDO LISTO */}
+      {pedidoListoAlerta && (
+        <div className="fixed top-4 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-auto sm:min-w-[440px] z-50 flex items-center justify-between gap-4 rounded-2xl border-2 border-blue-400 bg-zinc-950/95 px-5 py-3.5 shadow-2xl shadow-blue-500/50 backdrop-blur-md animate-bounce">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-3xl animate-bounce shrink-0">🛎️</span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-wider text-blue-400">
+                ¡Comanda Lista en Barra de Cocina!
+              </p>
+              <p className="text-base font-extrabold text-white truncate">
+                Mesa {pedidoListoAlerta.mesa} (Terraza) • Servir ya
+              </p>
+              <p className="text-xs text-zinc-300 truncate">{pedidoListoAlerta.detalle}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setMesa(pedidoListoAlerta.mesa);
+                setVista('croquis');
+                setPedidoListoAlerta(null);
+              }}
+              className="rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-extrabold text-white hover:bg-blue-500 transition-colors shadow-md shadow-blue-600/30"
+            >
+              Ver Mesa 🍽️
+            </button>
+            <button
+              type="button"
+              onClick={() => setPedidoListoAlerta(null)}
+              className="rounded-xl bg-zinc-800 border border-zinc-700 px-2.5 py-1.5 text-xs font-bold text-zinc-300 hover:text-white transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* BARRA SUPERIOR DE NAVEGACIÓN ENTRE CROQUIS DE TERRAZA Y MENÚ */}
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 rounded-2xl bg-zinc-950 border border-zinc-800 p-1">
+            <button
+              type="button"
+              onClick={() => setVista('croquis')}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                vista === 'croquis'
+                  ? 'bg-orange-500 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+              }`}
+            >
+              <span>🌿</span> Plano Terraza (5 Mesas)
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setVista('menu')}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+                vista === 'menu'
+                  ? 'bg-orange-500 text-white shadow-md'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+              }`}
+            >
+              <span>🍔</span> Menú (Mesa {mesa})
+            </button>
+          </div>
+
+          {/* Control de sonido para el timbre de cocina */}
           <button
             type="button"
-            onClick={() => setVista('menu')}
-            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
-              vista === 'menu'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+            onClick={toggleSonido}
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
+              sonidoHabilitado
+                ? 'border-blue-800/80 bg-blue-950/40 text-blue-300 hover:bg-blue-900/50'
+                : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white'
             }`}
+            title={sonidoHabilitado ? 'Timbre de cocina activo (clic para silenciar)' : 'Silenciado (clic para activar)'}
           >
-            <span>🍔</span> Menú (Mesa {mesa})
+            <span>{sonidoHabilitado ? '🔔 Timbre Activo' : '🔇 Silenciado'}</span>
           </button>
         </div>
 
@@ -298,6 +400,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
           </button>
         )}
       </div>
+
 
       {/* VISTA 1: CROQUIS DE LA TERRAZA (5 MESAS) */}
       {vista === 'croquis' && (

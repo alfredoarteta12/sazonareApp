@@ -17,7 +17,10 @@ export interface Pedido {
 
 export function useRealtimeOrders(
   onNuevoPedido?: (pedido: Pedido) => void,
-  options?: { incluirEntregados?: boolean }
+  options?: {
+    incluirEntregados?: boolean;
+    onPedidoListo?: (pedido: Pedido) => void;
+  }
 ) {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -27,6 +30,11 @@ export function useRealtimeOrders(
   useEffect(() => {
     onNuevoPedidoRef.current = onNuevoPedido;
   }, [onNuevoPedido]);
+
+  const onPedidoListoRef = useRef(options?.onPedidoListo);
+  useEffect(() => {
+    onPedidoListoRef.current = options?.onPedidoListo;
+  }, [options?.onPedidoListo]);
 
   const incluirEntregados = options?.incluirEntregados ?? false;
 
@@ -59,15 +67,22 @@ export function useRealtimeOrders(
             setPedidos((prev) => [nuevo, ...prev]);
             onNuevoPedidoRef.current?.(nuevo);
           } else if (payload.eventType === 'UPDATE') {
-            setPedidos((prev) =>
-              prev
-                .map((p) => (p.id === (payload.new as Pedido).id ? (payload.new as Pedido) : p))
+            const nuevo = payload.new as Pedido;
+            setPedidos((prev) => {
+              const previo = prev.find((p) => p.id === nuevo.id);
+              // Notificar al mesero si la comanda acaba de pasar a HECHO (Listo para servir)
+              if (nuevo.estado === 'HECHO' && previo?.estado !== 'HECHO') {
+                onPedidoListoRef.current?.(nuevo);
+              }
+
+              return prev
+                .map((p) => (p.id === nuevo.id ? nuevo : p))
                 .filter((p) =>
                   incluirEntregados
                     ? p.estado !== 'CANCELADO'
                     : p.estado !== 'ENTREGADO' && p.estado !== 'CANCELADO' && p.estado !== 'PAGADO'
-                )
-            );
+                );
+            });
           }
         }
       )
@@ -77,6 +92,7 @@ export function useRealtimeOrders(
       supabase.removeChannel(canal);
     };
   }, [incluirEntregados]);
+
 
 
 

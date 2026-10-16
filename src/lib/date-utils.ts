@@ -87,3 +87,4 @@ export function formatearFechaHoraColombia(fecha: Date | string): string {
     hour12: true,
   }).format(d);
 }
+

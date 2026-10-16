@@ -104,6 +104,76 @@ class KitchenAudioAlert {
       console.warn('Error al reproducir alerta de cocina:', err);
     }
   }
+
+  // Doble campanilla de servicio para el mesero (Ding-Ding agudo de mostrador 🛎️)
+  public playReadyBell() {
+    if (!this.soundEnabled) return;
+
+    try {
+      const ctx = this.getContext();
+      if (!ctx) return;
+
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      const now = ctx.currentTime;
+
+      // Doble repique agudo y metálico de timbre de cocina para llamar al mesero
+      const strikes = [
+        { time: 0.0, freq: 2093.0, duration: 0.75, gain: 0.45 }, // Primer Ding (Do agudo)
+        { time: 0.2, freq: 2637.0, duration: 1.1, gain: 0.5 },   // Segundo Ding (Mi agudo)
+      ];
+
+      strikes.forEach(({ time, freq, duration, gain }) => {
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        // Tono triangular para sonido de campana de servicio metálica
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + time);
+
+        gainNode.gain.setValueAtTime(0, now + time);
+        gainNode.gain.linearRampToValueAtTime(gain, now + time + 0.015);
+        gainNode.gain.exponentialRampToValueAtTime(0.0001, now + time + duration);
+
+        osc.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        osc.start(now + time);
+        osc.stop(now + time + duration);
+      });
+
+      // Vibración de aviso en el celular del mesero
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate([250, 100, 250]);
+      }
+    } catch (err) {
+      console.warn('Error al reproducir timbre de mesero:', err);
+    }
+  }
 }
 
 export const kitchenAudio = new KitchenAudioAlert();
+
+class WaiterAudioAlert extends KitchenAudioAlert {
+  constructor() {
+    super();
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sazonare_mesero_sonido');
+      if (saved !== null) {
+        this.setEnabled(saved === 'true');
+      }
+    }
+  }
+
+  public override setEnabled(enabled: boolean) {
+    super.setEnabled(enabled);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sazonare_mesero_sonido', String(enabled));
+    }
+  }
+}
+
+export const waiterAudio = new WaiterAudioAlert();
+

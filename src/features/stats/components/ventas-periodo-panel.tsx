@@ -7,6 +7,8 @@ import {
   ReportePeriodoData,
 } from '../actions/get-financial-reports';
 import { BotonRecibo } from './boton-recibo';
+import { ArqueoCajaModal } from './arqueo-caja-modal';
+import { HistorialCierresModal } from './historial-cierres-modal';
 import { formatearHoraColombia, formatearFechaColombia } from '@/lib/date-utils';
 
 interface VentasPeriodoPanelProps {
@@ -18,6 +20,8 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
   const [reporte, setReporte] = useState<ReportePeriodoData>(reporteInicial);
   const [isPending, startTransition] = useTransition();
   const [busqueda, setBusqueda] = useState('');
+  const [mostrarArqueo, setMostrarArqueo] = useState(false);
+  const [mostrarHistorial, setMostrarHistorial] = useState(false);
 
   const cambiarPeriodo = (nuevoPeriodo: PeriodoReporte) => {
     setPeriodo(nuevoPeriodo);
@@ -46,8 +50,8 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
 
   return (
     <div className="space-y-6">
-      {/* SELECTOR DE PERÍODO (DÍA / SEMANA / MES) */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5 shadow-xl">
+      {/* SELECTOR DE PERÍODO (DÍA / SEMANA / MES) Y ARQUEO */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5 shadow-xl">
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xl">📊</span>
@@ -63,46 +67,72 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
           </p>
         </div>
 
-        {/* Tabs de período */}
-        <div className="flex items-center gap-1.5 rounded-2xl bg-zinc-900 border border-zinc-800 p-1">
-          <button
-            type="button"
-            onClick={() => cambiarPeriodo('dia')}
-            disabled={isPending}
-            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
-              periodo === 'dia'
-                ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
-          >
-            <span>📅</span> Hoy
-          </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Botones de Arqueo y Cierre de Caja */}
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setMostrarArqueo(true)}
+              className="flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-500 px-3.5 py-2 text-xs font-bold text-white shadow-lg shadow-orange-500/25 hover:from-orange-600 hover:to-amber-600 active:scale-95 transition-all"
+            >
+              <span>🔒</span>
+              <span>Arqueo y Cierre</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={() => cambiarPeriodo('semana')}
-            disabled={isPending}
-            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
-              periodo === 'semana'
-                ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
-          >
-            <span>📆</span> Esta Semana
-          </button>
+            <button
+              type="button"
+              onClick={() => setMostrarHistorial(true)}
+              className="flex items-center gap-1.5 rounded-2xl bg-zinc-900 border border-zinc-800 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+              title="Ver auditoría e historial de Reportes Z"
+            >
+              <span>📜</span>
+              <span>Historial Z</span>
+            </button>
+          </div>
 
-          <button
-            type="button"
-            onClick={() => cambiarPeriodo('mes')}
-            disabled={isPending}
-            className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
-              periodo === 'mes'
-                ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
-          >
-            <span>🗓️</span> Este Mes
-          </button>
+          <div className="hidden sm:block h-6 w-px bg-zinc-800" />
+
+          {/* Tabs de período */}
+          <div className="flex items-center gap-1.5 rounded-2xl bg-zinc-900 border border-zinc-800 p-1">
+            <button
+              type="button"
+              onClick={() => cambiarPeriodo('dia')}
+              disabled={isPending}
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+                periodo === 'dia'
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
+            >
+              <span>📅</span> Hoy
+            </button>
+
+            <button
+              type="button"
+              onClick={() => cambiarPeriodo('semana')}
+              disabled={isPending}
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+                periodo === 'semana'
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
+            >
+              <span>📆</span> Esta Semana
+            </button>
+
+            <button
+              type="button"
+              onClick={() => cambiarPeriodo('mes')}
+              disabled={isPending}
+              className={`flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-all ${
+                periodo === 'mes'
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-500/30'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
+              }`}
+            >
+              <span>🗓️</span> Este Mes
+            </button>
+          </div>
         </div>
       </div>
 
@@ -323,6 +353,23 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
           )}
         </div>
       </div>
+
+      {/* MODAL DE ARQUEO Y CIERRE DE CAJA */}
+      {mostrarArqueo && (
+        <ArqueoCajaModal
+          onCerrar={() => setMostrarArqueo(false)}
+          onCierreCompletado={() => {
+            cambiarPeriodo(periodo);
+          }}
+        />
+      )}
+
+      {/* MODAL DE HISTORIAL DE REPORTES Z */}
+      {mostrarHistorial && (
+        <HistorialCierresModal
+          onCerrar={() => setMostrarHistorial(false)}
+        />
+      )}
     </div>
   );
 }

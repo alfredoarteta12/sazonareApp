@@ -27,16 +27,19 @@ body {
   scrollbar-width: none;
 }
 
-/* Reglas de impresión para ticket térmico de comanda (80mm) */
+/* Reglas de impresión para ticket térmico y reporte Z (80mm) */
 @media print {
   body * {
     visibility: hidden !important;
   }
   #ticket-imprimible,
-  #ticket-imprimible * {
+  #ticket-imprimible *,
+  #reporte-z-imprimible,
+  #reporte-z-imprimible * {
     visibility: visible !important;
   }
-  #ticket-imprimible {
+  #ticket-imprimible,
+  #reporte-z-imprimible {
     position: fixed !important;
     left: 0 !important;
     top: 0 !important;

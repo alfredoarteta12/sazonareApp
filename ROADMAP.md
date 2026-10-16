@@ -14,7 +14,7 @@ flowchart LR
 
 ---
 
-## 1. 📋 Arqueo y Cierre de Caja Diario (Reporte Z Imprimible)
+## 1. 📋 Arqueo y Cierre de Caja Diario (Reporte Z Imprimible) — ✅ COMPLETADO
 
 ### Objetivo
 Permitir al administrador o cajero realizar el cuadre formal de caja al terminar cada turno o jornada, controlando el dinero en efectivo físico contra las ventas registradas por el sistema.
@@ -22,19 +22,20 @@ Permitir al administrador o cajero realizar el cuadre formal de caja al terminar
 ### Funcionalidades Clave
 1. **Fondo Inicial (Base de Caja):**
    * Registro del efectivo con el que abre la caja en la mañana (ej: $100.000 COP para cambios).
-2. **Arqueo Ciego / Conteo Físico:**
-   * El cajero ingresa el dinero físico contado en billetes y monedas al terminar el turno.
+2. **Arqueo Ciego / Conteo Físico Interactivo:**
+   * El cajero ingresa el dinero físico contado o usa la calculadora integrada de billetes y monedas (COP).
    * El sistema calcula automáticamente:
      $$\text{Efectivo Esperado} = \text{Base Inicial} + \text{Ventas en Efectivo} - \text{Retiros/Gastos}$$
-     $$\text{Diferencia} = \text{Efectivo Físico} - \text{Efectivo Esperado} \quad (\text{Sobrante o Faltante})$$
+     $$\text{Diferencia} = \text{Efectivo Físico} - \text{Efectivo Esperado} \quad (\text{Cuadre exacto, Sobrante o Faltante})$$
 3. **Ticket Térmico de Cierre (Reporte Z):**
-   * Formato imprimible para impresora de 80mm / 58mm con:
-     * Fecha, hora de apertura y cierre oficial de Colombia (`America/Bogota`).
-     * Desglose: Total Efectivo, Total Transferencia (Nequi/Daviplata), Total Propinas.
-     * Número de pedidos atendidos, cancelados y ticket promedio.
-     * Firma del cajero y administrador responsable.
+   * Formato imprimible para impresora térmica de 80mm / 58mm con `@media print`:
+     * Fecha y hora oficial de Colombia (`America/Bogota`).
+     * Desglose: Ventas en Efectivo, Transferencias (Nequi/Daviplata/Bancolombia), Ventas Netas.
+     * Número de pedidos atendidos y ticket promedio.
+     * Cuadro de auditoría de arqueo (Base, Efectivo esperado, Efectivo real, Diferencia).
+     * Espacio para observaciones y firma física del cajero/administrador.
 4. **Historial de Cierres Auditados:**
-   * Tabla histórica con estados de cuadre para auditoría contable.
+   * Tabla histórica en Supabase con estados de cuadre y botón para re-imprimir cualquier Reporte Z en cualquier momento.
 
 ---
 
@@ -138,13 +139,13 @@ graph TD
 
 ---
 
-## 🛠️ Matriz de Priorización Sugerida
-
-| Módulo | Complejidad | Impacto en Ventas / Operación | Esfuerzo Estimado |
+## 🛠️ Matriz de Priorización y Estado
+ 
+| Módulo | Complejidad | Impacto en Operación | Estado |
 | :--- | :---: | :---: | :---: |
-| **1. Cierre de Caja / Arqueo Z** | Media | ⭐⭐⭐⭐⭐ (Control contable indispensable) | 1 a 2 iteraciones |
-| **2. Adiciones y Modificadores** | Media | ⭐⭐⭐⭐⭐ (Aumenta el ticket promedio) | 1 a 2 iteraciones |
-| **3. Plato Agotado en Tiempo Real**| Baja | ⭐⭐⭐⭐ (Evita reclamos en cocina) | 1 iteración |
-| **4. PWA Instalable** | Baja | ⭐⭐⭐⭐ (Comodidad meseros/cocina) | 1 iteración |
-| **5. Página Dinámica con 3D / AR** | Media-Alta | ⭐⭐⭐⭐⭐ (Factor WOW e innovación) | 2 iteraciones |
+| **1. Cierre de Caja / Arqueo Z** | Media | ⭐⭐⭐⭐⭐ (Control contable indispensable) | ✅ **Completado** |
+| **2. Plato Agotado en Tiempo Real** | Baja | ⭐⭐⭐⭐ (Evita reclamos en cocina) | ✅ **Completado** |
+| **3. Adiciones y Modificadores** | Media | ⭐⭐⭐⭐⭐ (Aumenta el ticket promedio) | ⏳ Pendiente |
+| **4. PWA Móvil Instalable** | Baja | ⭐⭐⭐⭐ (Comodidad meseros/cocina) | ⏳ Pendiente |
+| **5. Página Dinámica con 3D / AR** | Media-Alta | ⭐⭐⭐⭐⭐ (Experiencia interactiva WOW) | ⏳ Pendiente |
 

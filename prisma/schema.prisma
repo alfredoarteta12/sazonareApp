@@ -64,4 +64,23 @@ model Pedido {
   updatedAt  DateTime    @updatedAt
 }
 
+model CierreCaja {
+  id               String   @id @default(uuid())
+  fecha            DateTime @default(now())
+  responsable      String
+  baseInicial      Float    @default(0)
+  ventasEfectivo   Float    @default(0)
+  ventasTransf     Float    @default(0)
+  totalVentas      Float    @default(0)
+  retiros          Float    @default(0)
+  efectivoEsperado Float    @default(0)
+  efectivoReal     Float    @default(0)
+  diferencia       Float    @default(0)
+  totalPedidos     Int      @default(0)
+  ticketPromedio   Float    @default(0)
+  observaciones    String?
+  createdAt        DateTime @default(now())
+}
+
+
 

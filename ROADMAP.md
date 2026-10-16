@@ -39,26 +39,20 @@ Permitir al administrador o cajero realizar el cuadre formal de caja al terminar
 
 ---
 
-## 2. 🥓 Adiciones y Modificadores en Platillos
+## 2. 🥓 Adiciones y Descripción en Comandas (Indicaciones para Cocina) — ✅ COMPLETADO
 
 ### Objetivo
-Permitir que meseros y clientes personalicen sus platillos con ingredientes extra o instrucciones especiales sin depender de notas manuales propensas a errores.
+Permitir que los meseros envíen de manera ultrarrápida (en 1 toque) especificaciones y personalizaciones para la cocina (ej: "Sin lechuga", "Sin salsas", "Salsas aparte", "Término 3/4") sin entorpecer la toma de pedidos con modales individuales innecesarios.
 
-### Funcionalidades Clave
-1. **Grupos de Modificadores por Producto:**
-   * **Adiciones con costo:**
-     * *+ Tocineta crocante ($4.000)*
-     * *+ Queso cheddar fundido ($3.000)*
-     * *+ Huevo frito ($2.500)*
-     * *+ Porción extra de papas ($5.000)*
-   * **Modificadores sin costo / Preferencias:**
-     * *Término de la carne:* Término medio, 3/4, Bien asada.
-     * *Remociones:* Sin cebolla, Sin salsas, Sin tomate.
-     * *Servicio:* Salsas aparte, Empaque individual.
-2. **Impacto en el Sistema:**
-   * **Cálculo de precio:** Suma en tiempo real al total del ítem y de la comanda.
-   * **Monitor de Cocina:** Cada adición y remoción se destaca en viñetas de colores claros para que el cocinero las prepare al instante.
-   * **Recibo Térmico:** Lista las adiciones debajo del ítem principal con su costo desglosado.
+### Funcionalidades Implementadas
+1. **Adición Directa con 1 Toque:**
+   - Se eliminaron modales intermedios para alimentos y bebidas. Al tocar un ítem se agrega o suma inmediatamente a la orden.
+2. **Chips Rápidos de Indicaciones en Carrito:**
+   - Botones táctiles preconfigurados de un toque: `Sin salsas`, `Sin cebolla`, `Sin tomate`, `Sin lechuga`, `Salsas aparte`, `Término 3/4`, `Bien cocido`, `Sin hielo`.
+3. **Campo Libre de Descripción:**
+   - Área de texto para observaciones específicas adicionales sin pérdida de foco en teclados virtuales móviles.
+4. **Visualización Integral:**
+   - Las notas e indicaciones se transmiten en tiempo real a los monitores de cocina (`/cocina`), al detalle de la mesa y se imprimen en los tickets térmicos.
 
 ---
 
@@ -145,7 +139,8 @@ graph TD
 | :--- | :---: | :---: | :---: |
 | **1. Cierre de Caja / Arqueo Z** | Media | ⭐⭐⭐⭐⭐ (Control contable indispensable) | ✅ **Completado** |
 | **2. Plato Agotado en Tiempo Real** | Baja | ⭐⭐⭐⭐ (Evita reclamos en cocina) | ✅ **Completado** |
-| **3. Adiciones y Modificadores** | Media | ⭐⭐⭐⭐⭐ (Aumenta el ticket promedio) | ⏳ Pendiente |
+| **3. Adiciones / Indicaciones en Comanda** | Baja-Media | ⭐⭐⭐⭐⭐ (Agilidad en cocina y meseros) | ✅ **Completado** |
 | **4. PWA Móvil Instalable** | Baja | ⭐⭐⭐⭐ (Comodidad meseros/cocina) | ⏳ Pendiente |
 | **5. Página Dinámica con 3D / AR** | Media-Alta | ⭐⭐⭐⭐⭐ (Experiencia interactiva WOW) | ⏳ Pendiente |
+
 

@@ -307,6 +307,21 @@ export function MesaDetalleModal({
             </div>
           )}
 
+          {/* NOTA O INSTRUCCIONES DE LA COMANDA */}
+          {pedido.notas && (
+            <div className="rounded-2xl bg-amber-500/10 border border-amber-500/30 p-3 text-xs text-amber-200 flex items-start gap-2.5">
+              <span className="text-base shrink-0">📝</span>
+              <div className="min-w-0">
+                <p className="font-extrabold text-amber-400 uppercase tracking-wider text-[10px]">
+                  Indicaciones de la Comanda:
+                </p>
+                <p className="font-semibold text-white mt-0.5 whitespace-pre-wrap text-xs sm:text-sm">
+                  {pedido.notas}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* DETALLE DE PLATILLOS */}
           <div>
             <div className="flex items-center justify-between mb-2.5">

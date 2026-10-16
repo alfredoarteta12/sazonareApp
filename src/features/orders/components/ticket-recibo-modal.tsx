@@ -172,6 +172,16 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
               </div>
             </div>
 
+            {/* Indicaciones / Notas de la Comanda */}
+            {pedido.notas && (
+              <div className="py-2 border-b border-dashed border-zinc-400 text-[11px] font-sans">
+                <p className="font-bold text-zinc-800 uppercase tracking-wider text-[10px]">
+                  📝 Indicaciones de Cocina:
+                </p>
+                <p className="italic text-zinc-700 mt-0.5 whitespace-pre-wrap">{pedido.notas}</p>
+              </div>
+            )}
+
             {/* Resumen de Totales */}
             <div className="py-3 border-b border-dashed border-zinc-400 space-y-1 text-[11px]">
               <div className="flex justify-between text-zinc-600">

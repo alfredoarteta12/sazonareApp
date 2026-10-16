@@ -11,7 +11,6 @@ import {
   DatosPedidoExternoModal,
   DatosPedidoExterno,
 } from '@/features/orders/components/datos-pedido-externo-modal';
-import { PersonalizarPlatilloModal } from './personalizar-platillo-modal';
 import { waiterAudio } from '@/features/orders/utils/audio-alerts';
 
 interface Producto {
@@ -47,11 +46,8 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
     tipo: 'LLEVAR' | 'DOMICILIO';
   } | null>(null);
 
-  // Modal para agregar indicaciones de preparación (ej: sin salsas, sin cebolla, etc.)
-  const [personalizandoProducto, setPersonalizandoProducto] = useState<{
-    producto: Producto;
-    itemExistente?: ItemCarrito;
-  } | null>(null);
+  // Indicaciones o descripción general de la comanda para cocina
+  const [notasComanda, setNotasComanda] = useState('');
 
   // Modal para ver y cobrar cualquier pedido seleccionado (Terraza, Llevar o Domicilio)
   const [pedidoDetalleSeleccionado, setPedidoDetalleSeleccionado] = useState<Pedido | null>(null);
@@ -107,19 +103,6 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
     }
   };
 
-  // Identificar si un producto es bebida (las bebidas NO se personalizan)
-  const esBebida = (prod: Producto | { categoria?: { nombre?: string } }) => {
-    const cat = prod.categoria?.nombre?.toLowerCase() || '';
-    return (
-      cat.includes('bebida') ||
-      cat.includes('gaseosa') ||
-      cat.includes('jugo') ||
-      cat.includes('cerveza') ||
-      cat.includes('trago') ||
-      cat.includes('licor')
-    );
-  };
-
   // Contadores para insignias de pedidos activos
   const pedidosLlevarActivos = pedidosActivos.filter(
     (p) =>
@@ -149,14 +132,17 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
   const handleConfirmarDatosExternos = (datos: DatosPedidoExterno) => {
     setDatosExternos(datos);
     setTipoPedido(datos.tipoPedido);
+    if (datos.notas) {
+      setNotasComanda(datos.notas);
+    }
     setModalDatosExternos(null);
     setVista('menu');
   };
 
-  // Agregar directamente al carrito (usado para bebidas o comidas sin indicaciones)
-  const agregarDirecto = (producto: Producto) => {
+  // Agregar cualquier producto directamente al carrito con 1 solo toque (comidas y bebidas)
+  const handleClickProducto = (producto: Producto) => {
     setCarrito((prev) => {
-      const existente = prev.find((i) => i.productoId === producto.id && !i.notas);
+      const existente = prev.find((i) => i.productoId === producto.id);
       if (existente) {
         return prev.map((i) =>
           i.id === existente.id ? { ...i, cantidad: i.cantidad + 1 } : i
@@ -173,33 +159,6 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
         },
       ];
     });
-  };
-
-  // Manejador al hacer clic en un producto del menú
-  const handleClickProducto = (producto: Producto) => {
-    if (esBebida(producto)) {
-      // Las bebidas NO se personalizan: se agregan directamente
-      agregarDirecto(producto);
-      return;
-    }
-    // Para comidas, abrir modal de indicaciones de cocina (sin salsas, etc.)
-    setPersonalizandoProducto({ producto });
-  };
-
-  // Guardar o modificar ítem en el carrito con sus notas
-  const handleGuardarItemPersonalizado = (itemModificado: ItemCarrito) => {
-    setCarrito((prev) => {
-      const index = prev.findIndex((i) => i.id === itemModificado.id);
-      if (index >= 0) {
-        // Modificar ítem existente
-        const copia = [...prev];
-        copia[index] = itemModificado;
-        return copia;
-      }
-      // Agregar nuevo ítem al carrito
-      return [...prev, itemModificado];
-    });
-    setPersonalizandoProducto(null);
   };
 
   const decrementarCantidad = (itemId: string) => {
@@ -232,18 +191,22 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
   const enviarPedido = () => {
     if (carrito.length === 0) return;
     startTransition(async () => {
+      const notasFinales =
+        notasComanda.trim() || (tipoPedido !== 'MESA' ? datosExternos.notas : undefined);
+
       const result = await crearPedido({
         tipoPedido,
         mesa: tipoPedido === 'MESA' ? mesa : 0,
         cliente: tipoPedido !== 'MESA' ? datosExternos.cliente : undefined,
         telefono: tipoPedido !== 'MESA' ? datosExternos.telefono : undefined,
         direccion: tipoPedido === 'DOMICILIO' ? datosExternos.direccion : undefined,
-        notas: tipoPedido !== 'MESA' ? datosExternos.notas : undefined,
+        notas: notasFinales || undefined,
         items: carrito,
       });
 
       if (result.success && result.pedido) {
         setCarrito([]);
+        setNotasComanda('');
         const destinoTexto =
           tipoPedido === 'MESA'
             ? `Mesa ${mesa} - Terraza`
@@ -276,7 +239,10 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
           {carrito.length > 0 && (
             <button
               type="button"
-              onClick={() => setCarrito([])}
+              onClick={() => {
+                setCarrito([]);
+                setNotasComanda('');
+              }}
               className="text-xs text-zinc-500 hover:text-rose-400 underline transition-colors ml-1"
             >
               Vaciar
@@ -404,89 +370,102 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
         )}
       </div>
 
-      {/* Lista de productos en la comanda con soporte de indicaciones */}
-      <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+      {/* Lista de productos en la comanda */}
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1">
         {carrito.length === 0 ? (
           <div className="py-12 text-center text-zinc-500">
             <p className="text-3xl mb-1">🍔</p>
             <p className="text-xs">No hay platillos en la orden.</p>
-            <p className="text-[11px] text-zinc-600 mt-1">Toca los platillos para agregarlos.</p>
+            <p className="text-[11px] text-zinc-600 mt-1">Toca cualquier producto para agregarlo.</p>
           </div>
         ) : (
-          carrito.map((item) => {
-            const prod = productos.find((p) => p.id === item.productoId);
-            const esItemBebida = prod ? esBebida(prod) : false;
-
-            return (
-              <div
-                key={item.id}
-                className="rounded-2xl bg-zinc-900 border border-zinc-800/80 p-2.5 space-y-1.5 shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-white leading-tight">{item.nombre}</p>
-                    <p className="text-xs text-orange-400 font-black mt-0.5">
-                      ${(item.precio * item.cantidad).toFixed(2)}
-                      <span className="text-zinc-500 font-normal text-[10px] ml-1">
-                        (${item.precio.toFixed(2)} c/u)
-                      </span>
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    {/* Botón para editar indicación solo en comidas */}
-                    {!esItemBebida && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const prodEncontrado = productos.find((p) => p.id === item.productoId) || {
-                            id: item.productoId,
-                            nombre: item.nombre,
-                            precio: item.precio,
-                            categoriaId: '',
-                            categoria: { id: '', nombre: '' },
-                          };
-                          setPersonalizandoProducto({
-                            producto: prodEncontrado,
-                            itemExistente: item,
-                          });
-                        }}
-                        className="flex h-7 px-2 items-center justify-center rounded-lg bg-zinc-800 border border-zinc-700/80 text-[11px] font-bold text-orange-300 hover:bg-orange-500 hover:text-white transition-colors"
-                        title="Modificar indicación de preparación"
-                      >
-                        {item.notas ? '✏️ Nota' : '➕ Nota'}
-                      </button>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => decrementarCantidad(item.id!)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold text-zinc-300 hover:bg-rose-950 hover:text-rose-300 transition-colors active:scale-90"
-                    >
-                      -
-                    </button>
-                    <span className="w-5 text-center text-xs font-black text-white">{item.cantidad}</span>
-                    <button
-                      type="button"
-                      onClick={() => incrementarCantidad(item.id!)}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold text-zinc-300 hover:bg-emerald-950 hover:text-emerald-300 transition-colors active:scale-90"
-                    >
-                      +
-                    </button>
-                  </div>
+          carrito.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-2xl bg-zinc-900 border border-zinc-800/80 p-2.5 shadow-sm"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-white leading-tight truncate">{item.nombre}</p>
+                  <p className="text-xs text-orange-400 font-black mt-0.5">
+                    ${(item.precio * item.cantidad).toFixed(2)}
+                    <span className="text-zinc-500 font-normal text-[10px] ml-1">
+                      (${item.precio.toFixed(2)} c/u)
+                    </span>
+                  </p>
                 </div>
 
-                {/* Nota o instrucción especial de preparación */}
-                {item.notas && (
-                  <p className="text-[11px] text-zinc-300 font-medium bg-zinc-950/80 rounded-lg px-2.5 py-1 border border-zinc-800">
-                    📝 <span className="text-orange-200">{item.notas}</span>
-                  </p>
-                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => decrementarCantidad(item.id!)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold text-zinc-300 hover:bg-rose-950 hover:text-rose-300 transition-colors active:scale-90"
+                  >
+                    -
+                  </button>
+                  <span className="w-5 text-center text-xs font-black text-white">{item.cantidad}</span>
+                  <button
+                    type="button"
+                    onClick={() => incrementarCantidad(item.id!)}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-800 text-sm font-bold text-zinc-300 hover:bg-emerald-950 hover:text-emerald-300 transition-colors active:scale-90"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
-            );
-          })
+            </div>
+          ))
         )}
       </div>
+
+      {/* Indicaciones / Descripción general de la comanda para cocina */}
+      {carrito.length > 0 && (
+        <div className="mt-2.5 pt-2.5 border-t border-zinc-800/80 space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+              <span>📝</span>
+              <span>Indicaciones para Cocina</span>
+            </label>
+            {notasComanda && (
+              <button
+                type="button"
+                onClick={() => setNotasComanda('')}
+                className="text-[10px] text-zinc-500 hover:text-rose-400 font-semibold"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+
+          {/* Chips rápidos de 1 toque */}
+          <div className="flex flex-wrap gap-1">
+            {['Sin salsas', 'Sin cebolla', 'Sin tomate', 'Salsas aparte', 'Término 3/4', 'Bien cocido', 'Sin hielo'].map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => {
+                  setNotasComanda((prev) => {
+                    if (!prev.trim()) return chip;
+                    if (prev.toLowerCase().includes(chip.toLowerCase())) return prev;
+                    return `${prev.trim()}, ${chip}`;
+                  });
+                }}
+                className="rounded-lg border border-zinc-800 bg-zinc-900 px-2 py-0.5 text-[10px] font-semibold text-zinc-400 hover:border-orange-500 hover:text-white transition-all active:scale-95"
+              >
+                + {chip}
+              </button>
+            ))}
+          </div>
+
+          <textarea
+            rows={2}
+            placeholder="Ej: Una hamburguesa sin salsas, salsa aparte, bebida bien fría..."
+            value={notasComanda}
+            onChange={(e) => setNotasComanda(e.target.value)}
+            className="w-full rounded-xl border border-zinc-800 bg-zinc-900/90 p-2 text-xs text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none"
+          />
+        </div>
+      )}
 
       {/* Resumen total y botón de envío */}
       <div className="mt-4 border-t border-zinc-800 pt-4">
@@ -797,8 +776,6 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                     .filter((i) => i.productoId === producto.id)
                     .reduce((acc, i) => acc + i.cantidad, 0);
 
-                  const esProductoBebida = esBebida(producto);
-
                   return (
                     <button
                       key={producto.id}
@@ -828,7 +805,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                           ${producto.precio.toFixed(2)}
                         </p>
                         <span className="text-[11px] font-bold text-zinc-500 hover:text-orange-300">
-                          {esProductoBebida ? '+ Agregar' : '+ Indicación'}
+                          + Agregar
                         </span>
                       </div>
                     </button>
@@ -900,21 +877,6 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
             </div>
           )}
         </div>
-      )}
-
-      {/* MODAL PARA INDICACIONES DE PREPARACIÓN DE PLATILLO (COMIDAS) */}
-      {personalizandoProducto && (
-        <PersonalizarPlatilloModal
-          producto={{
-            id: personalizandoProducto.producto.id,
-            nombre: personalizandoProducto.producto.nombre,
-            precio: personalizandoProducto.producto.precio,
-            categoriaNombre: personalizandoProducto.producto.categoria.nombre,
-          }}
-          itemExistente={personalizandoProducto.itemExistente}
-          onConfirmar={handleGuardarItemPersonalizado}
-          onCerrar={() => setPersonalizandoProducto(null)}
-        />
       )}
 
       {/* MODAL PARA CAPTURAR DATOS DE CLIENTE (LLEVAR / DOMICILIO) */}

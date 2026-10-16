@@ -130,11 +130,18 @@ function TarjetaPedido({ pedido, esNuevo }: { pedido: Pedido; esNuevo?: boolean 
           </span>
         </div>
 
-        {/* Nota especial de preparación si existe */}
+        {/* Indicaciones / Notas de la comanda para cocina */}
         {pedido.notas && (
-          <div className="mb-3 rounded-xl bg-amber-950/40 border border-amber-700/60 p-2 text-xs text-amber-200 flex items-start gap-1.5">
-            <span className="shrink-0">⚠️</span>
-            <span className="font-semibold">{pedido.notas}</span>
+          <div className="mb-3 rounded-xl bg-amber-500/15 border-2 border-amber-500/50 p-2.5 text-xs text-amber-200 flex items-start gap-2 shadow-sm">
+            <span className="shrink-0 text-base">📝</span>
+            <div className="min-w-0">
+              <p className="font-extrabold text-amber-400 uppercase tracking-wider text-[10px]">
+                Indicaciones de la Comanda:
+              </p>
+              <p className="font-bold text-white text-xs sm:text-sm mt-0.5 whitespace-pre-wrap">
+                {pedido.notas}
+              </p>
+            </div>
           </div>
         )}
 

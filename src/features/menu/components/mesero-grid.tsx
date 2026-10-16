@@ -225,8 +225,8 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
     });
   };
 
-  // Contenido del Carrito (desktop y móvil)
-  const ContenidoCarrito = () => (
+  // Contenido del Carrito (desktop y móvil) - función directa para preservar foco del teclado
+  const renderContenidoCarrito = () => (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
         <div className="flex items-center gap-2">
@@ -439,7 +439,16 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
 
           {/* Chips rápidos de 1 toque */}
           <div className="flex flex-wrap gap-1">
-            {['Sin salsas', 'Sin cebolla', 'Sin tomate', 'Salsas aparte', 'Término 3/4', 'Bien cocido', 'Sin hielo'].map((chip) => (
+            {[
+              'Sin salsas',
+              'Sin cebolla',
+              'Sin tomate',
+              'Sin lechuga',
+              'Salsas aparte',
+              'Término 3/4',
+              'Bien cocido',
+              'Sin hielo',
+            ].map((chip) => (
               <button
                 key={chip}
                 type="button"
@@ -824,7 +833,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
 
           {/* PANEL LATERAL DEL CARRITO (Desktop >= lg) */}
           <div className="hidden lg:flex w-80 xl:w-96 flex-col rounded-2xl border border-zinc-800 bg-zinc-950 p-5 shadow-xl shrink-0">
-            <ContenidoCarrito />
+            {renderContenidoCarrito()}
           </div>
 
           {/* BOTÓN FLOTANTE INFERIOR EN TELÉFONOS (Móvil < lg) */}
@@ -871,7 +880,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
               <div className="w-full max-h-[85dvh] sm:max-h-[85vh] rounded-t-3xl border-t border-zinc-800 bg-zinc-950 p-4 sm:p-5 shadow-2xl flex flex-col transition-transform duration-300">
                 <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-zinc-800 shrink-0" />
                 <div className="flex-1 overflow-hidden flex flex-col">
-                  <ContenidoCarrito />
+                  {renderContenidoCarrito()}
                 </div>
               </div>
             </div>

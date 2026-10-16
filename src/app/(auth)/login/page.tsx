@@ -12,9 +12,11 @@ export default function LoginPage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white">SazonareFood</h1>
           <p className="mt-1 text-sm text-zinc-400">Sistema ERP & POS para Restaurante</p>
-          <div className="mt-3 flex justify-center">
-            <BotonInstalarPwa />
-          </div>
+        </div>
+
+        {/* Banner para instalar PWA */}
+        <div className="mb-4">
+          <BotonInstalarPwa variante="destacado" />
         </div>
 
         {/* Card de acceso y registro */}

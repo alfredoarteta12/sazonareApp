@@ -15,3 +15,4 @@ export async function GET() {
     return NextResponse.json({ error: 'Error al cargar productos' }, { status: 500 });
   }
 }
+

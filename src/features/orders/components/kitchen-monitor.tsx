@@ -7,6 +7,7 @@ import { kitchenAudio } from '../utils/audio-alerts';
 import { formatearHoraColombia } from '@/lib/date-utils';
 import { parseDetallePedido } from '../utils/parse-order-detail';
 import { PlatosAgotadosModal } from '@/features/menu/components/platos-agotados-modal';
+import { getTodosLosProductos } from '@/features/menu/actions/menu-queries';
 import { supabase } from '@/lib/supabase';
 
 
@@ -225,11 +226,10 @@ export function KitchenMonitor() {
   // Escuchar y contar platos agotados en tiempo real
   useEffect(() => {
     const cargarAgotados = () => {
-      fetch('/api/productos')
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setConteoAgotados(data.filter((p: { disponible: boolean }) => !p.disponible).length);
+      getTodosLosProductos()
+        .then((res) => {
+          if (res.success && res.data) {
+            setConteoAgotados(res.data.filter((p) => !p.disponible).length);
           }
         })
         .catch(() => {});

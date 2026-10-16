@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { toggleDisponibilidad } from '../actions/menu-queries';
+import { toggleDisponibilidad, getTodosLosProductos } from '../actions/menu-queries';
 import { supabase } from '@/lib/supabase';
 
 export interface ProductoAgotadoItem {
@@ -26,14 +26,13 @@ export function PlatosAgotadosModal({ onCerrar, productosIniciales }: PlatosAgot
   const [soloAgotados, setSoloAgotados] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  // Carga inicial si no vinieron productos iniciales
+  // Carga inicial directa con Server Action (independiente de sesión)
   useEffect(() => {
     if (!productosIniciales || productosIniciales.length === 0) {
-      fetch('/api/productos')
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data)) {
-            setProductos(data);
+      getTodosLosProductos()
+        .then((res) => {
+          if (res.success && res.data) {
+            setProductos(res.data);
           }
           setCargando(false);
         })
@@ -60,11 +59,9 @@ export function PlatosAgotadosModal({ onCerrar, productosIniciales }: PlatosAgot
               )
             );
           } else if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-            fetch('/api/productos')
-              .then((res) => res.json())
-              .then((data) => {
-                if (Array.isArray(data)) setProductos(data);
-              });
+            getTodosLosProductos().then((res) => {
+              if (res.success && res.data) setProductos(res.data);
+            });
           }
         }
       )
@@ -272,3 +269,4 @@ export function PlatosAgotadosModal({ onCerrar, productosIniciales }: PlatosAgot
     </div>
   );
 }
+

@@ -41,7 +41,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Rutas públicas que no requieren autenticación
-  const publicRoutes = ['/login', '/cocina', '/api/pedidos/activos', '/auth'];
+  const publicRoutes = ['/login', '/cocina', '/api/pedidos/activos', '/api/productos', '/auth'];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
   // Si no hay usuario y la ruta no es pública, redirigir al login

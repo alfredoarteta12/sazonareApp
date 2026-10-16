@@ -47,7 +47,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
     tipo: 'LLEVAR' | 'DOMICILIO';
   } | null>(null);
 
-  // Modal para personalizar o modificar adiciones/notas de un platillo
+  // Modal para agregar indicaciones de preparación (ej: sin salsas, sin cebolla, etc.)
   const [personalizandoProducto, setPersonalizandoProducto] = useState<{
     producto: Producto;
     itemExistente?: ItemCarrito;
@@ -107,6 +107,19 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
     }
   };
 
+  // Identificar si un producto es bebida (las bebidas NO se personalizan)
+  const esBebida = (prod: Producto | { categoria?: { nombre?: string } }) => {
+    const cat = prod.categoria?.nombre?.toLowerCase() || '';
+    return (
+      cat.includes('bebida') ||
+      cat.includes('gaseosa') ||
+      cat.includes('jugo') ||
+      cat.includes('cerveza') ||
+      cat.includes('trago') ||
+      cat.includes('licor')
+    );
+  };
+
   // Contadores para insignias de pedidos activos
   const pedidosLlevarActivos = pedidosActivos.filter(
     (p) =>
@@ -140,7 +153,40 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
     setVista('menu');
   };
 
-  // Guardar o modificar ítem en el carrito con sus adiciones y notas
+  // Agregar directamente al carrito (usado para bebidas o comidas sin indicaciones)
+  const agregarDirecto = (producto: Producto) => {
+    setCarrito((prev) => {
+      const existente = prev.find((i) => i.productoId === producto.id && !i.notas);
+      if (existente) {
+        return prev.map((i) =>
+          i.id === existente.id ? { ...i, cantidad: i.cantidad + 1 } : i
+        );
+      }
+      return [
+        ...prev,
+        {
+          id: `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          productoId: producto.id,
+          nombre: producto.nombre,
+          precio: producto.precio,
+          cantidad: 1,
+        },
+      ];
+    });
+  };
+
+  // Manejador al hacer clic en un producto del menú
+  const handleClickProducto = (producto: Producto) => {
+    if (esBebida(producto)) {
+      // Las bebidas NO se personalizan: se agregan directamente
+      agregarDirecto(producto);
+      return;
+    }
+    // Para comidas, abrir modal de indicaciones de cocina (sin salsas, etc.)
+    setPersonalizandoProducto({ producto });
+  };
+
+  // Guardar o modificar ítem en el carrito con sus notas
   const handleGuardarItemPersonalizado = (itemModificado: ItemCarrito) => {
     setCarrito((prev) => {
       const index = prev.findIndex((i) => i.id === itemModificado.id);
@@ -173,10 +219,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
   };
 
   const totalCantidad = carrito.reduce((acc, i) => acc + i.cantidad, 0);
-  const totalCarrito = carrito.reduce(
-    (acc, i) => acc + (i.precioUnitario ?? i.precio) * i.cantidad,
-    0
-  );
+  const totalCarrito = carrito.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
 
   // Categorías únicas
   const categorias = ['todas', ...new Set(productos.map((p) => p.categoria.nombre))];
@@ -361,17 +404,19 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
         )}
       </div>
 
-      {/* Lista de productos en la comanda con soporte de adiciones y notas */}
+      {/* Lista de productos en la comanda con soporte de indicaciones */}
       <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
         {carrito.length === 0 ? (
           <div className="py-12 text-center text-zinc-500">
             <p className="text-3xl mb-1">🍔</p>
             <p className="text-xs">No hay platillos en la orden.</p>
-            <p className="text-[11px] text-zinc-600 mt-1">Toca los platillos para agregarlos y personalizarlos.</p>
+            <p className="text-[11px] text-zinc-600 mt-1">Toca los platillos para agregarlos.</p>
           </div>
         ) : (
           carrito.map((item) => {
-            const pUnit = item.precioUnitario ?? item.precio;
+            const prod = productos.find((p) => p.id === item.productoId);
+            const esItemBebida = prod ? esBebida(prod) : false;
+
             return (
               <div
                 key={item.id}
@@ -381,34 +426,38 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white leading-tight">{item.nombre}</p>
                     <p className="text-xs text-orange-400 font-black mt-0.5">
-                      ${(pUnit * item.cantidad).toFixed(2)}
+                      ${(item.precio * item.cantidad).toFixed(2)}
                       <span className="text-zinc-500 font-normal text-[10px] ml-1">
-                        (${pUnit.toFixed(2)} c/u)
+                        (${item.precio.toFixed(2)} c/u)
                       </span>
                     </p>
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const prod = productos.find((p) => p.id === item.productoId) || {
-                          id: item.productoId,
-                          nombre: item.nombre,
-                          precio: item.precio,
-                          categoriaId: '',
-                          categoria: { id: '', nombre: '' },
-                        };
-                        setPersonalizandoProducto({
-                          producto: prod,
-                          itemExistente: item,
-                        });
-                      }}
-                      className="flex h-7 px-2 items-center justify-center rounded-lg bg-zinc-800 border border-zinc-700/80 text-[11px] font-bold text-orange-300 hover:bg-orange-500 hover:text-white transition-colors"
-                      title="Modificar adiciones y notas"
-                    >
-                      ✏️ Editar
-                    </button>
+                    {/* Botón para editar indicación solo en comidas */}
+                    {!esItemBebida && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const prodEncontrado = productos.find((p) => p.id === item.productoId) || {
+                            id: item.productoId,
+                            nombre: item.nombre,
+                            precio: item.precio,
+                            categoriaId: '',
+                            categoria: { id: '', nombre: '' },
+                          };
+                          setPersonalizandoProducto({
+                            producto: prodEncontrado,
+                            itemExistente: item,
+                          });
+                        }}
+                        className="flex h-7 px-2 items-center justify-center rounded-lg bg-zinc-800 border border-zinc-700/80 text-[11px] font-bold text-orange-300 hover:bg-orange-500 hover:text-white transition-colors"
+                        title="Modificar indicación de preparación"
+                      >
+                        {item.notas ? '✏️ Nota' : '➕ Nota'}
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       onClick={() => decrementarCantidad(item.id!)}
@@ -427,24 +476,10 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                   </div>
                 </div>
 
-                {/* Adiciones seleccionadas en el ítem */}
-                {item.adiciones && item.adiciones.length > 0 && (
-                  <div className="flex flex-wrap gap-1 pt-0.5">
-                    {item.adiciones.map((a, aIdx) => (
-                      <span
-                        key={aIdx}
-                        className="rounded-md bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[10px] font-bold text-amber-300"
-                      >
-                        + {a.nombre} (+${a.precio.toFixed(2)})
-                      </span>
-                    ))}
-                  </div>
-                )}
-
                 {/* Nota o instrucción especial de preparación */}
                 {item.notas && (
-                  <p className="text-[11px] text-zinc-400 italic bg-zinc-950/70 rounded-lg px-2 py-1 border border-zinc-800/80">
-                    📝 {item.notas}
+                  <p className="text-[11px] text-zinc-300 font-medium bg-zinc-950/80 rounded-lg px-2.5 py-1 border border-zinc-800">
+                    📝 <span className="text-orange-200">{item.notas}</span>
                   </p>
                 )}
               </div>
@@ -705,7 +740,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                   <p className="text-[10px] text-zinc-400">
                     {tipoPedido === 'DOMICILIO' && datosExternos.direccion
                       ? `📍 ${datosExternos.direccion}`
-                      : 'Toca un platillo para agregarlo o personalizar adiciones y notas'}
+                      : 'Toca los platillos para agregarlos o indicar si van sin salsas'}
                   </p>
                 </div>
               </div>
@@ -762,11 +797,13 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                     .filter((i) => i.productoId === producto.id)
                     .reduce((acc, i) => acc + i.cantidad, 0);
 
+                  const esProductoBebida = esBebida(producto);
+
                   return (
                     <button
                       key={producto.id}
                       type="button"
-                      onClick={() => setPersonalizandoProducto({ producto })}
+                      onClick={() => handleClickProducto(producto)}
                       className={`relative flex flex-col justify-between rounded-2xl border p-3 sm:p-4 text-left transition-all active:scale-95 min-h-[110px] sm:min-h-[120px] ${
                         cantidadEnCarrito > 0
                           ? 'border-orange-500 bg-orange-950/30'
@@ -791,7 +828,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
                           ${producto.precio.toFixed(2)}
                         </p>
                         <span className="text-[11px] font-bold text-zinc-500 hover:text-orange-300">
-                          + Personalizar
+                          {esProductoBebida ? '+ Agregar' : '+ Indicación'}
                         </span>
                       </div>
                     </button>
@@ -865,7 +902,7 @@ export function MeseroGrid({ productos, nombreMesero }: MeseroGridProps) {
         </div>
       )}
 
-      {/* MODAL PARA PERSONALIZAR O MODIFICAR UN PLATILLO */}
+      {/* MODAL PARA INDICACIONES DE PREPARACIÓN DE PLATILLO (COMIDAS) */}
       {personalizandoProducto && (
         <PersonalizarPlatilloModal
           producto={{

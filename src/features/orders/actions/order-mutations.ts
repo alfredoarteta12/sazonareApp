@@ -5,19 +5,11 @@ import { revalidatePath } from 'next/cache';
 import { OrderStatus } from '@prisma/client';
 
 // Tipos para las acciones
-export interface AdicionItem {
-  id?: string;
-  nombre: string;
-  precio: number;
-}
-
 export interface ItemCarrito {
   id?: string;
   productoId: string;
   nombre: string;
   precio: number;
-  precioUnitario?: number;
-  adiciones?: AdicionItem[];
   notas?: string;
   cantidad: number;
 }
@@ -74,20 +66,12 @@ export async function crearPedido(
   try {
     const detalleItems = items
       .map((item) => {
-        const pUnitario = item.precioUnitario ?? item.precio;
-        const adicStr =
-          item.adiciones && item.adiciones.length > 0
-            ? ` [+ ${item.adiciones.map((a) => `${a.nombre} (+$${a.precio.toFixed(2)})`).join(' + ')}]`
-            : '';
         const notaStr = item.notas && item.notas.trim() ? ` {Nota: ${item.notas.trim()}}` : '';
-        return `${item.cantidad}x ${item.nombre} ($${pUnitario.toFixed(2)})${adicStr}${notaStr}`;
+        return `${item.cantidad}x ${item.nombre} ($${item.precio.toFixed(2)})${notaStr}`;
       })
       .join(', ');
 
-    const total = items.reduce((acc, item) => {
-      const pUnitario = item.precioUnitario ?? item.precio;
-      return acc + pUnitario * item.cantidad;
-    }, 0);
+    const total = items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
 
     // Prefijo descriptivo en detalle para compatibilidad universal
     let prefijo = '';

@@ -1,7 +1,8 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { getRangoDiaColombia } from '@/lib/date-utils';
+import { getRangoDiaColombia, getRangoSemanaColombia, getRangoMesColombia } from '@/lib/date-utils';
+
 
 export async function getDailyFinancials() {
   try {
@@ -68,4 +69,151 @@ export async function getDailyOrders() {
     return { success: false, error: 'No se pudieron obtener los pedidos.' };
   }
 }
+
+export type PeriodoReporte = 'dia' | 'semana' | 'mes';
+
+export interface ReportePeriodoData {
+  periodo: PeriodoReporte;
+  rangoTexto: string;
+  ingresoNeto: number;
+  pedidosExitosos: number;
+  ticketPromedio: number;
+  totalEfectivo: number;
+  totalTransferencia: number;
+  dineroCancelado: number;
+  pedidosCancelados: number;
+  desglose: {
+    etiqueta: string;
+    total: number;
+    cantidad: number;
+  }[];
+  pedidos: {
+    id: string;
+    mesa: number;
+    detalle: string;
+    total: number;
+    metodoPago: string | null;
+    estado: string;
+    createdAt: string;
+  }[];
+}
+
+/**
+ * Obtiene el reporte financiero consolidado por Día, Semana o Mes en horario de Colombia
+ */
+export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Promise<{
+  success: boolean;
+  data?: ReportePeriodoData;
+  error?: string;
+}> {
+  try {
+    let rango: { inicio: Date; fin: Date };
+    let rangoTexto = '';
+
+    if (periodo === 'semana') {
+      rango = getRangoSemanaColombia();
+      rangoTexto = 'Esta Semana (Lunes a Domingo)';
+    } else if (periodo === 'mes') {
+      rango = getRangoMesColombia();
+      rangoTexto = 'Este Mes (Completo)';
+    } else {
+      rango = getRangoDiaColombia();
+      rangoTexto = 'Hoy';
+    }
+
+    // Consulta indexada ultra rápida a Supabase
+    const pedidos = await prisma.pedido.findMany({
+      where: {
+        createdAt: {
+          gte: rango.inicio,
+          lte: rango.fin,
+        },
+      },
+      select: {
+        id: true,
+        mesa: true,
+        detalle: true,
+        total: true,
+        metodoPago: true,
+        estado: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    let ingresoNeto = 0;
+    let pedidosExitosos = 0;
+    let totalEfectivo = 0;
+    let totalTransferencia = 0;
+    let dineroCancelado = 0;
+    let pedidosCancelados = 0;
+
+    // Desglose agrupado por fecha
+    const mapaDesglose: Record<string, { total: number; cantidad: number }> = {};
+
+    for (const p of pedidos) {
+      if (p.estado === 'CANCELADO') {
+        dineroCancelado += p.total;
+        pedidosCancelados++;
+      } else {
+        ingresoNeto += p.total;
+        pedidosExitosos++;
+
+        // Desglose por método de pago
+        if (p.metodoPago === 'TRANSFERENCIA' || p.detalle.includes('TRANSFERENCIA')) {
+          totalTransferencia += p.total;
+        } else {
+          // Por defecto efectivo si fue pagado o servido
+          totalEfectivo += p.total;
+        }
+
+        // Agrupación para gráfica
+        const fechaEtiqueta = new Intl.DateTimeFormat('es-CO', {
+          timeZone: 'America/Bogota',
+          weekday: periodo === 'semana' ? 'short' : undefined,
+          day: 'numeric',
+          month: periodo === 'mes' ? 'short' : undefined,
+        }).format(p.createdAt);
+
+        if (!mapaDesglose[fechaEtiqueta]) {
+          mapaDesglose[fechaEtiqueta] = { total: 0, cantidad: 0 };
+        }
+        mapaDesglose[fechaEtiqueta].total += p.total;
+        mapaDesglose[fechaEtiqueta].cantidad++;
+      }
+    }
+
+    const ticketPromedio = pedidosExitosos > 0 ? ingresoNeto / pedidosExitosos : 0;
+
+    const desglose = Object.entries(mapaDesglose).map(([etiqueta, val]) => ({
+      etiqueta,
+      total: val.total,
+      cantidad: val.cantidad,
+    }));
+
+    return {
+      success: true,
+      data: {
+        periodo,
+        rangoTexto,
+        ingresoNeto,
+        pedidosExitosos,
+        ticketPromedio,
+        totalEfectivo,
+        totalTransferencia,
+        dineroCancelado,
+        pedidosCancelados,
+        desglose,
+        pedidos: pedidos.map((p) => ({
+          ...p,
+          createdAt: p.createdAt.toISOString(),
+        })),
+      },
+    };
+  } catch (error) {
+    console.error('Error al obtener reporte por período:', error);
+    return { success: false, error: 'No se pudieron calcular las ventas del período.' };
+  }
+}
+
 

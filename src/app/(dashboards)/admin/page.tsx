@@ -1,95 +1,26 @@
 import { Suspense } from 'react';
-import { FinanceCards } from '@/features/stats/components/finance-cards';
-import { getDailyOrders } from '@/features/stats/actions/get-financial-reports';
+import { getPeriodFinancials } from '@/features/stats/actions/get-financial-reports';
+import { VentasPeriodoPanel } from '@/features/stats/components/ventas-periodo-panel';
 import { signOut } from '@/features/auth/actions/oauth';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
-import { BotonRecibo } from '@/features/stats/components/boton-recibo';
-import { formatearHoraColombia, formatearFechaLargaColombia } from '@/lib/date-utils';
-
-
+import { formatearFechaLargaColombia } from '@/lib/date-utils';
 
 export const dynamic = 'force-dynamic';
 
-async function TablaOrdenesHoy() {
-  const result = await getDailyOrders();
+async function SeccionVentasPeriodo() {
+  const result = await getPeriodFinancials('dia');
 
   if (!result.success || !result.data) {
-    return <p className="text-red-400">Error al cargar pedidos del día.</p>;
+    return (
+      <div className="rounded-2xl border border-red-900/50 bg-red-950/20 p-6 text-center text-red-400">
+        Error al cargar las métricas de ventas. Intenta recargar la página.
+      </div>
+    );
   }
 
-  const pedidos = result.data;
-
-  const ESTADO_BADGE: Record<string, string> = {
-    PENDIENTE: 'bg-amber-950 text-amber-300 border border-amber-800',
-    PREPARANDO: 'bg-blue-950 text-blue-300 border border-blue-800',
-    HECHO: 'bg-emerald-950 text-emerald-300 border border-emerald-800',
-    ENTREGADO: 'bg-zinc-900 text-zinc-400 border border-zinc-800',
-    PAGADO: 'bg-emerald-950 text-emerald-300 border border-emerald-600 font-bold',
-    CANCELADO: 'bg-rose-950 text-rose-300 border border-rose-800',
-  };
-
-
-  return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
-      <div className="border-b border-zinc-800/80 px-6 py-4">
-        <h2 className="font-semibold text-white">Registro del Día</h2>
-        <p className="text-xs text-zinc-500">{pedidos.length} operaciones registradas</p>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-zinc-900 text-xs font-semibold uppercase tracking-wider text-zinc-400">
-            <tr>
-              <th className="px-6 py-3 text-left">Hora</th>
-              <th className="px-6 py-3 text-left">Mesa</th>
-              <th className="px-6 py-3 text-left">Detalle</th>
-              <th className="px-6 py-3 text-right">Total</th>
-              <th className="px-6 py-3 text-center">Estado</th>
-              <th className="px-6 py-3 text-center">Ticket</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-900">
-            {pedidos.map((pedido) => (
-              <tr key={pedido.id} className="hover:bg-zinc-900/50 transition-colors">
-                <td className="px-6 py-3 text-zinc-400">
-                  {formatearHoraColombia(pedido.createdAt)}
-                </td>
-                <td className="px-6 py-3 font-semibold text-white">Mesa {pedido.mesa}</td>
-
-                <td className="max-w-xs px-6 py-3 text-zinc-300 truncate">{pedido.detalle}</td>
-                <td className="px-6 py-3 text-right font-bold text-white">
-                  ${pedido.total.toFixed(2)}
-                </td>
-                <td className="px-6 py-3 text-center">
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ESTADO_BADGE[pedido.estado]}`}>
-                    {pedido.estado}
-                  </span>
-                </td>
-                <td className="px-6 py-3 text-center">
-                  <BotonRecibo
-                    pedido={{
-                      ...pedido,
-                      createdAt: pedido.createdAt.toISOString(),
-                      updatedAt: pedido.updatedAt.toISOString(),
-                    }}
-                  />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-
-        {pedidos.length === 0 && (
-          <div className="py-12 text-center text-zinc-500">
-            <p className="text-4xl mb-2">📋</p>
-            <p>Sin operaciones registradas hoy</p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return <VentasPeriodoPanel reporteInicial={result.data} />;
 }
 
 export default async function AdminPage() {
@@ -171,26 +102,23 @@ export default async function AdminPage() {
           <h2 className="text-2xl font-bold tracking-tight text-white capitalize">
             {formatearFechaLargaColombia()}
           </h2>
-          <p className="text-sm text-zinc-400">Balance financiero y movimientos del día (Colombia)</p>
+          <p className="text-sm text-zinc-400">Balance financiero y movimientos en tiempo real (Colombia - UTC-5)</p>
         </div>
 
-
-        {/* KPIs financieros */}
+        {/* Panel unificado de Ventas por Período (Día / Semana / Mes) */}
         <Suspense fallback={
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 animate-pulse rounded-2xl bg-zinc-900" />
-            ))}
+          <div className="space-y-6">
+            <div className="h-20 animate-pulse rounded-3xl bg-zinc-900" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-28 animate-pulse rounded-2xl bg-zinc-900" />
+              ))}
+            </div>
+            <div className="h-64 animate-pulse rounded-3xl bg-zinc-900" />
+            <div className="h-96 animate-pulse rounded-3xl bg-zinc-900" />
           </div>
         }>
-          <FinanceCards />
-        </Suspense>
-
-        {/* Tabla de pedidos del día */}
-        <Suspense fallback={
-          <div className="h-64 animate-pulse rounded-2xl bg-zinc-900" />
-        }>
-          <TablaOrdenesHoy />
+          <SeccionVentasPeriodo />
         </Suspense>
       </main>
     </div>

@@ -31,6 +31,71 @@ export function getRangoDiaColombia(fechaReferencia: Date = new Date()): {
 }
 
 /**
+ * Obtiene el rango exacto de la semana actual en Colombia (de Lunes 00:00:00 a Domingo 23:59:59.999).
+ */
+export function getRangoSemanaColombia(fechaReferencia: Date = new Date()): {
+  inicio: Date;
+  fin: Date;
+} {
+  const formateador = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ZONA_HORARIA_COLOMBIA,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  const fechaStr = formateador.format(fechaReferencia);
+  const d = new Date(`${fechaStr}T12:00:00-05:00`);
+
+  // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+  const diaSemana = d.getDay();
+  const diffLunes = diaSemana === 0 ? -6 : 1 - diaSemana;
+
+  const lunes = new Date(d);
+  lunes.setDate(d.getDate() + diffLunes);
+  const lunesStr = formateador.format(lunes);
+
+  const domingo = new Date(lunes);
+  domingo.setDate(lunes.getDate() + 6);
+  const domingoStr = formateador.format(domingo);
+
+  const inicio = new Date(`${lunesStr}T00:00:00.000-05:00`);
+  const fin = new Date(`${domingoStr}T23:59:59.999-05:00`);
+
+  return { inicio, fin };
+}
+
+/**
+ * Obtiene el rango exacto del mes actual en Colombia (del 1ro a las 00:00:00 al último día a las 23:59:59.999).
+ */
+export function getRangoMesColombia(fechaReferencia: Date = new Date()): {
+  inicio: Date;
+  fin: Date;
+} {
+  const formateador = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ZONA_HORARIA_COLOMBIA,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  });
+
+  const fechaStr = formateador.format(fechaReferencia);
+  const [yearStr, monthStr] = fechaStr.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+
+  // Obtener el último día del mes
+  const ultimoDia = new Date(year, month, 0).getDate();
+  const ultimoDiaStr = String(ultimoDia).padStart(2, '0');
+
+  const inicio = new Date(`${yearStr}-${monthStr}-01T00:00:00.000-05:00`);
+  const fin = new Date(`${yearStr}-${monthStr}-${ultimoDiaStr}T23:59:59.999-05:00`);
+
+  return { inicio, fin };
+}
+
+
+/**
  * Formatea la hora en zona horaria de Colombia (ej: "07:15 p. m.")
  */
 export function formatearHoraColombia(

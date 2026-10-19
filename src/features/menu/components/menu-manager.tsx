@@ -325,8 +325,8 @@ export function MenuManager({
                 step="0.5"
                 min="0"
                 required
-                placeholder="Ej: 85.00"
-                value={precioProducto}
+                placeholder="0"
+                value={precioProducto === '0' ? '' : precioProducto}
                 onChange={(e) => setPrecioProducto(e.target.value)}
                 className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none"
               />
@@ -409,8 +409,10 @@ export function MenuManager({
                     <input
                       type="number"
                       step="0.5"
+                      min="0"
                       autoFocus
-                      value={precioEditado}
+                      placeholder="0"
+                      value={precioEditado === '0' ? '' : precioEditado}
                       onChange={(e) => setPrecioEditado(e.target.value)}
                       className="w-20 rounded-lg border border-orange-500 bg-zinc-900 px-2 py-1 text-sm font-bold text-white focus:outline-none"
                     />

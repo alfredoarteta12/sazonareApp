@@ -161,11 +161,27 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
 
   // Iniciar toma de pedido para llevar
   const iniciarPedidoLlevar = () => {
+    setDatosExternos({
+      tipoPedido: 'LLEVAR',
+      cliente: '',
+      telefono: '',
+      direccion: '',
+      notas: '',
+    });
+    setNotasComanda('');
     setModalDatosExternos({ abierto: true, tipo: 'LLEVAR' });
   };
 
   // Iniciar toma de pedido para domicilio
   const iniciarPedidoDomicilio = () => {
+    setDatosExternos({
+      tipoPedido: 'DOMICILIO',
+      cliente: '',
+      telefono: '',
+      direccion: '',
+      notas: '',
+    });
+    setNotasComanda('');
     setModalDatosExternos({ abierto: true, tipo: 'DOMICILIO' });
   };
 
@@ -285,6 +301,13 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
       if (result.success && result.pedido) {
         setCarrito([]);
         setNotasComanda('');
+        setDatosExternos({
+          tipoPedido: 'LLEVAR',
+          cliente: '',
+          telefono: '',
+          direccion: '',
+          notas: '',
+        });
         const destinoTexto =
           tipoPedido === 'MESA'
             ? `Mesa ${mesa} - Terraza`
@@ -320,6 +343,13 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
               onClick={() => {
                 setCarrito([]);
                 setNotasComanda('');
+                setDatosExternos({
+                  tipoPedido: 'LLEVAR',
+                  cliente: '',
+                  telefono: '',
+                  direccion: '',
+                  notas: '',
+                });
               }}
               className="text-xs text-zinc-500 hover:text-rose-400 underline transition-colors ml-1"
             >
@@ -760,6 +790,13 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
             onSeleccionarMesaParaMenu={(num) => {
               setTipoPedido('MESA');
               setMesa(num);
+              setDatosExternos({
+                tipoPedido: 'LLEVAR',
+                cliente: '',
+                telefono: '',
+                direccion: '',
+                notas: '',
+              });
               setVista('menu');
             }}
             nombreMesero={nombreMesero}

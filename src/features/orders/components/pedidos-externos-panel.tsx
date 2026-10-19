@@ -174,14 +174,24 @@ export function PedidosExternosPanel({
           </button>
         </div>
 
-        <div className="w-full sm:w-72">
+        <div className="relative w-full sm:w-72">
           <input
             type="text"
             placeholder={esLlevar ? 'Buscar por cliente o platillo...' : 'Buscar por cliente, dirección, tel...'}
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none"
+            className="w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-3.5 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none"
           />
+          {busqueda && (
+            <button
+              type="button"
+              onClick={() => setBusqueda('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-white"
+              title="Limpiar búsqueda"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 

@@ -37,9 +37,9 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
 
   // Estados del formulario
   const [responsable, setResponsable] = useState('');
-  const [baseInicial, setBaseInicial] = useState<number>(100000);
-  const [retiros, setRetiros] = useState<number>(0);
-  const [efectivoReal, setEfectivoReal] = useState<number>(0);
+  const [baseInicial, setBaseInicial] = useState<number | string>(100000);
+  const [retiros, setRetiros] = useState<number | string>('');
+  const [efectivoReal, setEfectivoReal] = useState<number | string>('');
   const [observaciones, setObservaciones] = useState('');
 
   // Contador de billetes y monedas
@@ -61,8 +61,8 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
         // Si ya hay un cierre hoy, inicializar con esos datos
         if (res.data.cierreExistente) {
           setBaseInicial(res.data.cierreExistente.baseInicial);
-          setRetiros(res.data.cierreExistente.retiros);
-          setEfectivoReal(res.data.cierreExistente.efectivoReal);
+          setRetiros(res.data.cierreExistente.retiros || '');
+          setEfectivoReal(res.data.cierreExistente.efectivoReal || '');
           setResponsable(res.data.cierreExistente.responsable);
           setObservaciones(res.data.cierreExistente.observaciones || '');
         }
@@ -81,7 +81,7 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
     for (const [v, c] of Object.entries(nuevoConteo)) {
       sumaTotal += Number(v) * (c || 0);
     }
-    setEfectivoReal(sumaTotal);
+    setEfectivoReal(sumaTotal === 0 ? '' : sumaTotal);
   };
 
   const ventasEfectivo = datosHoy?.ventasEfectivo || 0;
@@ -112,6 +112,11 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
 
       if (res.success && res.data) {
         setCierreGenerado(res.data as CierreCajaData);
+        setBaseInicial(100000);
+        setRetiros('');
+        setEfectivoReal('');
+        setObservaciones('');
+        setConteoBilletes({});
         if (onCierreCompletado) onCierreCompletado();
       } else {
         setErrorMsg(res.error || 'Ocurrió un error al registrar el cierre.');
@@ -238,8 +243,9 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
                         type="number"
                         min="0"
                         step="1000"
-                        value={baseInicial}
-                        onChange={(e) => setBaseInicial(Number(e.target.value))}
+                        placeholder="100000"
+                        value={baseInicial === 0 || baseInicial === '0' ? '' : baseInicial}
+                        onChange={(e) => setBaseInicial(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-8 pr-3.5 py-2 text-sm font-bold text-white focus:border-orange-500 focus:outline-none"
                       />
                     </div>
@@ -256,9 +262,9 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
                         type="number"
                         min="0"
                         step="1000"
-                        value={retiros}
-                        onChange={(e) => setRetiros(Number(e.target.value))}
                         placeholder="0"
+                        value={retiros === 0 || retiros === '0' ? '' : retiros}
+                        onChange={(e) => setRetiros(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-8 pr-3.5 py-2 text-sm font-bold text-rose-300 focus:border-orange-500 focus:outline-none"
                       />
                     </div>
@@ -284,8 +290,9 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
                         type="number"
                         min="0"
                         step="500"
-                        value={efectivoReal}
-                        onChange={(e) => setEfectivoReal(Number(e.target.value))}
+                        placeholder="0"
+                        value={efectivoReal === 0 || efectivoReal === '0' ? '' : efectivoReal}
+                        onChange={(e) => setEfectivoReal(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-8 pr-3.5 py-2 text-sm font-black text-emerald-300 focus:border-orange-500 focus:outline-none"
                       />
                     </div>
@@ -303,7 +310,7 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
                         type="button"
                         onClick={() => {
                           setConteoBilletes({});
-                          setEfectivoReal(0);
+                          setEfectivoReal('');
                         }}
                         className="text-[10px] text-zinc-400 hover:text-white"
                       >
@@ -322,8 +329,8 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
                               type="number"
                               min="0"
                               placeholder="0"
-                              value={conteoBilletes[d.valor] || ''}
-                              onChange={(e) => actualizarConteo(d.valor, parseInt(e.target.value) || 0)}
+                              value={conteoBilletes[d.valor] ? conteoBilletes[d.valor] : ''}
+                              onChange={(e) => actualizarConteo(d.valor, e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
                               className="w-full rounded-lg bg-zinc-950 border border-zinc-800 px-2 py-1 text-xs text-center text-white focus:border-orange-500 focus:outline-none"
                             />
                           </div>
@@ -342,8 +349,8 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
                               type="number"
                               min="0"
                               placeholder="0"
-                              value={conteoBilletes[d.valor] || ''}
-                              onChange={(e) => actualizarConteo(d.valor, parseInt(e.target.value) || 0)}
+                              value={conteoBilletes[d.valor] ? conteoBilletes[d.valor] : ''}
+                              onChange={(e) => actualizarConteo(d.valor, e.target.value === '' ? 0 : parseInt(e.target.value) || 0)}
                               className="w-full rounded-lg bg-zinc-950 border border-zinc-800 px-2 py-1 text-xs text-center text-white focus:border-orange-500 focus:outline-none"
                             />
                           </div>

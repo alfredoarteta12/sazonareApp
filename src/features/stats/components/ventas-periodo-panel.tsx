@@ -287,14 +287,24 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
             <p className="text-xs text-zinc-500">Historial completo en horario de Colombia</p>
           </div>
 
-          <div className="w-full sm:w-64">
+          <div className="relative w-full sm:w-64">
             <input
               type="text"
               placeholder="Buscar por mesa, producto, método..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none"
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-3 pr-8 py-1.5 text-xs text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none"
             />
+            {busqueda && (
+              <button
+                type="button"
+                onClick={() => setBusqueda('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-white"
+                title="Limpiar búsqueda"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 

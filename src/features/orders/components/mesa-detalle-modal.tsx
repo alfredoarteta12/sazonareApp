@@ -76,6 +76,7 @@ export function MesaDetalleModal({
 
       if (res.success && res.pedido) {
         setPedido(res.pedido as unknown as Pedido);
+        setMontoRecibido('');
         const textoCobro = esLlevar
           ? `🎉 ¡Pedido Para Llevar cobrado (${metodoPago}) con éxito!`
           : esDomicilio
@@ -236,8 +237,9 @@ export function MesaDetalleModal({
                       <input
                         type="number"
                         step="any"
-                        placeholder={pedido.total.toFixed(2)}
-                        value={montoRecibido}
+                        min="0"
+                        placeholder={pedido.total > 0 ? pedido.total.toFixed(2) : '0'}
+                        value={montoRecibido === '0' ? '' : montoRecibido}
                         onChange={(e) => setMontoRecibido(e.target.value)}
                         className="w-28 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
                       />

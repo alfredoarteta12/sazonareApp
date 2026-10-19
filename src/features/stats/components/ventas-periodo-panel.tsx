@@ -9,6 +9,7 @@ import {
 import { BotonRecibo } from './boton-recibo';
 import { ArqueoCajaModal } from './arqueo-caja-modal';
 import { HistorialCierresModal } from './historial-cierres-modal';
+import { eliminarPedido } from '@/features/orders/actions/order-mutations';
 import { formatearHoraColombia, formatearFechaColombia } from '@/lib/date-utils';
 
 interface VentasPeriodoPanelProps {
@@ -22,6 +23,32 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
   const [busqueda, setBusqueda] = useState('');
   const [mostrarArqueo, setMostrarArqueo] = useState(false);
   const [mostrarHistorial, setMostrarHistorial] = useState(false);
+  const [pedidoAEliminar, setPedidoAEliminar] = useState<ReportePeriodoData['pedidos'][0] | null>(null);
+  const [eliminando, setEliminando] = useState(false);
+  const [errorEliminacion, setErrorEliminacion] = useState('');
+
+  const handleConfirmarEliminar = async () => {
+    if (!pedidoAEliminar) return;
+    setEliminando(true);
+    setErrorEliminacion('');
+    try {
+      const res = await eliminarPedido(pedidoAEliminar.id);
+      if (res.success) {
+        // Refrescar métricas del período actual inmediatamente
+        const nuevo = await getPeriodFinancials(periodo);
+        if (nuevo.success && nuevo.data) {
+          setReporte(nuevo.data);
+        }
+        setPedidoAEliminar(null);
+      } else {
+        setErrorEliminacion(res.error || 'No se pudo eliminar el pedido.');
+      }
+    } catch (err) {
+      setErrorEliminacion('Ocurrió un error inesperado al eliminar.');
+    } finally {
+      setEliminando(false);
+    }
+  };
 
   const cambiarPeriodo = (nuevoPeriodo: PeriodoReporte) => {
     setPeriodo(nuevoPeriodo);
@@ -281,7 +308,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
                 <th className="px-6 py-3 text-left">Método</th>
                 <th className="px-6 py-3 text-right">Total</th>
                 <th className="px-6 py-3 text-center">Estado</th>
-                <th className="px-6 py-3 text-center">Ticket</th>
+                <th className="px-6 py-3 text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-900">
@@ -332,13 +359,26 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
                     </span>
                   </td>
                   <td className="px-6 py-3 text-center whitespace-nowrap">
-                    <BotonRecibo
-                      pedido={{
-                        ...pedido,
-                        estado: pedido.estado as any,
-                        updatedAt: pedido.createdAt,
-                      }}
-                    />
+                    <div className="flex items-center justify-center gap-1.5">
+                      <BotonRecibo
+                        pedido={{
+                          ...pedido,
+                          estado: pedido.estado as any,
+                          updatedAt: pedido.createdAt,
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setErrorEliminacion('');
+                          setPedidoAEliminar(pedido);
+                        }}
+                        className="rounded-lg bg-rose-500/10 border border-rose-500/30 px-2.5 py-1 text-xs font-bold text-rose-400 hover:text-white hover:bg-rose-600 hover:border-rose-600 transition-all shadow-sm active:scale-95"
+                        title="Eliminar comanda duplicada o errónea"
+                      >
+                        🗑️ Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -369,6 +409,92 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
         <HistorialCierresModal
           onCerrar={() => setMostrarHistorial(false)}
         />
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN PARA ELIMINAR PEDIDO */}
+      {pedidoAEliminar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm animate-in fade-in">
+          <div
+            className="fixed inset-0"
+            onClick={() => !eliminando && setPedidoAEliminar(null)}
+          />
+
+          <div className="relative z-10 w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-500/15 border border-rose-500/30 text-2xl text-rose-400">
+                🗑️
+              </div>
+              <div>
+                <h3 className="font-extrabold text-white text-base">¿Eliminar Comanda?</h3>
+                <p className="text-xs text-zinc-400">Eliminación permanente para pedidos duplicados</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4 space-y-2 text-xs">
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Mesa / Destino:</span>
+                <span className="font-bold text-white">
+                  {pedidoAEliminar.tipoPedido === 'LLEVAR'
+                    ? '🛍️ Para Llevar'
+                    : pedidoAEliminar.tipoPedido === 'DOMICILIO'
+                    ? '🛵 Domicilio'
+                    : `🍽️ Mesa ${pedidoAEliminar.mesa}`}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Total:</span>
+                <span className="font-black text-emerald-400">${pedidoAEliminar.total.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Estado:</span>
+                <span className="font-bold text-zinc-200">{pedidoAEliminar.estado}</span>
+              </div>
+              <div className="pt-2 border-t border-zinc-800 text-zinc-300">
+                <p className="font-semibold text-zinc-400 mb-1">Detalle de la orden:</p>
+                <p className="italic bg-zinc-950 p-2.5 rounded-xl text-zinc-200 border border-zinc-800/80 line-clamp-3">
+                  {pedidoAEliminar.detalle}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200/90 leading-relaxed">
+              ⚠️ <strong>Atención:</strong> Esta comanda se borrará por completo de la base de datos, del monitor de cocina y de las estadísticas de ventas. Úsala si el mesero se equivocó y envió el mismo pedido varias veces.
+            </div>
+
+            {errorEliminacion && (
+              <p className="text-xs font-bold text-rose-400">{errorEliminacion}</p>
+            )}
+
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                disabled={eliminando}
+                onClick={() => setPedidoAEliminar(null)}
+                className="flex-1 rounded-xl bg-zinc-900 border border-zinc-800 py-2.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                disabled={eliminando}
+                onClick={handleConfirmarEliminar}
+                className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-rose-600 py-2.5 text-xs font-bold text-white shadow-lg shadow-rose-600/30 hover:bg-rose-700 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {eliminando ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <span>Eliminando...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>🗑️</span>
+                    <span>Sí, Eliminar</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

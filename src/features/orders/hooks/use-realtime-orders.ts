@@ -90,6 +90,11 @@ export function useRealtimeOrders(
                     : p.estado !== 'ENTREGADO' && p.estado !== 'CANCELADO' && p.estado !== 'PAGADO'
                 );
             });
+          } else if (payload.eventType === 'DELETE') {
+            const idEliminado = (payload.old as { id?: string })?.id;
+            if (idEliminado) {
+              setPedidos((prev) => prev.filter((p) => p.id !== idEliminado));
+            }
           }
         }
       )

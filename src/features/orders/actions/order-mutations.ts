@@ -237,3 +237,32 @@ export async function cancelarPedido(pedidoId: string, motivo: string) {
   }
 }
 
+/**
+ * Elimina permanentemente un pedido duplicado o erróneo de la base de datos (Exclusivo Administrador)
+ */
+export async function eliminarPedido(pedidoId: string) {
+  try {
+    const pedido = await prisma.pedido.findUnique({
+      where: { id: pedidoId },
+    });
+
+    if (!pedido) {
+      return { success: false, error: 'El pedido no existe o ya fue eliminado.' };
+    }
+
+    await prisma.pedido.delete({
+      where: { id: pedidoId },
+    });
+
+    revalidatePath('/admin');
+    revalidatePath('/cocina');
+    revalidatePath('/mesero');
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error al eliminar pedido:', error);
+    return { success: false, error: 'No se pudo eliminar el pedido de la base de datos.' };
+  }
+}
+
+

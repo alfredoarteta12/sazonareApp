@@ -24,8 +24,15 @@ export interface ParametrosCrearPedido {
   items: ItemCarrito[];
 }
 
+export interface DatosPagoDividido {
+  efectivo: number;
+  transferencia: number;
+  efectivoRecibido?: number;
+}
+
 /**
  * Crea un nuevo pedido desde la estación de mesero (Mesa, Para Llevar o Domicilio)
+ * Normalización 1FN: Inserta el pedido y además crea cada fila atómica en DetallePedido.
  */
 export async function crearPedido(
   paramsOmesa: number | ParametrosCrearPedido,
@@ -83,6 +90,7 @@ export async function crearPedido(
 
     const detalle = `${prefijo}${detalleItems}${notas ? ` (Nota: ${notas})` : ''}`;
 
+    // Creación atómica de Pedido y de cada fila normalizada en DetallePedido
     const pedido = await prisma.pedido.create({
       data: {
         mesa: tipoPedido === 'MESA' ? mesa : 0,
@@ -94,6 +102,19 @@ export async function crearPedido(
         detalle,
         total,
         estado: 'PENDIENTE',
+        items: {
+          create: items.map((item) => ({
+            productoId: item.productoId && item.productoId.length > 5 ? item.productoId : null,
+            nombre: item.nombre,
+            precioUnitario: item.precio,
+            cantidad: item.cantidad,
+            subtotal: item.precio * item.cantidad,
+            notas: item.notas || null,
+          })),
+        },
+      },
+      include: {
+        items: true,
       },
     });
 
@@ -106,7 +127,6 @@ export async function crearPedido(
     return { success: false, error: 'No se pudo crear el pedido.' };
   }
 }
-
 
 /**
  * Marca directamente un pedido como ENTREGADO
@@ -128,33 +148,105 @@ export async function marcarComoEntregado(pedidoId: string) {
 }
 
 /**
- * Cobra el pedido (Efectivo o Transferencia) y libera la mesa dejándola disponible nuevamente
+ * Cobra el pedido (Efectivo, Transferencia o Pago Dividido) y libera la mesa
+ * Normalización 3FN: Registra la transacción en la tabla Pago y los montos divididos.
  */
 export async function cobrarPedidoYLiberarMesa(
   pedidoId: string,
-  metodoPago: 'EFECTIVO' | 'TRANSFERENCIA',
-  montoRecibido?: number
+  metodoPago: 'EFECTIVO' | 'TRANSFERENCIA' | 'DIVIDIDO',
+  montoRecibido?: number,
+  datosDividido?: DatosPagoDividido
 ) {
   try {
     const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId } });
     if (!pedido) return { success: false, error: 'Pedido no encontrado.' };
 
-    const cambio =
-      metodoPago === 'EFECTIVO' && montoRecibido && montoRecibido >= pedido.total
-        ? montoRecibido - pedido.total
-        : 0;
+    let pagoEfectivo = 0;
+    let pagoTransferencia = 0;
+    let cambio = 0;
+    let notaPago = '';
+    const nuevosPagos: {
+      metodoPago: string;
+      monto: number;
+      montoRecibido?: number | null;
+      cambio?: number | null;
+    }[] = [];
 
-    const notaPago =
-      metodoPago === 'EFECTIVO' && montoRecibido
+    if (metodoPago === 'EFECTIVO') {
+      pagoEfectivo = pedido.total;
+      pagoTransferencia = 0;
+      cambio = montoRecibido && montoRecibido >= pedido.total ? montoRecibido - pedido.total : 0;
+      notaPago = montoRecibido
         ? `[PAGADO: EFECTIVO | Pagó con: $${montoRecibido.toFixed(2)} | Cambio: $${cambio.toFixed(2)}]`
-        : `[PAGADO: TRANSFERENCIA]`;
+        : `[PAGADO: EFECTIVO]`;
+      nuevosPagos.push({
+        metodoPago: 'EFECTIVO',
+        monto: pedido.total,
+        montoRecibido: montoRecibido || pedido.total,
+        cambio,
+      });
+    } else if (metodoPago === 'TRANSFERENCIA') {
+      pagoEfectivo = 0;
+      pagoTransferencia = pedido.total;
+      cambio = 0;
+      notaPago = `[PAGADO: TRANSFERENCIA]`;
+      nuevosPagos.push({
+        metodoPago: 'TRANSFERENCIA',
+        monto: pedido.total,
+      });
+    } else if (metodoPago === 'DIVIDIDO') {
+      if (!datosDividido) {
+        return { success: false, error: 'Se requieren los montos para registrar el pago dividido.' };
+      }
+      pagoEfectivo = Number(datosDividido.efectivo) || 0;
+      pagoTransferencia = Number(datosDividido.transferencia) || 0;
+
+      const sumaDesglose = Math.round((pagoEfectivo + pagoTransferencia) * 100) / 100;
+      const totalRedondeado = Math.round(pedido.total * 100) / 100;
+
+      if (sumaDesglose !== totalRedondeado) {
+        return {
+          success: false,
+          error: `La suma de Efectivo ($${pagoEfectivo.toFixed(2)}) y Transferencia ($${pagoTransferencia.toFixed(2)}) debe coincidir con el total ($${pedido.total.toFixed(2)}).`,
+        };
+      }
+
+      const rec = Number(datosDividido.efectivoRecibido) || pagoEfectivo;
+      cambio = rec >= pagoEfectivo ? rec - pagoEfectivo : 0;
+
+      notaPago = `[PAGADO: DIVIDIDO | Efec: $${pagoEfectivo.toFixed(2)} (Recibió: $${rec.toFixed(2)}, Cambio: $${cambio.toFixed(2)}) + Transf: $${pagoTransferencia.toFixed(2)}]`;
+
+      if (pagoEfectivo > 0) {
+        nuevosPagos.push({
+          metodoPago: 'EFECTIVO',
+          monto: pagoEfectivo,
+          montoRecibido: rec,
+          cambio,
+        });
+      }
+      if (pagoTransferencia > 0) {
+        nuevosPagos.push({
+          metodoPago: 'TRANSFERENCIA',
+          monto: pagoTransferencia,
+        });
+      }
+    }
 
     const actualizado = await prisma.pedido.update({
       where: { id: pedidoId },
       data: {
         estado: 'PAGADO',
         metodoPago,
+        pagoEfectivo,
+        pagoTransferencia,
         detalle: `${notaPago} ${pedido.detalle}`,
+        pagos: {
+          create: nuevosPagos,
+        },
+      },
+      include: {
+        pagos: true,
+        items: true,
       },
     });
 
@@ -167,8 +259,6 @@ export async function cobrarPedidoYLiberarMesa(
     return { success: false, error: 'No se pudo registrar el cobro.' };
   }
 }
-
-
 
 /**
  * Avanza el estado de un pedido al siguiente paso
@@ -264,5 +354,3 @@ export async function eliminarPedido(pedidoId: string) {
     return { success: false, error: 'No se pudo eliminar el pedido de la base de datos.' };
   }
 }
-
-

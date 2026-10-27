@@ -3,7 +3,6 @@
 import { prisma } from '@/lib/prisma';
 import { getRangoDiaColombia, getRangoSemanaColombia, getRangoMesColombia } from '@/lib/date-utils';
 
-
 export async function getDailyFinancials() {
   try {
     const { inicio: inicioHoy, fin: finHoy } = getRangoDiaColombia();
@@ -98,6 +97,8 @@ export interface ReportePeriodoData {
     detalle: string;
     total: number;
     metodoPago: string | null;
+    pagoEfectivo: number;
+    pagoTransferencia: number;
     estado: string;
     createdAt: string;
   }[];
@@ -145,6 +146,8 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
         detalle: true,
         total: true,
         metodoPago: true,
+        pagoEfectivo: true,
+        pagoTransferencia: true,
         estado: true,
         createdAt: true,
       },
@@ -169,8 +172,11 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
         ingresoNeto += p.total;
         pedidosExitosos++;
 
-        // Desglose por método de pago
-        if (p.metodoPago === 'TRANSFERENCIA' || p.detalle.includes('TRANSFERENCIA')) {
+        // Desglose por método de pago (Soporta Pago Dividido normalizado)
+        if (p.metodoPago === 'DIVIDIDO') {
+          totalEfectivo += p.pagoEfectivo ?? 0;
+          totalTransferencia += p.pagoTransferencia ?? 0;
+        } else if (p.metodoPago === 'TRANSFERENCIA' || p.detalle.includes('TRANSFERENCIA')) {
           totalTransferencia += p.total;
         } else {
           // Por defecto efectivo si fue pagado o servido
@@ -216,6 +222,8 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
         desglose,
         pedidos: pedidos.map((p) => ({
           ...p,
+          pagoEfectivo: p.pagoEfectivo ?? 0,
+          pagoTransferencia: p.pagoTransferencia ?? 0,
           createdAt: p.createdAt.toISOString(),
         })),
       },
@@ -225,5 +233,3 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
     return { success: false, error: 'No se pudieron calcular las ventas del período.' };
   }
 }
-
-

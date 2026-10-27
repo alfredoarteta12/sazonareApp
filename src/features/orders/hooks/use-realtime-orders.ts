@@ -17,6 +17,8 @@ export interface Pedido {
   detalle: string;
   total: number;
   metodoPago?: string | null;
+  pagoEfectivo?: number | null;
+  pagoTransferencia?: number | null;
   estado: OrderStatus;
   createdAt: string;
   updatedAt: string;
@@ -105,9 +107,5 @@ export function useRealtimeOrders(
     };
   }, [incluirEntregados]);
 
-
-
-
   return { pedidos, cargando, error };
 }
-

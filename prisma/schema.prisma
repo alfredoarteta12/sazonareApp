@@ -39,29 +39,61 @@ model Categoria {
 }
 
 model Producto {
-  id          String    @id @default(uuid())
+  id          String          @id @default(uuid())
   nombre      String
   precio      Float
   imagen      String?
-  disponible  Boolean   @default(true)
+  disponible  Boolean         @default(true)
   categoriaId String
-  categoria   Categoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  categoria   Categoria       @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  detalles    DetallePedido[]
 }
 
 model Pedido {
-  id         String      @id @default(uuid())
-  mesa       Int         @default(0)
-  tipoPedido String      @default("MESA") // MESA | LLEVAR | DOMICILIO
-  cliente    String?
-  telefono   String?
-  direccion  String?
-  notas      String?
-  detalle    String      // Descripción textual (Ej: "2x Hamburguesa, 1x Papas")
-  total      Float
-  metodoPago String?     // EFECTIVO | TRANSFERENCIA
-  estado     OrderStatus @default(PENDIENTE)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id                String          @id @default(uuid())
+  mesa              Int             @default(0)
+  tipoPedido        String          @default("MESA") // MESA | LLEVAR | DOMICILIO
+  cliente           String?
+  telefono          String?
+  direccion         String?
+  notas             String?
+  detalle           String          // Descripción textual (mantenida para sincronización en tiempo real)
+  total             Float
+  metodoPago        String?         // EFECTIVO | TRANSFERENCIA | DIVIDIDO
+  pagoEfectivo      Float           @default(0)
+  pagoTransferencia Float           @default(0)
+  estado            OrderStatus     @default(PENDIENTE)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  items             DetallePedido[]
+  pagos             Pago[]
+}
+
+model DetallePedido {
+  id             String    @id @default(uuid())
+  pedidoId       String
+  pedido         Pedido    @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  productoId     String?
+  producto       Producto? @relation(fields: [productoId], references: [id], onDelete: SetNull)
+  nombre         String
+  precioUnitario Float
+  cantidad       Int       @default(1)
+  subtotal       Float
+  notas          String?
+  createdAt      DateTime  @default(now())
+}
+
+model Pago {
+  id            String   @id @default(uuid())
+  pedidoId      String
+  pedido        Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  metodoPago    String   // EFECTIVO | TRANSFERENCIA
+  monto         Float
+  montoRecibido Float?   // Efectivo recibido para cálculo de cambio
+  cambio        Float?
+  referencia    String?  // Referencia o comprobante
+  createdAt     DateTime @default(now())
 }
 
 model CierreCaja {
@@ -81,6 +113,3 @@ model CierreCaja {
   observaciones    String?
   createdAt        DateTime @default(now())
 }
-
-
-

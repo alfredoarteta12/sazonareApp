@@ -24,9 +24,14 @@ export function MesaDetalleModal({
 }: MesaDetalleModalProps) {
   const [pedido, setPedido] = useState<Pedido>(pedidoInicial);
   const [mostrandoRecibo, setMostrandoRecibo] = useState(false);
-  const [modoCobro, setModoCobro] = useState(pedidoInicial.estado === 'ENTREGADO');
-  const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TRANSFERENCIA'>('EFECTIVO');
+  const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TRANSFERENCIA' | 'DIVIDIDO'>('EFECTIVO');
   const [montoRecibido, setMontoRecibido] = useState<string>('');
+
+  // Estados para Pago Dividido
+  const [montoDivididoEfectivo, setMontoDivididoEfectivo] = useState<string>('');
+  const [montoDivididoTransf, setMontoDivididoTransf] = useState<string>('');
+  const [efectivoRecibidoDividido, setEfectivoRecibidoDividido] = useState<string>('');
+
   const [isPending, startTransition] = useTransition();
   const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
 
@@ -37,10 +42,27 @@ export function MesaDetalleModal({
   const ahora = new Date();
   const minutosTranscurridos = Math.max(0, Math.floor((ahora.getTime() - fechaPedido.getTime()) / 60000));
 
-  // Cálculo de cambio si es efectivo
+  // Cálculos para Efectivo Completo
   const valorEfectivo = parseFloat(montoRecibido) || 0;
   const cambio = valorEfectivo >= pedido.total ? valorEfectivo - pedido.total : 0;
   const dineroInsuficiente = metodoPago === 'EFECTIVO' && valorEfectivo > 0 && valorEfectivo < pedido.total;
+
+  // Cálculos para Pago Dividido
+  const valorDivididoEfectivo = parseFloat(montoDivididoEfectivo) || 0;
+  const valorDivididoTransf = parseFloat(montoDivididoTransf) || 0;
+  const sumaDividido = Math.round((valorDivididoEfectivo + valorDivididoTransf) * 100) / 100;
+  const totalRedondeado = Math.round(pedido.total * 100) / 100;
+  const cuadreExactoDividido = Math.abs(sumaDividido - totalRedondeado) < 0.01 && totalRedondeado > 0;
+
+  const valorRecibidoDividido = parseFloat(efectivoRecibidoDividido) || 0;
+  const efectivoDivididoInsuficiente =
+    metodoPago === 'DIVIDIDO' &&
+    valorRecibidoDividido > 0 &&
+    valorRecibidoDividido < valorDivididoEfectivo;
+  const cambioDividido =
+    valorRecibidoDividido >= valorDivididoEfectivo
+      ? valorRecibidoDividido - valorDivididoEfectivo
+      : 0;
 
   const esLlevar = pedido.tipoPedido === 'LLEVAR' || pedido.detalle.includes('[PARA LLEVAR');
   const esDomicilio = pedido.tipoPedido === 'DOMICILIO' || pedido.detalle.includes('[DOMICILIO');
@@ -50,7 +72,6 @@ export function MesaDetalleModal({
       const res = await marcarComoEntregado(pedido.id);
       if (res.success && res.pedido) {
         setPedido(res.pedido as unknown as Pedido);
-        setModoCobro(true); // Abrir directamente apartado de cobro
         const textoExito = esLlevar
           ? '✅ Pedido entregado al cliente en mostrador.'
           : esDomicilio
@@ -70,13 +91,45 @@ export function MesaDetalleModal({
       return;
     }
 
+    if (metodoPago === 'DIVIDIDO') {
+      if (!cuadreExactoDividido) {
+        setMensaje({
+          tipo: 'error',
+          texto: `La suma de Efectivo ($${valorDivididoEfectivo.toFixed(2)}) y Transf ($${valorDivididoTransf.toFixed(2)}) debe sumar exactamente $${pedido.total.toFixed(2)}.`,
+        });
+        return;
+      }
+      if (efectivoDivididoInsuficiente) {
+        setMensaje({ tipo: 'error', texto: 'El efectivo recibido es menor a la porción en efectivo.' });
+        return;
+      }
+    }
+
     startTransition(async () => {
-      const efectivoFinal = metodoPago === 'EFECTIVO' ? (valorEfectivo > 0 ? valorEfectivo : pedido.total) : undefined;
-      const res = await cobrarPedidoYLiberarMesa(pedido.id, metodoPago, efectivoFinal);
+      let res;
+      if (metodoPago === 'DIVIDIDO') {
+        res = await cobrarPedidoYLiberarMesa(pedido.id, 'DIVIDIDO', undefined, {
+          efectivo: valorDivididoEfectivo,
+          transferencia: valorDivididoTransf,
+          efectivoRecibido: valorRecibidoDividido > 0 ? valorRecibidoDividido : valorDivididoEfectivo,
+        });
+      } else {
+        const efectivoFinal =
+          metodoPago === 'EFECTIVO'
+            ? valorEfectivo > 0
+              ? valorEfectivo
+              : pedido.total
+            : undefined;
+        res = await cobrarPedidoYLiberarMesa(pedido.id, metodoPago, efectivoFinal);
+      }
 
       if (res.success && res.pedido) {
         setPedido(res.pedido as unknown as Pedido);
         setMontoRecibido('');
+        setMontoDivididoEfectivo('');
+        setMontoDivididoTransf('');
+        setEfectivoRecibidoDividido('');
+
         const textoCobro = esLlevar
           ? `🎉 ¡Pedido Para Llevar cobrado (${metodoPago}) con éxito!`
           : esDomicilio
@@ -95,6 +148,11 @@ export function MesaDetalleModal({
       }
     });
   };
+
+  const botonCobroDeshabilitado =
+    isPending ||
+    (metodoPago === 'EFECTIVO' && dineroInsuficiente) ||
+    (metodoPago === 'DIVIDIDO' && (!cuadreExactoDividido || efectivoDivididoInsuficiente));
 
   if (mostrandoRecibo) {
     return (
@@ -185,7 +243,7 @@ export function MesaDetalleModal({
             </div>
           )}
 
-          {/* SECCIÓN / APARTADO DE PAGO (Efectivo o Transferencia) */}
+          {/* SECCIÓN / APARTADO DE PAGO */}
           {pedido.estado !== 'PAGADO' && (
             <div className="rounded-2xl border-2 border-orange-500/30 bg-gradient-to-b from-orange-950/10 to-zinc-900/40 p-4 shadow-xl">
               <div className="flex items-center justify-between mb-3">
@@ -200,35 +258,57 @@ export function MesaDetalleModal({
                 </span>
               </div>
 
-              {/* Selector de Método de Pago */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
+              {/* Selector de Método de Pago: Efectivo, Transferencia o Dividido */}
+              <div className="grid grid-cols-3 gap-1.5 mb-3">
                 <button
                   type="button"
                   onClick={() => setMetodoPago('EFECTIVO')}
-                  className={`flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs font-bold transition-all border ${
+                  className={`flex items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-bold transition-all border ${
                     metodoPago === 'EFECTIVO'
                       ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-600/30 ring-2 ring-emerald-400/30'
                       : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white hover:bg-zinc-800'
                   }`}
                 >
-                  <span className="text-base">💵</span> Efectivo
+                  <span className="text-sm">💵</span> Efectivo
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setMetodoPago('TRANSFERENCIA')}
-                  className={`flex items-center justify-center gap-2 rounded-xl py-2.5 px-3 text-xs font-bold transition-all border ${
+                  className={`flex items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-bold transition-all border ${
                     metodoPago === 'TRANSFERENCIA'
                       ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-600/30 ring-2 ring-blue-400/30'
                       : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white hover:bg-zinc-800'
                   }`}
                 >
-                  <span className="text-base">📲</span> Transferencia
+                  <span className="text-sm">📲</span> Transf
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMetodoPago('DIVIDIDO');
+                    // Sugerir 50% / 50% si están vacíos
+                    if (!montoDivididoEfectivo && !montoDivididoTransf) {
+                      const mitad = Math.round((pedido.total / 2) * 100) / 100;
+                      const resto = Math.round((pedido.total - mitad) * 100) / 100;
+                      setMontoDivididoEfectivo(mitad.toString());
+                      setMontoDivididoTransf(resto.toString());
+                    }
+                  }}
+                  className={`flex items-center justify-center gap-1 rounded-xl py-2 px-1 text-xs font-bold transition-all border ${
+                    metodoPago === 'DIVIDIDO'
+                      ? 'bg-purple-600 text-white border-purple-500 shadow-md shadow-purple-600/30 ring-2 ring-purple-400/30'
+                      : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white hover:bg-zinc-800'
+                  }`}
+                >
+                  <span className="text-sm">⚖️</span> Dividido
                 </button>
               </div>
 
-              {/* DETALLES DE EFECTIVO */}
+              {/* DETALLES DE PAGO SEGÚN MÉTODO */}
               {metodoPago === 'EFECTIVO' ? (
+                /* EFECTIVO COMPLETO */
                 <div className="space-y-2.5 rounded-xl bg-black/40 border border-zinc-800 p-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-zinc-400">Efectivo recibido:</span>
@@ -246,7 +326,7 @@ export function MesaDetalleModal({
                     </div>
                   </div>
 
-                  {/* Botones de sugerencia rápida de billetes */}
+                  {/* Sugerencias rápidas de billetes */}
                   <div className="flex gap-1.5 pt-1">
                     <button
                       type="button"
@@ -267,7 +347,7 @@ export function MesaDetalleModal({
                     ))}
                   </div>
 
-                  {/* Cálculo de vuelto/cambio */}
+                  {/* Cálculo de cambio */}
                   <div className="flex items-center justify-between pt-2 border-t border-zinc-800 text-xs">
                     <span className="font-semibold text-zinc-300">Cambio a entregar:</span>
                     <span
@@ -281,16 +361,140 @@ export function MesaDetalleModal({
                     </span>
                   </div>
                 </div>
-              ) : (
-                /* DETALLES DE TRANSFERENCIA */
+              ) : metodoPago === 'TRANSFERENCIA' ? (
+                /* TRANSFERENCIA COMPLETA */
                 <div className="rounded-xl bg-black/40 border border-zinc-800 p-3 text-xs text-zinc-300 space-y-1">
                   <p className="font-semibold text-blue-400 flex items-center gap-1.5">
-                    <span>✓</span> Pago por Transferencia Bancaria
+                    <span>✓</span> Pago 100% por Transferencia Bancaria
                   </p>
                   <p className="text-[11px] text-zinc-400">
                     Solicita al cliente el comprobante o notificación bancaria por el importe total de{' '}
                     <strong className="text-white">${pedido.total.toFixed(2)}</strong> antes de liberar la mesa.
                   </p>
+                </div>
+              ) : (
+                /* PAGO DIVIDIDO (EFECTIVO + TRANSFERENCIA) */
+                <div className="space-y-3 rounded-xl bg-black/40 border border-zinc-800 p-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-purple-300 flex items-center gap-1">
+                      <span>⚖️</span> Desglose Mixto
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const mitad = Math.round((pedido.total / 2) * 100) / 100;
+                        const resto = Math.round((pedido.total - mitad) * 100) / 100;
+                        setMontoDivididoEfectivo(mitad.toString());
+                        setMontoDivididoTransf(resto.toString());
+                      }}
+                      className="text-[11px] font-bold text-purple-400 hover:text-purple-300 underline"
+                    >
+                      Dividir 50% / 50%
+                    </button>
+                  </div>
+
+                  {/* Fila Efectivo */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-400 flex items-center gap-1">💵 Parte en Efectivo:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-zinc-500 font-bold text-xs">$</span>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0"
+                          placeholder="0.00"
+                          value={montoDivididoEfectivo === '0' ? '' : montoDivididoEfectivo}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setMontoDivididoEfectivo(val);
+                            const num = parseFloat(val) || 0;
+                            if (num <= pedido.total) {
+                              const resto = Math.max(0, Math.round((pedido.total - num) * 100) / 100);
+                              setMontoDivididoTransf(resto > 0 ? resto.toString() : '');
+                            }
+                          }}
+                          className="w-28 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-sm font-bold text-white focus:border-purple-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fila Transferencia */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-400 flex items-center gap-1">📲 Parte en Transf:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-zinc-500 font-bold text-xs">$</span>
+                        <input
+                          type="number"
+                          step="any"
+                          min="0"
+                          placeholder="0.00"
+                          value={montoDivididoTransf === '0' ? '' : montoDivididoTransf}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setMontoDivididoTransf(val);
+                            const num = parseFloat(val) || 0;
+                            if (num <= pedido.total) {
+                              const resto = Math.max(0, Math.round((pedido.total - num) * 100) / 100);
+                              setMontoDivididoEfectivo(resto > 0 ? resto.toString() : '');
+                            }
+                          }}
+                          className="w-28 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-sm font-bold text-white focus:border-purple-500 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Indicador reactivo de balance/cuadre */}
+                  <div className="flex items-center justify-between pt-2 border-t border-zinc-800 text-xs">
+                    <span className="text-zinc-400 font-medium">Total Asignado:</span>
+                    <span
+                      className={`font-black ${
+                        cuadreExactoDividido ? 'text-emerald-400' : 'text-rose-400'
+                      }`}
+                    >
+                      ${sumaDividido.toFixed(2)} / ${pedido.total.toFixed(2)}
+                      {cuadreExactoDividido
+                        ? ' ✓ Cuadrado'
+                        : ` (Faltan $${(pedido.total - sumaDividido).toFixed(2)})`}
+                    </span>
+                  </div>
+
+                  {/* Detalle de billetes / cambio para la porción en efectivo */}
+                  {valorDivididoEfectivo > 0 && (
+                    <div className="pt-2 border-t border-dashed border-zinc-800 space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-zinc-400">Efectivo recibido:</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-zinc-500 font-bold text-xs">$</span>
+                          <input
+                            type="number"
+                            step="any"
+                            min="0"
+                            placeholder={valorDivididoEfectivo > 0 ? valorDivididoEfectivo.toFixed(2) : '0'}
+                            value={efectivoRecibidoDividido === '0' ? '' : efectivoRecibidoDividido}
+                            onChange={(e) => setEfectivoRecibidoDividido(e.target.value)}
+                            className="w-28 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-xs font-bold text-white focus:border-emerald-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold text-zinc-300">Cambio por efectivo:</span>
+                        <span
+                          className={`text-xs font-black ${
+                            efectivoDivididoInsuficiente ? 'text-rose-400' : 'text-emerald-400'
+                          }`}
+                        >
+                          {efectivoDivididoInsuficiente
+                            ? `Faltan $${(valorDivididoEfectivo - valorRecibidoDividido).toFixed(2)}`
+                            : `$${cambioDividido.toFixed(2)}`}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -298,7 +502,7 @@ export function MesaDetalleModal({
               <button
                 type="button"
                 onClick={handleProcesarCobro}
-                disabled={isPending || dineroInsuficiente}
+                disabled={botonCobroDeshabilitado}
                 className="mt-3 w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 py-3 text-xs sm:text-sm font-extrabold text-white shadow-lg shadow-emerald-600/30 hover:from-emerald-500 hover:to-emerald-400 active:scale-98 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <span>💰</span>

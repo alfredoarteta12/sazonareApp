@@ -84,6 +84,8 @@ export async function getDatosCierreHoy(): Promise<{
         id: true,
         total: true,
         metodoPago: true,
+        pagoEfectivo: true,
+        pagoTransferencia: true,
         estado: true,
         detalle: true,
       },
@@ -100,7 +102,10 @@ export async function getDatosCierreHoy(): Promise<{
         totalVentas += p.total;
         totalPedidos++;
 
-        if (p.metodoPago === 'TRANSFERENCIA' || p.detalle.includes('TRANSFERENCIA')) {
+        if (p.metodoPago === 'DIVIDIDO') {
+          ventasEfectivo += p.pagoEfectivo ?? 0;
+          ventasTransf += p.pagoTransferencia ?? 0;
+        } else if (p.metodoPago === 'TRANSFERENCIA' || p.detalle.includes('TRANSFERENCIA')) {
           ventasTransf += p.total;
         } else {
           ventasEfectivo += p.total;
@@ -166,6 +171,8 @@ export async function registrarCierreCaja(input: RegistrarCierreInput) {
       select: {
         total: true,
         metodoPago: true,
+        pagoEfectivo: true,
+        pagoTransferencia: true,
         detalle: true,
       },
     });
@@ -177,7 +184,10 @@ export async function registrarCierreCaja(input: RegistrarCierreInput) {
 
     for (const p of pedidos) {
       totalVentas += p.total;
-      if (p.metodoPago === 'TRANSFERENCIA' || p.detalle.includes('TRANSFERENCIA')) {
+      if (p.metodoPago === 'DIVIDIDO') {
+        ventasEfectivo += p.pagoEfectivo ?? 0;
+        ventasTransf += p.pagoTransferencia ?? 0;
+      } else if (p.metodoPago === 'TRANSFERENCIA' || p.detalle.includes('TRANSFERENCIA')) {
         ventasTransf += p.total;
       } else {
         ventasEfectivo += p.total;
@@ -248,4 +258,3 @@ export async function getHistorialCierres(limit = 30) {
     return { success: false, error: 'No se pudo obtener el historial de cierres.' };
   }
 }
-

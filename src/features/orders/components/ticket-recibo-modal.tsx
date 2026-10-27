@@ -17,7 +17,6 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
   const fechaFormateada = formatearFechaColombia(pedido.createdAt);
   const horaFormateada = formatearHoraColombia(pedido.createdAt);
 
-
   // Cálculos de IVA y propinas sugeridas
   const subtotalSinIva = pedido.total / 1.16;
   const ivaCalculado = pedido.total - subtotalSinIva;
@@ -127,10 +126,23 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
             {pedido.estado === 'PAGADO' && (
               <div className="my-2 rounded border-2 border-dashed border-emerald-600 bg-emerald-50/70 p-2 text-center text-emerald-800">
                 <p className="text-xs font-black uppercase tracking-widest">★ CUENTA PAGADA ★</p>
-                <p className="text-[10px] font-bold">MÉTODO: {pedido.metodoPago || 'EFECTIVO'}</p>
+                {pedido.metodoPago === 'DIVIDIDO' ? (
+                  <div className="text-[10px] font-bold space-y-0.5 mt-1">
+                    <p className="text-emerald-900 font-black">MÉTODO: PAGO DIVIDIDO</p>
+                    <div className="flex justify-between px-2 pt-1 border-t border-emerald-200">
+                      <span>💵 Efectivo:</span>
+                      <span>${(pedido.pagoEfectivo ?? 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between px-2">
+                      <span>📲 Transferencia:</span>
+                      <span>${(pedido.pagoTransferencia ?? 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[10px] font-bold">MÉTODO: {pedido.metodoPago || 'EFECTIVO'}</p>
+                )}
               </div>
             )}
-
 
             {/* Lista Desglosada de Platillos */}
             <div className="py-3 border-b border-dashed border-zinc-400">
@@ -241,4 +253,3 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
     </div>
   );
 }
-

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import {
   getPeriodFinancials,
   PeriodoReporte,
@@ -144,7 +144,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
               }`}
             >
-              <span>📆</span> Esta Semana
+              <span>📈</span> Esta Semana
             </button>
 
             <button
@@ -232,7 +232,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
         </div>
       </div>
 
-      {/* GRÁFICA DE BARRAS INTERACTIVA (CSS Puro Ultrarrápido) */}
+      {/* GRÁFICA DE BARRAS INTERACTIVA */}
       {reporte.desglose.length > 0 && (
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6 shadow-xl">
           <div className="flex items-center justify-between mb-6">
@@ -249,14 +249,14 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
 
           <div className="flex items-end justify-between gap-2 sm:gap-4 h-48 pt-6 pb-2 px-2 border-b border-zinc-800">
             {reporte.desglose.map((item, idx) => {
-              const alturaPct = Math.max(12, Math.round((item.total / maxVentaDesglose) * 100));
-
+              const alturaPct = Math.max(Math.round((item.total / maxVentaDesglose) * 100), 4);
               return (
-                <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group">
-                  {/* Tooltip con valor flotante */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity mb-2 text-center pointer-events-none">
-                    <span className="rounded-lg bg-zinc-800 border border-zinc-700 px-2 py-0.5 text-[10px] font-bold text-white shadow-md">
-                      ${item.total.toFixed(2)} ({item.cantidad})
+                <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group relative">
+                  {/* Tooltip flotante */}
+                  <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-zinc-900 border border-zinc-700 px-2.5 py-1 rounded-xl shadow-lg whitespace-nowrap">
+                    <p className="text-xs font-bold text-white">${item.total.toFixed(2)}</p>
+                    <span className="text-[10px] text-zinc-400">
+                      {item.cantidad} {item.cantidad === 1 ? 'pedido' : 'pedidos'}
                     </span>
                   </div>
 
@@ -342,7 +342,14 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
                   </td>
                   <td className="max-w-xs px-6 py-3 text-zinc-300 truncate">{pedido.detalle}</td>
                   <td className="px-6 py-3 text-xs whitespace-nowrap">
-                    {pedido.metodoPago === 'TRANSFERENCIA' || pedido.detalle.includes('TRANSFERENCIA') ? (
+                    {pedido.metodoPago === 'DIVIDIDO' ? (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-md bg-purple-950/70 border border-purple-800/80 px-2 py-0.5 font-bold text-purple-300 cursor-help"
+                        title={`Efectivo: $${pedido.pagoEfectivo.toFixed(2)} | Transf: $${pedido.pagoTransferencia.toFixed(2)}`}
+                      >
+                        ⚖️ Dividido
+                      </span>
+                    ) : pedido.metodoPago === 'TRANSFERENCIA' || pedido.detalle.includes('TRANSFERENCIA') ? (
                       <span className="rounded-md bg-blue-950/70 border border-blue-800/80 px-2 py-0.5 font-bold text-blue-300">
                         📲 Transf
                       </span>
@@ -373,6 +380,8 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
                       <BotonRecibo
                         pedido={{
                           ...pedido,
+                          pagoEfectivo: pedido.pagoEfectivo,
+                          pagoTransferencia: pedido.pagoTransferencia,
                           estado: pedido.estado as any,
                           updatedAt: pedido.createdAt,
                         }}
@@ -509,4 +518,3 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
     </div>
   );
 }
-

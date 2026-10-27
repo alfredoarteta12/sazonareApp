@@ -29,12 +29,12 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-2 sm:p-4 backdrop-blur-sm">
       {/* Fondo clickeable para cerrar */}
       <div className="fixed inset-0" onClick={onCerrar} />
 
       {/* Contenedor del Modal */}
-      <div className="relative z-10 flex max-h-[92vh] w-full max-w-md flex-col rounded-3xl border border-zinc-800 bg-zinc-950 p-5 shadow-2xl">
+      <div className="relative z-10 flex max-h-[92dvh] w-full max-w-md flex-col rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-5 shadow-2xl pb-safe">
         {/* Cabecera del modal (no se imprime) */}
         <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
           <div className="flex items-center gap-2">

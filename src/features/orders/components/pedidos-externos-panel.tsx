@@ -149,28 +149,28 @@ export function PedidosExternosPanel({
 
       {/* BARRA DE FILTROS Y BÚSQUEDA */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shrink-0">
-        <div className="flex items-center gap-1.5 rounded-2xl bg-zinc-950 border border-zinc-800 p-1">
+        <div className="grid grid-cols-2 sm:flex items-center gap-1 rounded-2xl bg-zinc-950 border border-zinc-800 p-1 w-full sm:w-auto">
           <button
             type="button"
             onClick={() => setFiltro('activos')}
-            className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+            className={`rounded-xl px-2.5 sm:px-3.5 py-1.5 text-center text-xs font-bold transition-all ${
               filtro === 'activos'
                 ? 'bg-zinc-800 text-white shadow-sm'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            Activos en Curso ({conteoActivos})
+            Activos ({conteoActivos})
           </button>
           <button
             type="button"
             onClick={() => setFiltro('todos')}
-            className={`rounded-xl px-3.5 py-1.5 text-xs font-bold transition-all ${
+            className={`rounded-xl px-2.5 sm:px-3.5 py-1.5 text-center text-xs font-bold transition-all ${
               filtro === 'todos'
                 ? 'bg-zinc-800 text-white shadow-sm'
                 : 'text-zinc-400 hover:text-white'
             }`}
           >
-            Historial de Hoy ({pedidosFiltradosPorTipo.length})
+            Historial ({pedidosFiltradosPorTipo.length})
           </button>
         </div>
 

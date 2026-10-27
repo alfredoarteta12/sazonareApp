@@ -35,6 +35,20 @@ button, a, input, select, textarea {
   scrollbar-width: none;
 }
 
+/* Soporte de safe area para iPhones (notch / home indicator) y barras gestuales Android */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+.bottom-safe {
+  bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
 /* Reglas de impresión para ticket térmico y reporte Z (80mm) */
 @media print {
   body * {

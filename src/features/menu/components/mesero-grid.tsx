@@ -688,33 +688,37 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
       )}
 
       {/* BARRA SUPERIOR DE NAVEGACIÓN ENTRE TERRAZA, LLEVAR, DOMICILIOS Y MENÚ */}
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 shrink-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-2xl bg-zinc-950 border border-zinc-800 p-1">
+      <div className="mb-2.5 flex items-center justify-between gap-1.5 shrink-0 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1 rounded-2xl bg-zinc-950 border border-zinc-800 p-1">
             <button
               type="button"
               onClick={() => setVista('croquis')}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
                 vista === 'croquis'
                   ? 'bg-orange-500 text-white shadow-md'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <span>🌿</span> Terraza (5 Mesas)
+              <span>🌿</span>
+              <span className="hidden sm:inline">Terraza (5 Mesas)</span>
+              <span className="sm:hidden">Mesas</span>
             </button>
 
             <button
               type="button"
               onClick={() => setVista('llevar')}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
                 vista === 'llevar'
                   ? 'bg-amber-500 text-white shadow-md'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <span>🛍️</span> Para Llevar
+              <span>🛍️</span>
+              <span className="hidden sm:inline">Para Llevar</span>
+              <span className="sm:hidden">Llevar</span>
               {pedidosLlevarActivos > 0 && (
-                <span className="rounded-full bg-amber-400 text-black text-[10px] font-black px-1.5 py-0.2">
+                <span className="rounded-full bg-amber-400 text-black text-[9px] sm:text-[10px] font-black px-1.5 py-0.2">
                   {pedidosLlevarActivos}
                 </span>
               )}
@@ -723,15 +727,17 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
             <button
               type="button"
               onClick={() => setVista('domicilio')}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
                 vista === 'domicilio'
                   ? 'bg-cyan-600 text-white shadow-md'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <span>🛵</span> Domicilios
+              <span>🛵</span>
+              <span className="hidden sm:inline">Domicilios</span>
+              <span className="sm:hidden">Domicilio</span>
               {pedidosDomicilioActivos > 0 && (
-                <span className="rounded-full bg-cyan-400 text-black text-[10px] font-black px-1.5 py-0.2">
+                <span className="rounded-full bg-cyan-400 text-black text-[9px] sm:text-[10px] font-black px-1.5 py-0.2">
                   {pedidosDomicilioActivos}
                 </span>
               )}
@@ -740,13 +746,19 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
             <button
               type="button"
               onClick={() => setVista('menu')}
-              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
                 vista === 'menu'
                   ? 'bg-orange-500 text-white shadow-md'
                   : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
               }`}
             >
-              <span>🍔</span> Menú ({tipoPedido === 'MESA' ? `Mesa ${mesa}` : tipoPedido === 'LLEVAR' ? 'Para Llevar' : 'Domicilio'})
+              <span>🍔</span>
+              <span className="hidden sm:inline">
+                Menú ({tipoPedido === 'MESA' ? `Mesa ${mesa}` : tipoPedido === 'LLEVAR' ? 'Para Llevar' : 'Domicilio'})
+              </span>
+              <span className="sm:hidden">
+                Menú {tipoPedido === 'MESA' ? `(M${mesa})` : tipoPedido === 'LLEVAR' ? '(Llev)' : '(Dom)'}
+              </span>
             </button>
           </div>
 
@@ -754,19 +766,20 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
           <button
             type="button"
             onClick={toggleSonido}
-            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1 sm:gap-1.5 rounded-xl border px-2 sm:px-3 py-1.5 text-xs font-semibold transition-all shrink-0 ${
               sonidoHabilitado
                 ? 'border-blue-800/80 bg-blue-950/40 text-blue-300 hover:bg-blue-900/50'
                 : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white'
             }`}
             title={sonidoHabilitado ? 'Timbre de cocina activo (clic para silenciar)' : 'Silenciado (clic para activar)'}
           >
-            <span>{sonidoHabilitado ? '🔔 Timbre Activo' : '🔇 Silenciado'}</span>
+            <span>{sonidoHabilitado ? '🔔' : '🔇'}</span>
+            <span className="hidden md:inline">{sonidoHabilitado ? 'Timbre Activo' : 'Silencio'}</span>
           </button>
         </div>
 
         {vista === 'menu' && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -774,9 +787,11 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
                 else if (tipoPedido === 'DOMICILIO') setVista('domicilio');
                 else setVista('croquis');
               }}
-              className="flex items-center gap-1 rounded-xl bg-zinc-900 border border-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
+              className="flex items-center gap-1 rounded-xl bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors whitespace-nowrap"
             >
-              <span>←</span> Volver a {tipoPedido === 'LLEVAR' ? 'Para Llevar' : tipoPedido === 'DOMICILIO' ? 'Domicilios' : 'Terraza'}
+              <span>←</span>
+              <span className="hidden sm:inline">Volver a </span>
+              <span>{tipoPedido === 'LLEVAR' ? 'Llevar' : tipoPedido === 'DOMICILIO' ? 'Domicilio' : 'Terraza'}</span>
             </button>
           </div>
         )}
@@ -980,25 +995,25 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
           </div>
 
           {/* BOTÓN FLOTANTE INFERIOR EN TELÉFONOS (Móvil < lg) */}
-          <div className="lg:hidden fixed bottom-4 left-3 right-3 z-40">
+          <div className="lg:hidden fixed bottom-safe left-2.5 right-2.5 sm:left-4 sm:right-4 z-40">
             <button
               type="button"
               onClick={() => setCarritoAbiertoEnMovil(true)}
-              className={`w-full flex items-center justify-between rounded-2xl px-4 py-3.5 shadow-2xl active:scale-98 transition-all font-bold ${
+              className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 sm:py-3.5 shadow-2xl active:scale-98 transition-all font-bold ${
                 totalCantidad > 0
                   ? 'bg-orange-500 text-white shadow-orange-500/40 ring-2 ring-orange-400/50'
                   : 'bg-zinc-900/95 text-zinc-300 border border-zinc-800 backdrop-blur-md'
               }`}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <span
-                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black ${
+                  className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-black shrink-0 ${
                     totalCantidad > 0 ? 'bg-white text-orange-600' : 'bg-zinc-800 text-zinc-400'
                   }`}
                 >
                   {totalCantidad}
                 </span>
-                <span className="text-sm font-semibold truncate">
+                <span className="text-xs sm:text-sm font-semibold truncate">
                   {tipoPedido === 'MESA'
                     ? `Mesa ${mesa}`
                     : tipoPedido === 'LLEVAR'
@@ -1007,7 +1022,7 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
                   • {totalCantidad > 0 ? 'Ver Comanda' : 'Abrir Comanda'}
                 </span>
               </div>
-              <span className="text-sm sm:text-base font-extrabold shrink-0">
+              <span className="text-xs sm:text-base font-extrabold shrink-0 pl-2">
                 {totalCantidad > 0 ? `$${totalCarrito.toFixed(2)} →` : 'Comanda'}
               </span>
             </button>
@@ -1020,7 +1035,7 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
                 className="flex-1"
                 onClick={() => setCarritoAbiertoEnMovil(false)}
               />
-              <div className="w-full max-h-[85dvh] sm:max-h-[85vh] rounded-t-3xl border-t border-zinc-800 bg-zinc-950 p-4 sm:p-5 shadow-2xl flex flex-col transition-transform duration-300">
+              <div className="w-full max-h-[88dvh] rounded-t-3xl border-t border-zinc-800 bg-zinc-950 p-4 sm:p-5 shadow-2xl flex flex-col transition-transform duration-300 pb-safe">
                 <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-zinc-800 shrink-0" />
                 <div className="flex-1 overflow-hidden flex flex-col">
                   {renderContenidoCarrito()}

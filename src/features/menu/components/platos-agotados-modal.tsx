@@ -100,10 +100,10 @@ export function PlatosAgotadosModal({ onCerrar, productosIniciales }: PlatosAgot
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-3 sm:p-5 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-5 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="fixed inset-0" onClick={onCerrar} />
 
-      <div className="relative z-10 flex h-[90vh] max-h-[800px] w-full max-w-3xl flex-col rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6 shadow-2xl overflow-hidden">
+      <div className="relative z-10 flex h-[92dvh] max-h-[800px] w-full max-w-3xl flex-col rounded-3xl border border-zinc-800 bg-zinc-950 p-3.5 sm:p-6 shadow-2xl overflow-hidden pb-safe">
         {/* Cabecera */}
         <div className="flex items-center justify-between pb-4 border-b border-zinc-800 shrink-0">
           <div className="flex items-center gap-3">

@@ -50,10 +50,10 @@ export function DatosPedidoExternoModal({
   const esLlevar = tipo === 'LLEVAR';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 backdrop-blur-sm">
       <div className="fixed inset-0" onClick={onCerrar} />
 
-      <div className="relative z-10 w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-950 p-5 sm:p-6 shadow-2xl">
+      <div className="relative z-10 w-full max-w-md max-h-[92dvh] overflow-y-auto rounded-3xl border border-zinc-800 bg-zinc-950 p-4 sm:p-6 shadow-2xl pb-safe">
         {/* Cabecera */}
         <div className="flex items-center justify-between pb-3.5 border-b border-zinc-800">
           <div className="flex items-center gap-2.5">

@@ -73,17 +73,17 @@ export function CroquisTerraza({
 
 
   return (
-    <div className="flex h-full flex-col space-y-4 sm:space-y-6 overflow-y-auto pr-1">
+    <div className="flex h-full flex-col space-y-3 sm:space-y-6 overflow-y-auto pr-1 pb-10">
       {/* BANNER DE CABECERA CON RESUMEN EN TIEMPO REAL */}
-      <div className="rounded-3xl border border-zinc-800 bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 p-4 sm:p-6 shadow-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-orange-500/10 border border-orange-500/30 text-2xl sm:text-3xl shadow-inner">
+      <div className="rounded-3xl border border-zinc-800 bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 p-3.5 sm:p-6 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="flex h-10 w-10 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-2xl bg-orange-500/10 border border-orange-500/30 text-xl sm:text-3xl shadow-inner">
               🌿
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
+                <h2 className="text-base sm:text-xl font-black text-white tracking-tight">
                   Plano de Mesas • Terraza
                 </h2>
                 <span className="rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
@@ -91,28 +91,28 @@ export function CroquisTerraza({
                 </span>
               </div>
               <p className="text-xs text-zinc-400 mt-0.5">
-                Selecciona una mesa para tomar comandas, monitorear el estado o imprimir recibos.
+                Selecciona una mesa para tomar comandas, monitorear el estado o cobrar.
               </p>
             </div>
           </div>
 
           {/* BADGES DE ESTADO RÁPIDO */}
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="flex items-center gap-1.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 px-3 py-1.5 font-bold text-emerald-300">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
+            <span className="flex items-center gap-1.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 px-2.5 sm:px-3 py-1 sm:py-1.5 font-bold text-emerald-300">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               {mesasLibres} {mesasLibres === 1 ? 'Libre' : 'Libres'}
             </span>
 
             {mesasEnCocina > 0 && (
-              <span className="flex items-center gap-1.5 rounded-xl bg-amber-950/40 border border-amber-800/60 px-3 py-1.5 font-bold text-amber-300">
+              <span className="flex items-center gap-1.5 rounded-xl bg-amber-950/40 border border-amber-800/60 px-2.5 sm:px-3 py-1 sm:py-1.5 font-bold text-amber-300">
                 <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
                 {mesasEnCocina} En Cocina
               </span>
             )}
 
             {mesasListas > 0 && (
-              <span className="flex items-center gap-1.5 rounded-xl bg-blue-950/60 border border-blue-500 px-3 py-1.5 font-black text-blue-300 shadow-md shadow-blue-500/20 animate-bounce">
-                <span>🍽️</span> {mesasListas} ¡Lista(s) para Servir!
+              <span className="flex items-center gap-1.5 rounded-xl bg-blue-950/60 border border-blue-500 px-2.5 sm:px-3 py-1 sm:py-1.5 font-black text-blue-300 shadow-md shadow-blue-500/20 animate-bounce">
+                <span>🍽️</span> {mesasListas} ¡Lista(s)!
               </span>
             )}
           </div>
@@ -120,8 +120,8 @@ export function CroquisTerraza({
       </div>
 
       {/* PLANO / CROQUIS INTERACTIVO DE LAS 5 MESAS DE LA TERRAZA */}
-      <div className="flex-1 rounded-3xl border border-zinc-800/80 bg-zinc-950/70 p-4 sm:p-8 backdrop-blur-md">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="flex-1 rounded-3xl border border-zinc-800/80 bg-zinc-950/70 p-3.5 sm:p-8 backdrop-blur-md">
+        <div className="mb-3 sm:mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">
               Distribución de Terraza Exterior
@@ -134,7 +134,7 @@ export function CroquisTerraza({
         </div>
 
         {/* Cuadrícula visual de las 5 mesas */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
           {MESAS_TERRAZA.map((mesa) => {
             const pedido = getPedidoMesa(mesa.id);
             const estaOcupada = !!pedido;

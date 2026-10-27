@@ -53,12 +53,12 @@ export function OrderStatusStepper({ estado, size = 'md' }: OrderStatusStepperPr
             <div key={paso.key} className="relative z-10 flex flex-col items-center">
               <div
                 className={`flex items-center justify-center rounded-full transition-all ${
-                  size === 'sm' ? 'h-7 w-7 text-xs' : 'h-9 w-9 text-sm'
+                  size === 'sm' ? 'h-6 w-6 sm:h-7 sm:w-7 text-[11px] sm:text-xs' : 'h-7 w-7 sm:h-9 sm:w-9 text-xs sm:text-sm'
                 } ${
                   esActual
-                    ? 'bg-orange-500 text-white ring-4 ring-orange-500/30 scale-110 shadow-lg shadow-orange-500/40 font-bold animate-pulse'
+                    ? 'bg-orange-500 text-white ring-2 sm:ring-4 ring-orange-500/30 scale-105 sm:scale-110 shadow-lg shadow-orange-500/40 font-bold animate-pulse'
                     : esCompletado
-                    ? 'bg-emerald-600 text-white font-bold ring-2 ring-emerald-500/40'
+                    ? 'bg-emerald-600 text-white font-bold ring-1 sm:ring-2 ring-emerald-500/40'
                     : 'bg-zinc-900 border border-zinc-700 text-zinc-500'
                 }`}
               >
@@ -66,8 +66,8 @@ export function OrderStatusStepper({ estado, size = 'md' }: OrderStatusStepperPr
               </div>
 
               <span
-                className={`mt-1.5 text-center transition-colors ${
-                  size === 'sm' ? 'text-[10px]' : 'text-xs'
+                className={`mt-1 text-center transition-colors leading-tight ${
+                  size === 'sm' ? 'text-[8px] sm:text-[10px]' : 'text-[9px] sm:text-xs'
                 } ${
                   esActual
                     ? 'font-extrabold text-orange-400'

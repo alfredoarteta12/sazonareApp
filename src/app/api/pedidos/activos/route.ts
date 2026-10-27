@@ -26,7 +26,12 @@ export async function GET(request: NextRequest) {
 
     const pedidos = await prisma.pedido.findMany({
       where: whereClause,
-      include: { pagos: true },
+      include: {
+        pagos: true,
+        creadoPor: {
+          select: { nombre: true, email: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -39,10 +44,13 @@ export async function GET(request: NextRequest) {
         else efec += monto;
       }
       const metodoPago = efec > 0 && transf > 0 ? 'DIVIDIDO' : transf > 0 ? 'TRANSFERENCIA' : 'EFECTIVO';
+      const nombreMesero = p.creadoPor?.nombre || p.creadoPor?.email?.split('@')[0] || null;
+
       return {
         ...p,
         total: Number(p.total),
         metodoPago,
+        nombreMesero,
         pagoEfectivo: efec,
         pagoTransferencia: transf,
         pagos: p.pagos.map((pg) => ({

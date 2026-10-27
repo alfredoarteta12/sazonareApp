@@ -19,6 +19,8 @@ export interface Pedido {
   metodoPago?: string | null;
   pagoEfectivo?: number | null;
   pagoTransferencia?: number | null;
+  nombreMesero?: string | null;
+  creadoPor?: { nombre: string } | string | null;
   pagos?: {
     id: string;
     metodoPago: MetodoPago;
@@ -108,7 +110,7 @@ export function useRealtimeOrders(
               }
 
               return prev
-                .map((p) => (p.id === nuevo.id ? nuevo : p))
+                .map((p) => (p.id === nuevo.id ? { ...p, ...nuevo } : p))
                 .filter((p) =>
                   incluirEntregados
                     ? p.estado !== 'CANCELADO'

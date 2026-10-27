@@ -17,6 +17,9 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
   const fechaFormateada = formatearFechaColombia(pedido.createdAt);
   const horaFormateada = formatearHoraColombia(pedido.createdAt);
 
+  // Atendido por: preferir el mesero guardado en base de datos con el pedido, o el prop
+  const meseroQueAtendio = pedido.nombreMesero || (pedido as any).creadoPor || nombreMesero;
+
   // Cálculos de IVA y propinas sugeridas
   const subtotalSinIva = pedido.total / 1.16;
   const ivaCalculado = pedido.total - subtotalSinIva;
@@ -106,10 +109,10 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
                 <span className="text-zinc-600">Fecha:</span>
                 <span>{fechaFormateada} - {horaFormateada}</span>
               </div>
-              {nombreMesero && (
+              {meseroQueAtendio && (
                 <div className="flex justify-between">
                   <span className="text-zinc-600">Atendido por:</span>
-                  <span className="font-medium truncate max-w-[150px]">{nombreMesero}</span>
+                  <span className="font-medium truncate max-w-[150px]">{meseroQueAtendio}</span>
                 </div>
               )}
               <div className="flex justify-between">

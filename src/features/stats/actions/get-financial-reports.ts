@@ -60,6 +60,9 @@ export async function getDailyOrders() {
       },
       include: {
         pagos: true,
+        creadoPor: {
+          select: { nombre: true, email: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -70,6 +73,7 @@ export async function getDailyOrders() {
         ...p,
         total: Number(p.total),
         detalle: p.detalle || '',
+        nombreMesero: p.creadoPor?.nombre || p.creadoPor?.email?.split('@')[0] || null,
         pagos: p.pagos.map((pg) => ({
           ...pg,
           monto: Number(pg.monto),
@@ -114,6 +118,7 @@ export interface ReportePeriodoData {
     metodoPago: string | null;
     pagoEfectivo: number;
     pagoTransferencia: number;
+    nombreMesero?: string | null;
     estado: string;
     createdAt: string;
   }[];
@@ -142,7 +147,7 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
       rangoTexto = 'Hoy';
     }
 
-    // Consulta indexada a Supabase con pagos normalizados
+    // Consulta indexada a Supabase con pagos normalizados y mesero que atendió
     const pedidos = await prisma.pedido.findMany({
       where: {
         createdAt: {
@@ -152,6 +157,9 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
       },
       include: {
         pagos: true,
+        creadoPor: {
+          select: { nombre: true, email: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -269,6 +277,7 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
             metodoPago: metodoPagoLabel,
             pagoEfectivo: efec,
             pagoTransferencia: transf,
+            nombreMesero: p.creadoPor?.nombre || p.creadoPor?.email?.split('@')[0] || null,
             estado: p.estado,
             createdAt: p.createdAt.toISOString(),
           };

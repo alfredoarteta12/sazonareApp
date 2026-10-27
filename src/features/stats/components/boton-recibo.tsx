@@ -11,6 +11,9 @@ interface BotonReciboProps {
 export function BotonRecibo({ pedido }: BotonReciboProps) {
   const [abierto, setAbierto] = useState(false);
 
+  // Nombre del mesero real que tomó la comanda o fallback a Caja si no fue asignado
+  const nombreMeseroReal = pedido.nombreMesero || (pedido as any).creadoPor || 'Caja / Admin';
+
   return (
     <>
       <button
@@ -25,11 +28,10 @@ export function BotonRecibo({ pedido }: BotonReciboProps) {
       {abierto && (
         <TicketReciboModal
           pedido={pedido}
-          nombreMesero="Caja / Admin"
+          nombreMesero={nombreMeseroReal}
           onCerrar={() => setAbierto(false)}
         />
       )}
     </>
   );
 }
-

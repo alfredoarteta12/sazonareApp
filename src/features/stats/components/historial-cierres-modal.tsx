@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getHistorialCierres } from '../actions/cierre-caja-actions';
 import { TicketReporteZModal, CierreCajaData } from './ticket-reporte-z-modal';
 import { formatearFechaColombia, formatearHoraColombia } from '@/lib/date-utils';
+import { formatearCOP } from '@/lib/currency';
 
 interface HistorialCierresModalProps {
   onCerrar: () => void;
@@ -108,16 +109,16 @@ export function HistorialCierresModal({ onCerrar }: HistorialCierresModalProps) 
                           {c.responsable}
                         </td>
                         <td className="px-4 py-3 text-xs text-right text-zinc-400 whitespace-nowrap">
-                          ${c.baseInicial.toFixed(2)}
+                          {formatearCOP(c.baseInicial)}
                         </td>
                         <td className="px-4 py-3 text-xs text-right font-bold text-zinc-200 whitespace-nowrap">
-                          ${c.ventasEfectivo.toFixed(2)}
+                          {formatearCOP(c.ventasEfectivo)}
                         </td>
                         <td className="px-4 py-3 text-xs text-right font-black text-emerald-400 whitespace-nowrap">
-                          ${c.totalVentas.toFixed(2)}
+                          {formatearCOP(c.totalVentas)}
                         </td>
                         <td className="px-4 py-3 text-xs text-right font-black text-white whitespace-nowrap">
-                          ${c.efectivoReal.toFixed(2)}
+                          {formatearCOP(c.efectivoReal)}
                         </td>
                         <td className="px-4 py-3 text-center whitespace-nowrap">
                           <span
@@ -129,7 +130,7 @@ export function HistorialCierresModal({ onCerrar }: HistorialCierresModalProps) 
                                 : 'bg-rose-950 text-rose-300 border border-rose-800'
                             }`}
                           >
-                            {c.diferencia >= 0 ? '+' : ''}${c.diferencia.toFixed(2)}
+                            {c.diferencia >= 0 ? '+' : ''}{formatearCOP(c.diferencia)}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center whitespace-nowrap">

@@ -1,4 +1,5 @@
 import { getDailyFinancials } from '../actions/get-financial-reports';
+import { formatearCOP } from '@/lib/currency';
 
 function StatCard({
   titulo,
@@ -44,21 +45,21 @@ export async function FinanceCards() {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <StatCard
         titulo="Ingreso Neto del Día"
-        valor={`$${ingresoNeto.toFixed(2)}`}
+        valor={formatearCOP(ingresoNeto)}
         subtitulo={`${pedidosExitosos} pedidos completados`}
         color="bg-zinc-950 border-emerald-900/40 shadow-lg shadow-emerald-950/10"
         icono="💰"
       />
       <StatCard
         titulo="Pérdidas por Cancelaciones"
-        valor={`$${dineroCancelado.toFixed(2)}`}
+        valor={formatearCOP(dineroCancelado)}
         subtitulo={`${pedidosCancelados} pedidos cancelados`}
         color="bg-zinc-950 border-rose-900/40 shadow-lg shadow-rose-950/10"
         icono="📉"
       />
       <StatCard
         titulo="Total Facturado (Bruto)"
-        valor={`$${(ingresoNeto + dineroCancelado).toFixed(2)}`}
+        valor={formatearCOP(ingresoNeto + dineroCancelado)}
         subtitulo={`${totalOperaciones} operaciones totales`}
         color="bg-zinc-950 border-blue-900/40 shadow-lg shadow-blue-950/10"
         icono="📊"

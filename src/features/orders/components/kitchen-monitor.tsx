@@ -9,6 +9,7 @@ import { parseDetallePedido } from '../utils/parse-order-detail';
 import { PlatosAgotadosModal } from '@/features/menu/components/platos-agotados-modal';
 import { getTodosLosProductos } from '@/features/menu/actions/menu-queries';
 import { supabase } from '@/lib/supabase';
+import { formatearCOP } from '@/lib/currency';
 
 
 const ESTADO_CONFIG = {
@@ -195,7 +196,7 @@ function TarjetaPedido({ pedido, esNuevo }: { pedido: Pedido; esNuevo?: boolean 
             🕒 {formatearHoraColombia(pedido.createdAt)}
           </span>
 
-          <span className="text-base font-extrabold text-white">${pedido.total.toFixed(2)}</span>
+          <span className="text-base font-extrabold text-white">{formatearCOP(pedido.total)}</span>
         </div>
 
         {/* Botón táctil para pasar de estado */}
@@ -368,7 +369,7 @@ export function KitchenMonitor() {
                 ¡Nueva Comanda Recibida!
               </p>
               <p className="text-base font-extrabold text-white truncate">
-                Mesa {nuevoPedidoAlerta.mesa} • ${nuevoPedidoAlerta.total.toFixed(2)}
+                Mesa {nuevoPedidoAlerta.mesa} • {formatearCOP(nuevoPedidoAlerta.total)}
               </p>
               <p className="text-xs text-zinc-300 truncate">{nuevoPedidoAlerta.detalle}</p>
             </div>

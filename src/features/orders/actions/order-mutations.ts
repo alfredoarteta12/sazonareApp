@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { OrderStatus, TipoPedido, MetodoPago } from '@prisma/client';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { formatearCOP } from '@/lib/currency';
 
 // Tipos para las acciones
 export interface ItemCarrito {
@@ -111,7 +112,7 @@ export async function crearPedido(
     const detalleItems = items
       .map((item) => {
         const notaStr = item.notas && item.notas.trim() ? ` {Nota: ${item.notas.trim()}}` : '';
-        return `${item.cantidad}x ${item.nombre} ($${item.precio.toFixed(2)})${notaStr}`;
+        return `${item.cantidad}x ${item.nombre} (${formatearCOP(item.precio)})${notaStr}`;
       })
       .join(', ');
 
@@ -221,7 +222,7 @@ export async function cobrarPedidoYLiberarMesa(
       pagoTransferencia = 0;
       cambio = montoRecibido && montoRecibido >= totalNum ? montoRecibido - totalNum : 0;
       notaPago = montoRecibido
-        ? `[PAGADO: EFECTIVO | Pagó con: $${montoRecibido.toFixed(2)} | Cambio: $${cambio.toFixed(2)}]`
+        ? `[PAGADO: EFECTIVO | Pagó con: ${formatearCOP(montoRecibido)} | Cambio: ${formatearCOP(cambio)}]`
         : `[PAGADO: EFECTIVO]`;
       nuevosPagos.push({
         metodoPago: MetodoPago.EFECTIVO,
@@ -251,14 +252,14 @@ export async function cobrarPedidoYLiberarMesa(
       if (sumaDesglose !== totalRedondeado) {
         return {
           success: false,
-          error: `La suma de Efectivo ($${pagoEfectivo.toFixed(2)}) y Transferencia ($${pagoTransferencia.toFixed(2)}) debe coincidir con el total ($${totalNum.toFixed(2)}).`,
+          error: `La suma de Efectivo (${formatearCOP(pagoEfectivo)}) y Transferencia (${formatearCOP(pagoTransferencia)}) debe coincidir con el total (${formatearCOP(totalNum)}).`,
         };
       }
 
       const rec = Number(datosDividido.efectivoRecibido) || pagoEfectivo;
       cambio = rec >= pagoEfectivo ? rec - pagoEfectivo : 0;
 
-      notaPago = `[PAGADO: DIVIDIDO | Efec: $${pagoEfectivo.toFixed(2)} (Recibió: $${rec.toFixed(2)}, Cambio: $${cambio.toFixed(2)}) + Transf: $${pagoTransferencia.toFixed(2)}]`;
+      notaPago = `[PAGADO: DIVIDIDO | Efec: ${formatearCOP(pagoEfectivo)} (Recibió: ${formatearCOP(rec)}, Cambio: ${formatearCOP(cambio)}) + Transf: ${formatearCOP(pagoTransferencia)}]`;
 
       if (pagoEfectivo > 0) {
         nuevosPagos.push({

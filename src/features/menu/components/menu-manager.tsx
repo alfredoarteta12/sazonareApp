@@ -10,6 +10,7 @@ import {
   eliminarProducto,
 } from '../actions/menu-queries';
 import { supabase } from '@/lib/supabase';
+import { formatearCOP } from '@/lib/currency';
 
 interface Categoria {
   id: string;
@@ -318,14 +319,14 @@ export function MenuManager({
 
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                Precio ($)
+                Precio ($ COP)
               </label>
               <input
                 type="number"
-                step="0.5"
+                step="500"
                 min="0"
                 required
-                placeholder="0"
+                placeholder="Ej: 18000"
                 value={precioProducto === '0' ? '' : precioProducto}
                 onChange={(e) => setPrecioProducto(e.target.value)}
                 className="w-full rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none"
@@ -408,13 +409,13 @@ export function MenuManager({
                     <span className="text-zinc-500 text-sm">$</span>
                     <input
                       type="number"
-                      step="0.5"
+                      step="500"
                       min="0"
                       autoFocus
-                      placeholder="0"
+                      placeholder="Ej: 18000"
                       value={precioEditado === '0' ? '' : precioEditado}
                       onChange={(e) => setPrecioEditado(e.target.value)}
-                      className="w-20 rounded-lg border border-orange-500 bg-zinc-900 px-2 py-1 text-sm font-bold text-white focus:outline-none"
+                      className="w-24 rounded-lg border border-orange-500 bg-zinc-900 px-2 py-1 text-sm font-bold text-white focus:outline-none"
                     />
                     <button
                       onClick={() => handleGuardarPrecio(producto.id)}
@@ -439,7 +440,7 @@ export function MenuManager({
                     title="Clic para editar precio"
                   >
                     <span className="text-lg font-bold text-orange-400 group-hover:text-orange-300">
-                      ${producto.precio.toFixed(2)}
+                      {formatearCOP(producto.precio)}
                     </span>
                     <span className="text-[11px] text-zinc-600 group-hover:text-zinc-400 ml-1">✏️</span>
                   </button>

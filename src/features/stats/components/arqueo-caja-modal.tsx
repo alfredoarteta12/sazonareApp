@@ -7,6 +7,7 @@ import {
   DatosCierreHoy,
 } from '../actions/cierre-caja-actions';
 import { TicketReporteZModal, CierreCajaData } from './ticket-reporte-z-modal';
+import { formatearCOP } from '@/lib/currency';
 
 interface ArqueoCajaModalProps {
   onCerrar: () => void;
@@ -198,15 +199,15 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/60 p-3">
                   <span className="text-[11px] font-semibold text-zinc-400">💵 Ventas Efectivo:</span>
-                  <p className="text-lg font-black text-white mt-0.5">${ventasEfectivo.toFixed(2)}</p>
+                  <p className="text-lg font-black text-white mt-0.5">{formatearCOP(ventasEfectivo)}</p>
                 </div>
                 <div className="rounded-2xl border border-blue-900/40 bg-blue-950/20 p-3">
                   <span className="text-[11px] font-semibold text-blue-300">📲 Ventas Transf:</span>
-                  <p className="text-lg font-black text-blue-200 mt-0.5">${ventasTransf.toFixed(2)}</p>
+                  <p className="text-lg font-black text-blue-200 mt-0.5">{formatearCOP(ventasTransf)}</p>
                 </div>
                 <div className="col-span-2 sm:col-span-1 rounded-2xl border border-emerald-900/40 bg-emerald-950/20 p-3">
                   <span className="text-[11px] font-semibold text-emerald-300">💰 Total Ventas:</span>
-                  <p className="text-lg font-black text-emerald-300 mt-0.5">${totalVentas.toFixed(2)}</p>
+                  <p className="text-lg font-black text-emerald-300 mt-0.5">{formatearCOP(totalVentas)}</p>
                   <p className="text-[10px] text-zinc-400">{datosHoy?.totalPedidos} pedidos pagados</p>
                 </div>
               </div>
@@ -376,7 +377,7 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
                         Efectivo Esperado (Base + Ventas - Retiros):
                       </p>
                       <p className="text-lg font-black text-white">
-                        ${efectivoEsperado.toFixed(2)}
+                        {formatearCOP(efectivoEsperado)}
                       </p>
                     </div>
 
@@ -393,7 +394,7 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
                             : 'text-rose-400'
                         }`}
                       >
-                        {diferencia >= 0 ? '+' : ''}${diferencia.toFixed(2)}
+                        {diferencia >= 0 ? '+' : ''}{formatearCOP(diferencia)}
                       </p>
                     </div>
                   </div>
@@ -406,12 +407,12 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
                     )}
                     {diferenciaEsSobrante && (
                       <span className="text-blue-300">
-                        🔵 Sobrante de caja: Tienes ${diferencia.toFixed(2)} más de lo registrado.
+                        🔵 Sobrante de caja: Tienes {formatearCOP(diferencia)} más de lo registrado.
                       </span>
                     )}
                     {diferenciaEsFaltante && (
                       <span className="text-rose-400">
-                        🔴 Faltante de caja: Hacen falta ${Math.abs(diferencia).toFixed(2)} en efectivo.
+                        🔴 Faltante de caja: Hacen falta {formatearCOP(Math.abs(diferencia))} en efectivo.
                       </span>
                     )}
                   </div>

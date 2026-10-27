@@ -13,6 +13,7 @@ import {
 } from '@/features/orders/components/datos-pedido-externo-modal';
 import { waiterAudio } from '@/features/orders/utils/audio-alerts';
 import { supabase } from '@/lib/supabase';
+import { formatearCOP } from '@/lib/currency';
 
 interface Producto {
   id: string;
@@ -511,9 +512,9 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
                       )}
                     </div>
                     <p className="text-xs text-orange-400 font-black mt-0.5">
-                      ${(item.precio * item.cantidad).toFixed(2)}
+                      {formatearCOP(item.precio * item.cantidad)}
                       <span className="text-zinc-500 font-normal text-[10px] ml-1">
-                        (${item.precio.toFixed(2)} c/u)
+                        ({formatearCOP(item.precio)} c/u)
                       </span>
                     </p>
                   </div>
@@ -604,7 +605,7 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
       <div className="mt-4 border-t border-zinc-800 pt-4">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-sm font-medium text-zinc-400">Total a pagar</span>
-          <span className="text-2xl font-bold text-white">${totalCarrito.toFixed(2)}</span>
+          <span className="text-2xl font-bold text-white">{formatearCOP(totalCarrito)}</span>
         </div>
 
         {mensaje && (
@@ -965,7 +966,7 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
                       </div>
                       <div className="mt-2 flex items-center justify-between">
                         <p className="text-base sm:text-lg font-bold text-orange-400">
-                          ${producto.precio.toFixed(2)}
+                          {formatearCOP(producto.precio)}
                         </p>
                         <span
                           className={`text-[11px] font-bold ${
@@ -1023,7 +1024,7 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
                 </span>
               </div>
               <span className="text-xs sm:text-base font-extrabold shrink-0 pl-2">
-                {totalCantidad > 0 ? `$${totalCarrito.toFixed(2)} →` : 'Comanda'}
+                {totalCantidad > 0 ? `${formatearCOP(totalCarrito)} →` : 'Comanda'}
               </span>
             </button>
           </div>

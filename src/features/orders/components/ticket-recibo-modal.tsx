@@ -3,6 +3,7 @@
 import { Pedido } from '../hooks/use-realtime-orders';
 import { parseDetallePedido } from '../utils/parse-order-detail';
 import { formatearFechaColombia, formatearHoraColombia } from '@/lib/date-utils';
+import { formatearCOP } from '@/lib/currency';
 
 interface TicketReciboModalProps {
   pedido: Pedido;
@@ -20,11 +21,11 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
   // Atendido por: preferir el mesero guardado en base de datos con el pedido, o el prop
   const meseroQueAtendio = pedido.nombreMesero || (pedido as any).creadoPor || nombreMesero;
 
-  // Cálculos de IVA y propinas sugeridas
-  const subtotalSinIva = pedido.total / 1.16;
+  // Cálculos de IVA/Impoconsumo (8% incluido para restaurantes en Colombia) y propinas sugeridas
+  const subtotalSinIva = Math.round(pedido.total / 1.08);
   const ivaCalculado = pedido.total - subtotalSinIva;
-  const propina10 = pedido.total * 0.1;
-  const propina15 = pedido.total * 0.15;
+  const propina10 = Math.round(pedido.total * 0.1);
+  const propina15 = Math.round(pedido.total * 0.15);
 
   const handleImprimir = () => {
     window.print();
@@ -63,7 +64,7 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
               <h2 className="text-base font-black tracking-wide uppercase">Sazonare</h2>
               <p className="text-[11px] text-zinc-600 font-sans">Restaurante & Terraza</p>
               <p className="text-[10px] text-zinc-500 font-sans mt-0.5">Zona de Terraza Exterior</p>
-              <p className="text-[10px] text-zinc-500 font-sans">Tel: (555) 019-2834</p>
+              <p className="text-[10px] text-zinc-500 font-sans">Colombia • Moneda Oficial (COP)</p>
             </div>
 
             {/* Metadatos del Pedido */}
@@ -134,11 +135,11 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
                     <p className="text-emerald-900 font-black">MÉTODO: PAGO DIVIDIDO</p>
                     <div className="flex justify-between px-2 pt-1 border-t border-emerald-200">
                       <span>💵 Efectivo:</span>
-                      <span>${(pedido.pagoEfectivo ?? 0).toFixed(2)}</span>
+                      <span>{formatearCOP(pedido.pagoEfectivo ?? 0)}</span>
                     </div>
                     <div className="flex justify-between px-2">
                       <span>📲 Transferencia:</span>
-                      <span>${(pedido.pagoTransferencia ?? 0).toFixed(2)}</span>
+                      <span>{formatearCOP(pedido.pagoTransferencia ?? 0)}</span>
                     </div>
                   </div>
                 ) : (
@@ -152,7 +153,7 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
               <div className="flex justify-between text-[10px] font-bold uppercase text-zinc-600 pb-1.5 border-b border-zinc-200">
                 <span className="w-8">Cant</span>
                 <span className="flex-1 px-1">Descripción</span>
-                <span className="w-16 text-right">Importe</span>
+                <span className="w-20 text-right">Importe</span>
               </div>
 
               <div className="space-y-1.5 pt-2">
@@ -175,12 +176,12 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
                       )}
                       {item.precioUnitario > 0 && (
                         <p className="text-[10px] text-zinc-500 font-sans">
-                          ${item.precioUnitario.toFixed(2)} c/u
+                          {formatearCOP(item.precioUnitario)} c/u
                         </p>
                       )}
                     </div>
-                    <span className="w-16 text-right font-bold text-zinc-900">
-                      {item.subtotal > 0 ? `$${item.subtotal.toFixed(2)}` : '—'}
+                    <span className="w-20 text-right font-bold text-zinc-900">
+                      {item.subtotal > 0 ? formatearCOP(item.subtotal) : '—'}
                     </span>
                   </div>
                 ))}
@@ -201,15 +202,15 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
             <div className="py-3 border-b border-dashed border-zinc-400 space-y-1 text-[11px]">
               <div className="flex justify-between text-zinc-600">
                 <span>Subtotal (Base):</span>
-                <span>${subtotalSinIva.toFixed(2)}</span>
+                <span>{formatearCOP(subtotalSinIva)}</span>
               </div>
               <div className="flex justify-between text-zinc-600">
-                <span>IVA (16% Incluido):</span>
-                <span>${ivaCalculado.toFixed(2)}</span>
+                <span>Impoconsumo (8% Incluido):</span>
+                <span>{formatearCOP(ivaCalculado)}</span>
               </div>
               <div className="flex justify-between items-baseline pt-2 border-t border-zinc-300 text-sm font-black">
                 <span className="text-base uppercase">Total:</span>
-                <span className="text-lg font-black">${pedido.total.toFixed(2)}</span>
+                <span className="text-lg font-black">{formatearCOP(pedido.total)}</span>
               </div>
             </div>
 
@@ -217,12 +218,12 @@ export function TicketReciboModal({ pedido, nombreMesero, onCerrar }: TicketReci
             <div className="py-2.5 border-b border-dashed border-zinc-400 text-[10px] text-zinc-600 space-y-0.5">
               <p className="font-bold uppercase tracking-wider text-zinc-800">Propina Sugerida (Voluntaria):</p>
               <div className="flex justify-between">
-                <span>10%: ${propina10.toFixed(2)}</span>
-                <span>Total: ${(pedido.total + propina10).toFixed(2)}</span>
+                <span>10%: {formatearCOP(propina10)}</span>
+                <span>Total: {formatearCOP(pedido.total + propina10)}</span>
               </div>
               <div className="flex justify-between">
-                <span>15%: ${propina15.toFixed(2)}</span>
-                <span>Total: ${(pedido.total + propina15).toFixed(2)}</span>
+                <span>15%: {formatearCOP(propina15)}</span>
+                <span>Total: {formatearCOP(pedido.total + propina15)}</span>
               </div>
             </div>
 

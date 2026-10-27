@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pedido } from '../hooks/use-realtime-orders';
 import { parseDetallePedido } from '../utils/parse-order-detail';
 import { formatearHoraColombia } from '@/lib/date-utils';
+import { formatearCOP } from '@/lib/currency';
 
 interface PedidosExternosPanelProps {
   pedidos: Pedido[];
@@ -315,7 +316,7 @@ export function PedidosExternosPanel({
                           </span>
                           {item.subtotal > 0 && (
                             <span className="font-bold text-white shrink-0 ml-2">
-                              ${item.subtotal.toFixed(2)}
+                              {formatearCOP(item.subtotal)}
                             </span>
                           )}
                         </div>
@@ -348,7 +349,7 @@ export function PedidosExternosPanel({
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-xs font-semibold text-zinc-400">Total a pagar:</span>
                     <span className="text-lg font-black text-white">
-                      ${pedido.total.toFixed(2)}
+                      {formatearCOP(pedido.total)}
                     </span>
                   </div>
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Pedido } from '../hooks/use-realtime-orders';
 import { MesaDetalleModal } from './mesa-detalle-modal';
+import { formatearCOP } from '@/lib/currency';
 
 interface CroquisTerrazaProps {
   pedidosActivos: Pedido[];
@@ -226,7 +227,7 @@ export function CroquisTerraza({
                     <div className="flex items-center justify-between text-xs">
                       <div>
                         <p className="font-extrabold text-white text-sm">
-                          ${pedido.total.toFixed(2)}
+                          {formatearCOP(pedido.total)}
                         </p>
                         <p className="text-[11px] text-zinc-400">
                           {minutos} min transcurridos

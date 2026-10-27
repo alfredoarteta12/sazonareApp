@@ -6,6 +6,7 @@ import { OrderStatusStepper } from './order-status-stepper';
 import { TicketReciboModal } from './ticket-recibo-modal';
 import { parseDetallePedido } from '../utils/parse-order-detail';
 import { marcarComoEntregado, cobrarPedidoYLiberarMesa } from '../actions/order-mutations';
+import { formatearCOP } from '@/lib/currency';
 
 interface MesaDetalleModalProps {
   mesa: number;
@@ -95,7 +96,7 @@ export function MesaDetalleModal({
       if (!cuadreExactoDividido) {
         setMensaje({
           tipo: 'error',
-          texto: `La suma de Efectivo ($${valorDivididoEfectivo.toFixed(2)}) y Transf ($${valorDivididoTransf.toFixed(2)}) debe sumar exactamente $${pedido.total.toFixed(2)}.`,
+          texto: `La suma de Efectivo (${formatearCOP(valorDivididoEfectivo)}) y Transf (${formatearCOP(valorDivididoTransf)}) debe sumar exactamente ${formatearCOP(pedido.total)}.`,
         });
         return;
       }
@@ -254,7 +255,7 @@ export function MesaDetalleModal({
                   </h4>
                 </div>
                 <span className="text-xs font-bold text-orange-400">
-                  Total: ${pedido.total.toFixed(2)}
+                  Total: {formatearCOP(pedido.total)}
                 </span>
               </div>
 
@@ -290,8 +291,8 @@ export function MesaDetalleModal({
                     setMetodoPago('DIVIDIDO');
                     // Sugerir 50% / 50% si están vacíos
                     if (!montoDivididoEfectivo && !montoDivididoTransf) {
-                      const mitad = Math.round((pedido.total / 2) * 100) / 100;
-                      const resto = Math.round((pedido.total - mitad) * 100) / 100;
+                      const mitad = Math.round(pedido.total / 2);
+                      const resto = Math.round(pedido.total - mitad);
                       setMontoDivididoEfectivo(mitad.toString());
                       setMontoDivididoTransf(resto.toString());
                     }
@@ -316,17 +317,17 @@ export function MesaDetalleModal({
                       <span className="text-zinc-400 font-bold">$</span>
                       <input
                         type="number"
-                        step="any"
+                        step="1000"
                         min="0"
-                        placeholder={pedido.total > 0 ? pedido.total.toFixed(2) : '0'}
+                        placeholder={pedido.total > 0 ? pedido.total.toString() : '0'}
                         value={montoRecibido === '0' ? '' : montoRecibido}
                         onChange={(e) => setMontoRecibido(e.target.value)}
-                        className="w-28 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
+                        className="w-32 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-sm font-bold text-white focus:border-emerald-500 focus:outline-none"
                       />
                     </div>
                   </div>
 
-                  {/* Sugerencias rápidas de billetes */}
+                  {/* Sugerencias rápidas de billetes de Colombia */}
                   <div className="flex gap-1.5 pt-1">
                     <button
                       type="button"
@@ -335,14 +336,14 @@ export function MesaDetalleModal({
                     >
                       Exacto
                     </button>
-                    {[100, 200, 500].map((billete) => (
+                    {[10000, 20000, 50000, 100000].map((billete) => (
                       <button
                         key={billete}
                         type="button"
                         onClick={() => setMontoRecibido(billete.toString())}
                         className="flex-1 rounded-lg bg-zinc-800/80 border border-zinc-700/80 py-1 text-[11px] font-bold text-zinc-300 hover:bg-zinc-700"
                       >
-                        ${billete}
+                        {formatearCOP(billete)}
                       </button>
                     ))}
                   </div>
@@ -356,8 +357,8 @@ export function MesaDetalleModal({
                       }`}
                     >
                       {dineroInsuficiente
-                        ? `Faltan $${(pedido.total - valorEfectivo).toFixed(2)}`
-                        : `$${cambio.toFixed(2)}`}
+                        ? `Faltan ${formatearCOP(pedido.total - valorEfectivo)}`
+                        : formatearCOP(cambio)}
                     </span>
                   </div>
                 </div>
@@ -365,11 +366,11 @@ export function MesaDetalleModal({
                 /* TRANSFERENCIA COMPLETA */
                 <div className="rounded-xl bg-black/40 border border-zinc-800 p-3 text-xs text-zinc-300 space-y-1">
                   <p className="font-semibold text-blue-400 flex items-center gap-1.5">
-                    <span>✓</span> Pago 100% por Transferencia Bancaria
+                    <span>✓</span> Pago 100% por Transferencia Bancaria (COP)
                   </p>
                   <p className="text-[11px] text-zinc-400">
-                    Solicita al cliente el comprobante o notificación bancaria por el importe total de{' '}
-                    <strong className="text-white">${pedido.total.toFixed(2)}</strong> antes de liberar la mesa.
+                    Solicita al cliente el comprobante de Nequi, Daviplata o Bancolombia por el valor de{' '}
+                    <strong className="text-white">{formatearCOP(pedido.total)}</strong> antes de liberar la mesa.
                   </p>
                 </div>
               ) : (
@@ -377,13 +378,13 @@ export function MesaDetalleModal({
                 <div className="space-y-3 rounded-xl bg-black/40 border border-zinc-800 p-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-purple-300 flex items-center gap-1">
-                      <span>⚖️</span> Desglose Mixto
+                      <span>⚖️</span> Desglose Mixto (COP)
                     </span>
                     <button
                       type="button"
                       onClick={() => {
-                        const mitad = Math.round((pedido.total / 2) * 100) / 100;
-                        const resto = Math.round((pedido.total - mitad) * 100) / 100;
+                        const mitad = Math.round(pedido.total / 2);
+                        const resto = Math.round(pedido.total - mitad);
                         setMontoDivididoEfectivo(mitad.toString());
                         setMontoDivididoTransf(resto.toString());
                       }}
@@ -401,20 +402,20 @@ export function MesaDetalleModal({
                         <span className="text-zinc-500 font-bold text-xs">$</span>
                         <input
                           type="number"
-                          step="any"
+                          step="1000"
                           min="0"
-                          placeholder="0.00"
+                          placeholder="0"
                           value={montoDivididoEfectivo === '0' ? '' : montoDivididoEfectivo}
                           onChange={(e) => {
                             const val = e.target.value;
                             setMontoDivididoEfectivo(val);
                             const num = parseFloat(val) || 0;
                             if (num <= pedido.total) {
-                              const resto = Math.max(0, Math.round((pedido.total - num) * 100) / 100);
+                              const resto = Math.max(0, Math.round(pedido.total - num));
                               setMontoDivididoTransf(resto > 0 ? resto.toString() : '');
                             }
                           }}
-                          className="w-28 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-sm font-bold text-white focus:border-purple-500 focus:outline-none"
+                          className="w-32 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-sm font-bold text-white focus:border-purple-500 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -428,20 +429,20 @@ export function MesaDetalleModal({
                         <span className="text-zinc-500 font-bold text-xs">$</span>
                         <input
                           type="number"
-                          step="any"
+                          step="1000"
                           min="0"
-                          placeholder="0.00"
+                          placeholder="0"
                           value={montoDivididoTransf === '0' ? '' : montoDivididoTransf}
                           onChange={(e) => {
                             const val = e.target.value;
                             setMontoDivididoTransf(val);
                             const num = parseFloat(val) || 0;
                             if (num <= pedido.total) {
-                              const resto = Math.max(0, Math.round((pedido.total - num) * 100) / 100);
+                              const resto = Math.max(0, Math.round(pedido.total - num));
                               setMontoDivididoEfectivo(resto > 0 ? resto.toString() : '');
                             }
                           }}
-                          className="w-28 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-sm font-bold text-white focus:border-purple-500 focus:outline-none"
+                          className="w-32 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-sm font-bold text-white focus:border-purple-500 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -455,10 +456,10 @@ export function MesaDetalleModal({
                         cuadreExactoDividido ? 'text-emerald-400' : 'text-rose-400'
                       }`}
                     >
-                      ${sumaDividido.toFixed(2)} / ${pedido.total.toFixed(2)}
+                      {formatearCOP(sumaDividido)} / {formatearCOP(pedido.total)}
                       {cuadreExactoDividido
                         ? ' ✓ Cuadrado'
-                        : ` (Faltan $${(pedido.total - sumaDividido).toFixed(2)})`}
+                        : ` (Faltan ${formatearCOP(pedido.total - sumaDividido)})`}
                     </span>
                   </div>
 
@@ -471,12 +472,12 @@ export function MesaDetalleModal({
                           <span className="text-zinc-500 font-bold text-xs">$</span>
                           <input
                             type="number"
-                            step="any"
+                            step="1000"
                             min="0"
-                            placeholder={valorDivididoEfectivo > 0 ? valorDivididoEfectivo.toFixed(2) : '0'}
+                            placeholder={valorDivididoEfectivo > 0 ? valorDivididoEfectivo.toString() : '0'}
                             value={efectivoRecibidoDividido === '0' ? '' : efectivoRecibidoDividido}
                             onChange={(e) => setEfectivoRecibidoDividido(e.target.value)}
-                            className="w-28 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-xs font-bold text-white focus:border-emerald-500 focus:outline-none"
+                            className="w-32 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-right text-xs font-bold text-white focus:border-emerald-500 focus:outline-none"
                           />
                         </div>
                       </div>
@@ -489,8 +490,8 @@ export function MesaDetalleModal({
                           }`}
                         >
                           {efectivoDivididoInsuficiente
-                            ? `Faltan $${(valorDivididoEfectivo - valorRecibidoDividido).toFixed(2)}`
-                            : `$${cambioDividido.toFixed(2)}`}
+                            ? `Faltan ${formatearCOP(valorDivididoEfectivo - valorRecibidoDividido)}`
+                            : formatearCOP(cambioDividido)}
                         </span>
                       </div>
                     </div>
@@ -554,7 +555,7 @@ export function MesaDetalleModal({
                     </div>
                     {item.subtotal > 0 && (
                       <span className="text-sm font-bold text-orange-400 shrink-0">
-                        ${item.subtotal.toFixed(2)}
+                        {formatearCOP(item.subtotal)}
                       </span>
                     )}
                   </div>
@@ -586,7 +587,7 @@ export function MesaDetalleModal({
             {/* Total acumulado */}
             <div className="mt-3 flex items-center justify-between rounded-xl bg-zinc-900/90 border border-zinc-800 p-3.5">
               <span className="text-sm font-semibold text-zinc-300">Total comanda</span>
-              <span className="text-xl font-black text-white">${pedido.total.toFixed(2)}</span>
+              <span className="text-xl font-black text-white">{formatearCOP(pedido.total)}</span>
             </div>
           </div>
         </div>

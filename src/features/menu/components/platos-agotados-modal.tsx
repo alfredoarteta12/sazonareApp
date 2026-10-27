@@ -3,6 +3,7 @@
 import { useState, useEffect, useTransition } from 'react';
 import { toggleDisponibilidad, getTodosLosProductos } from '../actions/menu-queries';
 import { supabase } from '@/lib/supabase';
+import { formatearCOP } from '@/lib/currency';
 
 export interface ProductoAgotadoItem {
   id: string;
@@ -229,7 +230,7 @@ export function PlatosAgotadosModal({ onCerrar, productosIniciales }: PlatosAgot
                     {prod.nombre}
                   </p>
                   <p className="text-xs text-orange-400 font-semibold mt-0.5">
-                    ${prod.precio.toFixed(2)}
+                    {formatearCOP(prod.precio)}
                   </p>
                 </div>
 

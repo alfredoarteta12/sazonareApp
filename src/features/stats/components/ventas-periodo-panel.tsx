@@ -11,6 +11,7 @@ import { ArqueoCajaModal } from './arqueo-caja-modal';
 import { HistorialCierresModal } from './historial-cierres-modal';
 import { eliminarPedido } from '@/features/orders/actions/order-mutations';
 import { formatearHoraColombia, formatearFechaColombia } from '@/lib/date-utils';
+import { formatearCOP } from '@/lib/currency';
 
 interface VentasPeriodoPanelProps {
   reporteInicial: ReportePeriodoData;
@@ -90,7 +91,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
             </span>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Horario oficial de Colombia (America/Bogota) • Agregaciones en tiempo real
+            Horario oficial de Colombia (America/Bogota) • Agregaciones en tiempo real (COP)
           </p>
         </div>
 
@@ -174,7 +175,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
             <span className="text-xl">💰</span>
           </div>
           <p className="text-2xl sm:text-3xl font-black text-white">
-            ${reporte.ingresoNeto.toFixed(2)}
+            {formatearCOP(reporte.ingresoNeto)}
           </p>
           <p className="text-[11px] text-emerald-400 font-semibold mt-1">
             {reporte.pedidosExitosos} pedidos completados
@@ -192,11 +193,11 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
           <div className="space-y-1">
             <div className="flex items-center justify-between text-xs font-bold">
               <span className="text-zinc-400 flex items-center gap-1">💵 Efectivo:</span>
-              <span className="text-white">${reporte.totalEfectivo.toFixed(2)}</span>
+              <span className="text-white">{formatearCOP(reporte.totalEfectivo)}</span>
             </div>
             <div className="flex items-center justify-between text-xs font-bold">
               <span className="text-zinc-400 flex items-center gap-1">📲 Transf:</span>
-              <span className="text-blue-300">${reporte.totalTransferencia.toFixed(2)}</span>
+              <span className="text-blue-300">{formatearCOP(reporte.totalTransferencia)}</span>
             </div>
           </div>
         </div>
@@ -210,7 +211,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
             <span className="text-xl">🧾</span>
           </div>
           <p className="text-2xl sm:text-3xl font-black text-white">
-            ${reporte.ticketPromedio.toFixed(2)}
+            {formatearCOP(reporte.ticketPromedio)}
           </p>
           <p className="text-[11px] text-zinc-400 mt-1">Promedio por comanda</p>
         </div>
@@ -224,7 +225,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
             <span className="text-xl">📉</span>
           </div>
           <p className="text-2xl sm:text-3xl font-black text-rose-400">
-            ${reporte.dineroCancelado.toFixed(2)}
+            {formatearCOP(reporte.dineroCancelado)}
           </p>
           <p className="text-[11px] text-rose-300/80 mt-1">
             {reporte.pedidosCancelados} pedidos anulados
@@ -243,7 +244,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
               <p className="text-xs text-zinc-400">Total recaudado por fecha</p>
             </div>
             <span className="text-xs font-bold text-zinc-400">
-              Pico: ${maxVentaDesglose.toFixed(2)}
+              Pico: {formatearCOP(maxVentaDesglose)}
             </span>
           </div>
 
@@ -254,7 +255,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
                 <div key={idx} className="flex-1 flex flex-col items-center h-full justify-end group relative">
                   {/* Tooltip flotante */}
                   <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 bg-zinc-900 border border-zinc-700 px-2.5 py-1 rounded-xl shadow-lg whitespace-nowrap">
-                    <p className="text-xs font-bold text-white">${item.total.toFixed(2)}</p>
+                    <p className="text-xs font-bold text-white">{formatearCOP(item.total)}</p>
                     <span className="text-[10px] text-zinc-400">
                       {item.cantidad} {item.cantidad === 1 ? 'pedido' : 'pedidos'}
                     </span>
@@ -345,7 +346,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
                     {pedido.metodoPago === 'DIVIDIDO' ? (
                       <span
                         className="inline-flex items-center gap-1 rounded-md bg-purple-950/70 border border-purple-800/80 px-2 py-0.5 font-bold text-purple-300 cursor-help"
-                        title={`Efectivo: $${pedido.pagoEfectivo.toFixed(2)} | Transf: $${pedido.pagoTransferencia.toFixed(2)}`}
+                        title={`Efectivo: ${formatearCOP(pedido.pagoEfectivo)} | Transf: ${formatearCOP(pedido.pagoTransferencia)}`}
                       >
                         ⚖️ Dividido
                       </span>
@@ -360,7 +361,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
                     )}
                   </td>
                   <td className="px-6 py-3 text-right font-extrabold text-white whitespace-nowrap">
-                    ${pedido.total.toFixed(2)}
+                    {formatearCOP(pedido.total)}
                   </td>
                   <td className="px-6 py-3 text-center whitespace-nowrap">
                     <span
@@ -462,7 +463,7 @@ export function VentasPeriodoPanel({ reporteInicial }: VentasPeriodoPanelProps) 
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-400">Total:</span>
-                <span className="font-black text-emerald-400">${pedidoAEliminar.total.toFixed(2)}</span>
+                <span className="font-black text-emerald-400">{formatearCOP(pedidoAEliminar.total)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-zinc-400">Estado:</span>

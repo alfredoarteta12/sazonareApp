@@ -24,13 +24,37 @@ export async function GET(request: NextRequest) {
       };
     }
 
-
     const pedidos = await prisma.pedido.findMany({
       where: whereClause,
+      include: { pagos: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    return NextResponse.json(pedidos);
+    const serialized = pedidos.map((p) => {
+      let efec = 0;
+      let transf = 0;
+      for (const pg of p.pagos) {
+        const monto = Number(pg.monto);
+        if (pg.metodoPago === 'TRANSFERENCIA') transf += monto;
+        else efec += monto;
+      }
+      const metodoPago = efec > 0 && transf > 0 ? 'DIVIDIDO' : transf > 0 ? 'TRANSFERENCIA' : 'EFECTIVO';
+      return {
+        ...p,
+        total: Number(p.total),
+        metodoPago,
+        pagoEfectivo: efec,
+        pagoTransferencia: transf,
+        pagos: p.pagos.map((pg) => ({
+          ...pg,
+          monto: Number(pg.monto),
+          montoRecibido: pg.montoRecibido ? Number(pg.montoRecibido) : null,
+          cambio: pg.cambio ? Number(pg.cambio) : null,
+        })),
+      };
+    });
+
+    return NextResponse.json(serialized);
   } catch (error) {
     console.error('Error al obtener pedidos activos:', error);
     return NextResponse.json(
@@ -39,5 +63,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-

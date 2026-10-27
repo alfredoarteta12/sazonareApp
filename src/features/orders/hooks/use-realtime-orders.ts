@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, TipoPedido, MetodoPago } from '@prisma/client';
 
-export type TipoPedido = 'MESA' | 'LLEVAR' | 'DOMICILIO';
+export type { TipoPedido, MetodoPago };
 
 export interface Pedido {
   id: string;
@@ -19,6 +19,13 @@ export interface Pedido {
   metodoPago?: string | null;
   pagoEfectivo?: number | null;
   pagoTransferencia?: number | null;
+  pagos?: {
+    id: string;
+    metodoPago: MetodoPago;
+    monto: number;
+    montoRecibido?: number | null;
+    cambio?: number | null;
+  }[];
   estado: OrderStatus;
   createdAt: string;
   updatedAt: string;
@@ -56,7 +63,13 @@ export function useRealtimeOrders(
         return res.json();
       })
       .then((data: Pedido[]) => {
-        setPedidos(data);
+        setPedidos(
+          data.map((p) => ({
+            ...p,
+            total: Number(p.total),
+            detalle: p.detalle || '',
+          }))
+        );
         setCargando(false);
       })
       .catch((err) => {
@@ -72,11 +85,21 @@ export function useRealtimeOrders(
         { event: '*', schema: 'public', table: 'Pedido' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            const nuevo = payload.new as Pedido;
+            const raw = payload.new as any;
+            const nuevo: Pedido = {
+              ...raw,
+              detalle: raw.detalle || '',
+              total: Number(raw.total),
+            };
             setPedidos((prev) => [nuevo, ...prev]);
             onNuevoPedidoRef.current?.(nuevo);
           } else if (payload.eventType === 'UPDATE') {
-            const nuevo = payload.new as Pedido;
+            const raw = payload.new as any;
+            const nuevo: Pedido = {
+              ...raw,
+              detalle: raw.detalle || '',
+              total: Number(raw.total),
+            };
             setPedidos((prev) => {
               const previo = prev.find((p) => p.id === nuevo.id);
               // Notificar al mesero si la comanda acaba de pasar a HECHO (Listo para servir)

@@ -1,6 +1,6 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
@@ -23,13 +23,29 @@ enum OrderStatus {
   CANCELADO
 }
 
+enum TipoPedido {
+  MESA
+  LLEVAR
+  DOMICILIO
+}
+
+enum MetodoPago {
+  EFECTIVO
+  TRANSFERENCIA
+  TARJETA
+  OTRO
+}
+
 model Perfil {
-  id        String   @id // Vinculado al UUID de Supabase Auth
-  email     String   @unique
-  nombre    String
-  role      Role     @default(MESERO)
-  activo    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id             String       @id // UUID de Supabase Auth
+  email          String       @unique
+  nombre         String
+  role           Role         @default(MESERO)
+  activo         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+
+  pedidos        Pedido[]     @relation("MeseroPedidos")
+  cierresCaja    CierreCaja[]
 }
 
 model Categoria {
@@ -41,33 +57,41 @@ model Categoria {
 model Producto {
   id          String          @id @default(uuid())
   nombre      String
-  precio      Float
+  precio      Decimal         @db.Decimal(10, 2)
   imagen      String?
   disponible  Boolean         @default(true)
   categoriaId String
   categoria   Categoria       @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
   detalles    DetallePedido[]
+
+  @@index([categoriaId])
 }
 
 model Pedido {
-  id                String          @id @default(uuid())
-  mesa              Int             @default(0)
-  tipoPedido        String          @default("MESA") // MESA | LLEVAR | DOMICILIO
-  cliente           String?
-  telefono          String?
-  direccion         String?
-  notas             String?
-  detalle           String          // Descripción textual (mantenida para sincronización en tiempo real)
-  total             Float
-  metodoPago        String?         // EFECTIVO | TRANSFERENCIA | DIVIDIDO
-  pagoEfectivo      Float           @default(0)
-  pagoTransferencia Float           @default(0)
-  estado            OrderStatus     @default(PENDIENTE)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id          String          @id @default(uuid())
+  mesa        Int             @default(0)
+  tipoPedido  TipoPedido      @default(MESA)
+  cliente     String?
+  telefono    String?
+  direccion   String?
+  notas       String?
+  detalle     String?         // Texto plano de respaldo para webhooks/sync
+  total       Decimal         @db.Decimal(10, 2)
+  estado      OrderStatus     @default(PENDIENTE)
 
-  items             DetallePedido[]
-  pagos             Pago[]
+  // Auditoría
+  creadoPorId String?
+  creadoPor   Perfil?         @relation("MeseroPedidos", fields: [creadoPorId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  items       DetallePedido[]
+  pagos       Pago[]
+
+  @@index([estado])
+  @@index([createdAt])
+  @@index([mesa])
 }
 
 model DetallePedido {
@@ -77,39 +101,46 @@ model DetallePedido {
   productoId     String?
   producto       Producto? @relation(fields: [productoId], references: [id], onDelete: SetNull)
   nombre         String
-  precioUnitario Float
+  precioUnitario Decimal   @db.Decimal(10, 2)
   cantidad       Int       @default(1)
-  subtotal       Float
+  subtotal       Decimal   @db.Decimal(10, 2)
   notas          String?
   createdAt      DateTime  @default(now())
+
+  @@index([pedidoId])
 }
 
 model Pago {
-  id            String   @id @default(uuid())
+  id            String     @id @default(uuid())
   pedidoId      String
-  pedido        Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  metodoPago    String   // EFECTIVO | TRANSFERENCIA
-  monto         Float
-  montoRecibido Float?   // Efectivo recibido para cálculo de cambio
-  cambio        Float?
-  referencia    String?  // Referencia o comprobante
-  createdAt     DateTime @default(now())
+  pedido        Pedido     @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  metodoPago    MetodoPago
+  monto         Decimal    @db.Decimal(10, 2)
+  montoRecibido Decimal?   @db.Decimal(10, 2)
+  cambio        Decimal?   @db.Decimal(10, 2)
+  referencia    String?
+  createdAt     DateTime   @default(now())
+
+  @@index([pedidoId])
 }
 
 model CierreCaja {
   id               String   @id @default(uuid())
   fecha            DateTime @default(now())
-  responsable      String
-  baseInicial      Float    @default(0)
-  ventasEfectivo   Float    @default(0)
-  ventasTransf     Float    @default(0)
-  totalVentas      Float    @default(0)
-  retiros          Float    @default(0)
-  efectivoEsperado Float    @default(0)
-  efectivoReal     Float    @default(0)
-  diferencia       Float    @default(0)
+  responsableId    String?
+  responsable      Perfil?  @relation(fields: [responsableId], references: [id], onDelete: SetNull)
+  baseInicial      Decimal  @default(0) @db.Decimal(10, 2)
+  ventasEfectivo   Decimal  @default(0) @db.Decimal(10, 2)
+  ventasTransf     Decimal  @default(0) @db.Decimal(10, 2)
+  totalVentas      Decimal  @default(0) @db.Decimal(10, 2)
+  retiros          Decimal  @default(0) @db.Decimal(10, 2)
+  efectivoEsperado Decimal  @default(0) @db.Decimal(10, 2)
+  efectivoReal     Decimal  @default(0) @db.Decimal(10, 2)
+  diferencia       Decimal  @default(0) @db.Decimal(10, 2)
   totalPedidos     Int      @default(0)
-  ticketPromedio   Float    @default(0)
+  ticketPromedio   Decimal  @default(0) @db.Decimal(10, 2)
   observaciones    String?
   createdAt        DateTime @default(now())
+
+  @@index([fecha])
 }

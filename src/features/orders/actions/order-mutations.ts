@@ -2,7 +2,8 @@
 
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, TipoPedido, MetodoPago } from '@prisma/client';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 // Tipos para las acciones
 export interface ItemCarrito {
@@ -15,7 +16,7 @@ export interface ItemCarrito {
 }
 
 export interface ParametrosCrearPedido {
-  tipoPedido?: 'MESA' | 'LLEVAR' | 'DOMICILIO';
+  tipoPedido?: TipoPedido | 'MESA' | 'LLEVAR' | 'DOMICILIO';
   mesa?: number;
   cliente?: string;
   telefono?: string;
@@ -30,6 +31,29 @@ export interface DatosPagoDividido {
   efectivoRecibido?: number;
 }
 
+function serializePedido(p: any) {
+  if (!p) return p;
+  return {
+    ...p,
+    total: Number(p.total),
+    items: p.items
+      ? p.items.map((i: any) => ({
+          ...i,
+          precioUnitario: Number(i.precioUnitario),
+          subtotal: Number(i.subtotal),
+        }))
+      : undefined,
+    pagos: p.pagos
+      ? p.pagos.map((pg: any) => ({
+          ...pg,
+          monto: Number(pg.monto),
+          montoRecibido: pg.montoRecibido ? Number(pg.montoRecibido) : null,
+          cambio: pg.cambio ? Number(pg.cambio) : null,
+        }))
+      : undefined,
+  };
+}
+
 /**
  * Crea un nuevo pedido desde la estación de mesero (Mesa, Para Llevar o Domicilio)
  * Normalización 1FN: Inserta el pedido y además crea cada fila atómica en DetallePedido.
@@ -38,7 +62,7 @@ export async function crearPedido(
   paramsOmesa: number | ParametrosCrearPedido,
   itemsLegacy?: ItemCarrito[]
 ) {
-  let tipoPedido: 'MESA' | 'LLEVAR' | 'DOMICILIO' = 'MESA';
+  let tipoPedido: TipoPedido = TipoPedido.MESA;
   let mesa = 1;
   let cliente: string | undefined;
   let telefono: string | undefined;
@@ -49,9 +73,9 @@ export async function crearPedido(
   if (typeof paramsOmesa === 'number') {
     mesa = paramsOmesa;
     items = itemsLegacy || [];
-    tipoPedido = 'MESA';
+    tipoPedido = TipoPedido.MESA;
   } else {
-    tipoPedido = paramsOmesa.tipoPedido || 'MESA';
+    tipoPedido = (paramsOmesa.tipoPedido as TipoPedido) || TipoPedido.MESA;
     mesa = paramsOmesa.mesa || 0;
     cliente = paramsOmesa.cliente?.trim();
     telefono = paramsOmesa.telefono?.trim();
@@ -60,10 +84,10 @@ export async function crearPedido(
     items = paramsOmesa.items || [];
   }
 
-  if (tipoPedido === 'MESA' && (!mesa || mesa < 1)) {
+  if (tipoPedido === TipoPedido.MESA && (!mesa || mesa < 1)) {
     return { success: false, error: 'Número de mesa inválido.' };
   }
-  if (tipoPedido === 'DOMICILIO' && (!direccion || direccion.length < 3)) {
+  if (tipoPedido === TipoPedido.DOMICILIO && (!direccion || direccion.length < 3)) {
     return { success: false, error: 'Debes indicar una dirección válida para el domicilio.' };
   }
   if (!items || items.length === 0) {
@@ -71,6 +95,19 @@ export async function crearPedido(
   }
 
   try {
+    let creadoPorId: string | null = null;
+    try {
+      const supabase = await createSupabaseServerClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        creadoPorId = user.id;
+      }
+    } catch (e) {
+      // Auth opcional
+    }
+
     const detalleItems = items
       .map((item) => {
         const notaStr = item.notas && item.notas.trim() ? ` {Nota: ${item.notas.trim()}}` : '';
@@ -82,9 +119,9 @@ export async function crearPedido(
 
     // Prefijo descriptivo en detalle para compatibilidad universal
     let prefijo = '';
-    if (tipoPedido === 'LLEVAR') {
+    if (tipoPedido === TipoPedido.LLEVAR) {
       prefijo = `[PARA LLEVAR${cliente ? ` - Cliente: ${cliente}` : ''}] `;
-    } else if (tipoPedido === 'DOMICILIO') {
+    } else if (tipoPedido === TipoPedido.DOMICILIO) {
       prefijo = `[DOMICILIO - ${cliente ? `Cliente: ${cliente} | ` : ''}Dir: ${direccion}${telefono ? ` | Tel: ${telefono}` : ''}] `;
     }
 
@@ -93,35 +130,37 @@ export async function crearPedido(
     // Creación atómica de Pedido y de cada fila normalizada en DetallePedido
     const pedido = await prisma.pedido.create({
       data: {
-        mesa: tipoPedido === 'MESA' ? mesa : 0,
+        mesa: tipoPedido === TipoPedido.MESA ? mesa : 0,
         tipoPedido,
         cliente: cliente || null,
         telefono: telefono || null,
         direccion: direccion || null,
         notas: notas || null,
         detalle,
-        total,
+        total: Number(total.toFixed(2)),
         estado: 'PENDIENTE',
+        creadoPorId,
         items: {
           create: items.map((item) => ({
             productoId: item.productoId && item.productoId.length > 5 ? item.productoId : null,
             nombre: item.nombre,
             precioUnitario: item.precio,
             cantidad: item.cantidad,
-            subtotal: item.precio * item.cantidad,
+            subtotal: Number((item.precio * item.cantidad).toFixed(2)),
             notas: item.notas || null,
           })),
         },
       },
       include: {
         items: true,
+        pagos: true,
       },
     });
 
     revalidatePath('/admin');
     revalidatePath('/cocina');
     revalidatePath('/mesero');
-    return { success: true, pedido };
+    return { success: true, pedido: serializePedido(pedido) };
   } catch (error) {
     console.error('Error al crear pedido:', error);
     return { success: false, error: 'No se pudo crear el pedido.' };
@@ -136,11 +175,15 @@ export async function marcarComoEntregado(pedidoId: string) {
     const pedido = await prisma.pedido.update({
       where: { id: pedidoId },
       data: { estado: 'ENTREGADO' },
+      include: {
+        items: true,
+        pagos: true,
+      },
     });
     revalidatePath('/cocina');
     revalidatePath('/admin');
     revalidatePath('/mesero');
-    return { success: true, pedido };
+    return { success: true, pedido: serializePedido(pedido) };
   } catch (error) {
     console.error('Error al marcar pedido como entregado:', error);
     return { success: false, error: 'No se pudo actualizar el pedido.' };
@@ -149,7 +192,7 @@ export async function marcarComoEntregado(pedidoId: string) {
 
 /**
  * Cobra el pedido (Efectivo, Transferencia o Pago Dividido) y libera la mesa
- * Normalización 3FN: Registra la transacción en la tabla Pago y los montos divididos.
+ * Normalización 3FN: Registra las transacciones en la entidad Pago.
  */
 export async function cobrarPedidoYLiberarMesa(
   pedidoId: string,
@@ -161,38 +204,39 @@ export async function cobrarPedidoYLiberarMesa(
     const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId } });
     if (!pedido) return { success: false, error: 'Pedido no encontrado.' };
 
+    const totalNum = Number(pedido.total);
     let pagoEfectivo = 0;
     let pagoTransferencia = 0;
     let cambio = 0;
     let notaPago = '';
     const nuevosPagos: {
-      metodoPago: string;
+      metodoPago: MetodoPago;
       monto: number;
       montoRecibido?: number | null;
       cambio?: number | null;
     }[] = [];
 
     if (metodoPago === 'EFECTIVO') {
-      pagoEfectivo = pedido.total;
+      pagoEfectivo = totalNum;
       pagoTransferencia = 0;
-      cambio = montoRecibido && montoRecibido >= pedido.total ? montoRecibido - pedido.total : 0;
+      cambio = montoRecibido && montoRecibido >= totalNum ? montoRecibido - totalNum : 0;
       notaPago = montoRecibido
         ? `[PAGADO: EFECTIVO | Pagó con: $${montoRecibido.toFixed(2)} | Cambio: $${cambio.toFixed(2)}]`
         : `[PAGADO: EFECTIVO]`;
       nuevosPagos.push({
-        metodoPago: 'EFECTIVO',
-        monto: pedido.total,
-        montoRecibido: montoRecibido || pedido.total,
+        metodoPago: MetodoPago.EFECTIVO,
+        monto: totalNum,
+        montoRecibido: montoRecibido || totalNum,
         cambio,
       });
     } else if (metodoPago === 'TRANSFERENCIA') {
       pagoEfectivo = 0;
-      pagoTransferencia = pedido.total;
+      pagoTransferencia = totalNum;
       cambio = 0;
       notaPago = `[PAGADO: TRANSFERENCIA]`;
       nuevosPagos.push({
-        metodoPago: 'TRANSFERENCIA',
-        monto: pedido.total,
+        metodoPago: MetodoPago.TRANSFERENCIA,
+        monto: totalNum,
       });
     } else if (metodoPago === 'DIVIDIDO') {
       if (!datosDividido) {
@@ -202,12 +246,12 @@ export async function cobrarPedidoYLiberarMesa(
       pagoTransferencia = Number(datosDividido.transferencia) || 0;
 
       const sumaDesglose = Math.round((pagoEfectivo + pagoTransferencia) * 100) / 100;
-      const totalRedondeado = Math.round(pedido.total * 100) / 100;
+      const totalRedondeado = Math.round(totalNum * 100) / 100;
 
       if (sumaDesglose !== totalRedondeado) {
         return {
           success: false,
-          error: `La suma de Efectivo ($${pagoEfectivo.toFixed(2)}) y Transferencia ($${pagoTransferencia.toFixed(2)}) debe coincidir con el total ($${pedido.total.toFixed(2)}).`,
+          error: `La suma de Efectivo ($${pagoEfectivo.toFixed(2)}) y Transferencia ($${pagoTransferencia.toFixed(2)}) debe coincidir con el total ($${totalNum.toFixed(2)}).`,
         };
       }
 
@@ -218,7 +262,7 @@ export async function cobrarPedidoYLiberarMesa(
 
       if (pagoEfectivo > 0) {
         nuevosPagos.push({
-          metodoPago: 'EFECTIVO',
+          metodoPago: MetodoPago.EFECTIVO,
           monto: pagoEfectivo,
           montoRecibido: rec,
           cambio,
@@ -226,7 +270,7 @@ export async function cobrarPedidoYLiberarMesa(
       }
       if (pagoTransferencia > 0) {
         nuevosPagos.push({
-          metodoPago: 'TRANSFERENCIA',
+          metodoPago: MetodoPago.TRANSFERENCIA,
           monto: pagoTransferencia,
         });
       }
@@ -236,12 +280,14 @@ export async function cobrarPedidoYLiberarMesa(
       where: { id: pedidoId },
       data: {
         estado: 'PAGADO',
-        metodoPago,
-        pagoEfectivo,
-        pagoTransferencia,
-        detalle: `${notaPago} ${pedido.detalle}`,
+        detalle: `${notaPago} ${pedido.detalle || ''}`,
         pagos: {
-          create: nuevosPagos,
+          create: nuevosPagos.map((pg) => ({
+            metodoPago: pg.metodoPago,
+            monto: pg.monto,
+            montoRecibido: pg.montoRecibido ?? null,
+            cambio: pg.cambio ?? null,
+          })),
         },
       },
       include: {
@@ -253,7 +299,16 @@ export async function cobrarPedidoYLiberarMesa(
     revalidatePath('/mesero');
     revalidatePath('/cocina');
     revalidatePath('/admin');
-    return { success: true, pedido: actualizado, cambio };
+    return {
+      success: true,
+      pedido: {
+        ...serializePedido(actualizado),
+        metodoPago,
+        pagoEfectivo,
+        pagoTransferencia,
+      },
+      cambio,
+    };
   } catch (error) {
     console.error('Error al cobrar y liberar mesa:', error);
     return { success: false, error: 'No se pudo registrar el cobro.' };
@@ -281,11 +336,15 @@ export async function avanzarEstadoPedido(pedidoId: string) {
     const actualizado = await prisma.pedido.update({
       where: { id: pedidoId },
       data: { estado: siguienteEstado },
+      include: {
+        items: true,
+        pagos: true,
+      },
     });
 
     revalidatePath('/cocina');
     revalidatePath('/admin');
-    return { success: true, pedido: actualizado };
+    return { success: true, pedido: serializePedido(actualizado) };
   } catch (error) {
     console.error('Error al avanzar estado:', error);
     return { success: false, error: 'No se pudo actualizar el pedido.' };
@@ -315,12 +374,16 @@ export async function cancelarPedido(pedidoId: string, motivo: string) {
       where: { id: pedidoId },
       data: {
         estado: 'CANCELADO',
-        detalle: `[CANCELADO - Motivo: ${motivo.trim()}]\n${original.detalle}`,
+        detalle: `[CANCELADO - Motivo: ${motivo.trim()}]\n${original.detalle || ''}`,
+      },
+      include: {
+        items: true,
+        pagos: true,
       },
     });
 
     revalidatePath('/admin');
-    return { success: true, pedido: pedidoCancelado };
+    return { success: true, pedido: serializePedido(pedidoCancelado) };
   } catch (error) {
     console.error('Error al cancelar pedido:', error);
     return { success: false, error: 'No se pudo cancelar el pedido.' };

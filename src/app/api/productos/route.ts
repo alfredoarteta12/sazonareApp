@@ -9,10 +9,14 @@ export async function GET() {
       include: { categoria: true },
       orderBy: [{ categoria: { nombre: 'asc' } }, { nombre: 'asc' }],
     });
-    return NextResponse.json(productos);
+    return NextResponse.json(
+      productos.map((p) => ({
+        ...p,
+        precio: Number(p.precio),
+      }))
+    );
   } catch (error) {
     console.error('Error al obtener productos:', error);
     return NextResponse.json({ error: 'Error al cargar productos' }, { status: 500 });
   }
 }
-

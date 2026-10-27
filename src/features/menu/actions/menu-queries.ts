@@ -3,6 +3,19 @@
 import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 
+export interface ProductoSerializado {
+  id: string;
+  nombre: string;
+  precio: number;
+  imagen: string | null;
+  disponible: boolean;
+  categoriaId: string;
+  categoria: {
+    id: string;
+    nombre: string;
+  };
+}
+
 /**
  * Obtiene los productos disponibles para la estación de mesero
  */
@@ -13,7 +26,13 @@ export async function getProductos() {
       include: { categoria: true },
       orderBy: [{ categoria: { nombre: 'asc' } }, { nombre: 'asc' }],
     });
-    return { success: true, data: productos };
+    return {
+      success: true,
+      data: productos.map((p) => ({
+        ...p,
+        precio: Number(p.precio),
+      })),
+    };
   } catch (error) {
     console.error('Error al obtener productos:', error);
     return { success: false, error: 'No se pudieron cargar los productos.' };
@@ -29,7 +48,13 @@ export async function getTodosLosProductos() {
       include: { categoria: true },
       orderBy: [{ categoria: { nombre: 'asc' } }, { nombre: 'asc' }],
     });
-    return { success: true, data: productos };
+    return {
+      success: true,
+      data: productos.map((p) => ({
+        ...p,
+        precio: Number(p.precio),
+      })),
+    };
   } catch (error) {
     console.error('Error al obtener productos para admin:', error);
     return { success: false, error: 'No se pudieron cargar los productos.' };
@@ -126,7 +151,13 @@ export async function crearProducto(data: {
     });
     revalidatePath('/admin/menu');
     revalidatePath('/mesero');
-    return { success: true, data: producto };
+    return {
+      success: true,
+      data: {
+        ...producto,
+        precio: Number(producto.precio),
+      },
+    };
   } catch (error) {
     console.error('Error al crear producto:', error);
     return { success: false, error: 'No se pudo crear el producto.' };
@@ -143,12 +174,22 @@ export async function actualizarProducto(
   try {
     const producto = await prisma.producto.update({
       where: { id },
-      data,
+      data: {
+        ...(data.nombre && { nombre: data.nombre.trim() }),
+        ...(data.precio !== undefined && { precio: Number(data.precio) }),
+        ...(data.categoriaId && { categoriaId: data.categoriaId }),
+      },
       include: { categoria: true },
     });
     revalidatePath('/admin/menu');
     revalidatePath('/mesero');
-    return { success: true, data: producto };
+    return {
+      success: true,
+      data: {
+        ...producto,
+        precio: Number(producto.precio),
+      },
+    };
   } catch (error) {
     console.error('Error al actualizar producto:', error);
     return { success: false, error: 'No se pudo actualizar el producto.' };
@@ -172,7 +213,13 @@ export async function toggleDisponibilidad(productoId: string) {
     revalidatePath('/admin/menu');
     revalidatePath('/mesero');
     revalidatePath('/cocina');
-    return { success: true, data: actualizado };
+    return {
+      success: true,
+      data: {
+        ...actualizado,
+        precio: Number(actualizado.precio),
+      },
+    };
   } catch (error) {
     console.error('Error al cambiar disponibilidad:', error);
     return { success: false, error: 'No se pudo actualizar el estado del producto.' };
@@ -193,7 +240,13 @@ export async function setDisponibilidadProducto(productoId: string, disponible: 
     revalidatePath('/admin/menu');
     revalidatePath('/mesero');
     revalidatePath('/cocina');
-    return { success: true, data: actualizado };
+    return {
+      success: true,
+      data: {
+        ...actualizado,
+        precio: Number(actualizado.precio),
+      },
+    };
   } catch (error) {
     console.error('Error al fijar disponibilidad de producto:', error);
     return { success: false, error: 'No se pudo actualizar el estado del producto.' };

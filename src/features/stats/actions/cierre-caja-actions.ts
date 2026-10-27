@@ -11,6 +11,7 @@ export interface DatosCierreHoy {
     id: string;
     fecha: string;
     responsable: string;
+    responsableId?: string | null;
     baseInicial: number;
     ventasEfectivo: number;
     ventasTransf: number;
@@ -46,10 +47,14 @@ export async function getDatosCierreHoy(): Promise<{
 
     // Obtener usuario autenticado para sugerir responsable
     let responsableSugerido = 'Administrador';
+    let responsableUserId: string | null = null;
     try {
       const supabase = await createSupabaseServerClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
+        responsableUserId = user.id;
         const perfil = await prisma.perfil.findUnique({ where: { id: user.id } });
         if (perfil?.nombre) {
           responsableSugerido = perfil.nombre;
@@ -69,10 +74,15 @@ export async function getDatosCierreHoy(): Promise<{
           lte: fin,
         },
       },
+      include: {
+        responsable: {
+          select: { nombre: true, email: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
-    // Obtener pedidos del día
+    // Obtener pedidos del día con pagos normalizados
     const pedidos = await prisma.pedido.findMany({
       where: {
         createdAt: {
@@ -80,14 +90,8 @@ export async function getDatosCierreHoy(): Promise<{
           lte: fin,
         },
       },
-      select: {
-        id: true,
-        total: true,
-        metodoPago: true,
-        pagoEfectivo: true,
-        pagoTransferencia: true,
-        estado: true,
-        detalle: true,
+      include: {
+        pagos: true,
       },
     });
 
@@ -98,20 +102,29 @@ export async function getDatosCierreHoy(): Promise<{
     let pedidosPendientes = 0;
 
     for (const p of pedidos) {
+      const totalNum = Number(p.total);
+
       if (p.estado === 'PAGADO') {
-        totalVentas += p.total;
+        totalVentas += totalNum;
         totalPedidos++;
 
-        if (p.metodoPago === 'DIVIDIDO') {
-          ventasEfectivo += p.pagoEfectivo ?? 0;
-          ventasTransf += p.pagoTransferencia ?? 0;
-        } else if (p.metodoPago === 'TRANSFERENCIA' || p.detalle.includes('TRANSFERENCIA')) {
-          ventasTransf += p.total;
+        let efec = 0;
+        let transf = 0;
+        if (p.pagos && p.pagos.length > 0) {
+          for (const pg of p.pagos) {
+            const m = Number(pg.monto);
+            if (pg.metodoPago === 'TRANSFERENCIA') transf += m;
+            else efec += m;
+          }
+        } else if (p.detalle?.includes('TRANSFERENCIA')) {
+          transf = totalNum;
         } else {
-          ventasEfectivo += p.total;
+          efec = totalNum;
         }
+
+        ventasEfectivo += efec;
+        ventasTransf += transf;
       } else if (p.estado !== 'CANCELADO') {
-        // Pedidos activos (PENDIENTE, PREPARANDO, HECHO, ENTREGADO) no pagados
         pedidosPendientes++;
       }
     }
@@ -124,8 +137,21 @@ export async function getDatosCierreHoy(): Promise<{
         yaCerrado: !!cierreHoy,
         cierreExistente: cierreHoy
           ? {
-              ...cierreHoy,
+              id: cierreHoy.id,
               fecha: cierreHoy.fecha.toISOString(),
+              responsable: cierreHoy.responsable?.nombre || 'Administrador',
+              responsableId: cierreHoy.responsableId,
+              baseInicial: Number(cierreHoy.baseInicial),
+              ventasEfectivo: Number(cierreHoy.ventasEfectivo),
+              ventasTransf: Number(cierreHoy.ventasTransf),
+              totalVentas: Number(cierreHoy.totalVentas),
+              retiros: Number(cierreHoy.retiros),
+              efectivoEsperado: Number(cierreHoy.efectivoEsperado),
+              efectivoReal: Number(cierreHoy.efectivoReal),
+              diferencia: Number(cierreHoy.diferencia),
+              totalPedidos: cierreHoy.totalPedidos,
+              ticketPromedio: Number(cierreHoy.ticketPromedio),
+              observaciones: cierreHoy.observaciones,
               createdAt: cierreHoy.createdAt.toISOString(),
             }
           : undefined,
@@ -145,7 +171,8 @@ export async function getDatosCierreHoy(): Promise<{
 }
 
 export interface RegistrarCierreInput {
-  responsable: string;
+  responsable?: string;
+  responsableId?: string;
   baseInicial: number;
   retiros: number;
   efectivoReal: number;
@@ -159,6 +186,26 @@ export async function registrarCierreCaja(input: RegistrarCierreInput) {
   try {
     const { inicio, fin } = getRangoDiaColombia();
 
+    // Obtener ID del empleado autenticado
+    let responsableId = input.responsableId || null;
+    let responsableNombre = input.responsable || 'Administrador';
+
+    if (!responsableId) {
+      try {
+        const supabase = await createSupabaseServerClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (user) {
+          responsableId = user.id;
+          const perfil = await prisma.perfil.findUnique({ where: { id: user.id } });
+          if (perfil?.nombre) responsableNombre = perfil.nombre;
+        }
+      } catch (e) {
+        // Auth opcional
+      }
+    }
+
     // Recalcular métricas del día directamente en el servidor para máxima integridad
     const pedidos = await prisma.pedido.findMany({
       where: {
@@ -168,12 +215,8 @@ export async function registrarCierreCaja(input: RegistrarCierreInput) {
         },
         estado: 'PAGADO',
       },
-      select: {
-        total: true,
-        metodoPago: true,
-        pagoEfectivo: true,
-        pagoTransferencia: true,
-        detalle: true,
+      include: {
+        pagos: true,
       },
     });
 
@@ -183,15 +226,25 @@ export async function registrarCierreCaja(input: RegistrarCierreInput) {
     const totalPedidos = pedidos.length;
 
     for (const p of pedidos) {
-      totalVentas += p.total;
-      if (p.metodoPago === 'DIVIDIDO') {
-        ventasEfectivo += p.pagoEfectivo ?? 0;
-        ventasTransf += p.pagoTransferencia ?? 0;
-      } else if (p.metodoPago === 'TRANSFERENCIA' || p.detalle.includes('TRANSFERENCIA')) {
-        ventasTransf += p.total;
+      const totalNum = Number(p.total);
+      totalVentas += totalNum;
+
+      let efec = 0;
+      let transf = 0;
+      if (p.pagos && p.pagos.length > 0) {
+        for (const pg of p.pagos) {
+          const m = Number(pg.monto);
+          if (pg.metodoPago === 'TRANSFERENCIA') transf += m;
+          else efec += m;
+        }
+      } else if (p.detalle?.includes('TRANSFERENCIA')) {
+        transf = totalNum;
       } else {
-        ventasEfectivo += p.total;
+        efec = totalNum;
       }
+
+      ventasEfectivo += efec;
+      ventasTransf += transf;
     }
 
     const ticketPromedio = totalPedidos > 0 ? totalVentas / totalPedidos : 0;
@@ -204,7 +257,7 @@ export async function registrarCierreCaja(input: RegistrarCierreInput) {
 
     const cierre = await prisma.cierreCaja.create({
       data: {
-        responsable: input.responsable.trim() || 'Administrador',
+        responsableId,
         baseInicial,
         ventasEfectivo,
         ventasTransf,
@@ -217,6 +270,11 @@ export async function registrarCierreCaja(input: RegistrarCierreInput) {
         ticketPromedio,
         observaciones: input.observaciones?.trim() || null,
       },
+      include: {
+        responsable: {
+          select: { nombre: true },
+        },
+      },
     });
 
     revalidatePath('/admin');
@@ -224,8 +282,21 @@ export async function registrarCierreCaja(input: RegistrarCierreInput) {
     return {
       success: true,
       data: {
-        ...cierre,
+        id: cierre.id,
         fecha: cierre.fecha.toISOString(),
+        responsable: cierre.responsable?.nombre || responsableNombre,
+        responsableId: cierre.responsableId,
+        baseInicial: Number(cierre.baseInicial),
+        ventasEfectivo: Number(cierre.ventasEfectivo),
+        ventasTransf: Number(cierre.ventasTransf),
+        totalVentas: Number(cierre.totalVentas),
+        retiros: Number(cierre.retiros),
+        efectivoEsperado: Number(cierre.efectivoEsperado),
+        efectivoReal: Number(cierre.efectivoReal),
+        diferencia: Number(cierre.diferencia),
+        totalPedidos: cierre.totalPedidos,
+        ticketPromedio: Number(cierre.ticketPromedio),
+        observaciones: cierre.observaciones,
         createdAt: cierre.createdAt.toISOString(),
       },
     };
@@ -242,14 +313,32 @@ export async function getHistorialCierres(limit = 30) {
   try {
     const cierres = await prisma.cierreCaja.findMany({
       take: limit,
+      include: {
+        responsable: {
+          select: { nombre: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
 
     return {
       success: true,
       data: cierres.map((c) => ({
-        ...c,
+        id: c.id,
         fecha: c.fecha.toISOString(),
+        responsable: c.responsable?.nombre || 'Administrador',
+        responsableId: c.responsableId,
+        baseInicial: Number(c.baseInicial),
+        ventasEfectivo: Number(c.ventasEfectivo),
+        ventasTransf: Number(c.ventasTransf),
+        totalVentas: Number(c.totalVentas),
+        retiros: Number(c.retiros),
+        efectivoEsperado: Number(c.efectivoEsperado),
+        efectivoReal: Number(c.efectivoReal),
+        diferencia: Number(c.diferencia),
+        totalPedidos: c.totalPedidos,
+        ticketPromedio: Number(c.ticketPromedio),
+        observaciones: c.observaciones,
         createdAt: c.createdAt.toISOString(),
       })),
     };

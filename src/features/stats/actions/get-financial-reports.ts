@@ -34,9 +34,9 @@ export async function getDailyFinancials() {
     return {
       success: true,
       data: {
-        ingresoNeto: ventasNetas._sum.total || 0,
+        ingresoNeto: Number(ventasNetas._sum.total || 0),
         pedidosExitosos: ventasNetas._count.id,
-        dineroCancelado: perdidas._sum.total || 0,
+        dineroCancelado: Number(perdidas._sum.total || 0),
         pedidosCancelados: perdidas._count.id,
         distribucion: pedidosPorEstado,
       },
@@ -58,11 +58,26 @@ export async function getDailyOrders() {
       where: {
         createdAt: { gte: inicioHoy, lte: finHoy },
       },
+      include: {
+        pagos: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
 
-    return { success: true, data: pedidos };
-
+    return {
+      success: true,
+      data: pedidos.map((p) => ({
+        ...p,
+        total: Number(p.total),
+        detalle: p.detalle || '',
+        pagos: p.pagos.map((pg) => ({
+          ...pg,
+          monto: Number(pg.monto),
+          montoRecibido: pg.montoRecibido ? Number(pg.montoRecibido) : null,
+          cambio: pg.cambio ? Number(pg.cambio) : null,
+        })),
+      })),
+    };
   } catch (error) {
     console.error('Error al obtener pedidos del día:', error);
     return { success: false, error: 'No se pudieron obtener los pedidos.' };
@@ -127,7 +142,7 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
       rangoTexto = 'Hoy';
     }
 
-    // Consulta indexada ultra rápida a Supabase
+    // Consulta indexada a Supabase con pagos normalizados
     const pedidos = await prisma.pedido.findMany({
       where: {
         createdAt: {
@@ -135,21 +150,8 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
           lte: rango.fin,
         },
       },
-      select: {
-        id: true,
-        mesa: true,
-        tipoPedido: true,
-        cliente: true,
-        telefono: true,
-        direccion: true,
-        notas: true,
-        detalle: true,
-        total: true,
-        metodoPago: true,
-        pagoEfectivo: true,
-        pagoTransferencia: true,
-        estado: true,
-        createdAt: true,
+      include: {
+        pagos: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -165,23 +167,35 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
     const mapaDesglose: Record<string, { total: number; cantidad: number }> = {};
 
     for (const p of pedidos) {
+      const totalNum = Number(p.total);
+
       if (p.estado === 'CANCELADO') {
-        dineroCancelado += p.total;
+        dineroCancelado += totalNum;
         pedidosCancelados++;
       } else {
-        ingresoNeto += p.total;
+        ingresoNeto += totalNum;
         pedidosExitosos++;
 
-        // Desglose por método de pago (Soporta Pago Dividido normalizado)
-        if (p.metodoPago === 'DIVIDIDO') {
-          totalEfectivo += p.pagoEfectivo ?? 0;
-          totalTransferencia += p.pagoTransferencia ?? 0;
-        } else if (p.metodoPago === 'TRANSFERENCIA' || p.detalle.includes('TRANSFERENCIA')) {
-          totalTransferencia += p.total;
+        // Desglose exacto mediante la entidad normalizada Pago
+        let efec = 0;
+        let transf = 0;
+        if (p.pagos && p.pagos.length > 0) {
+          for (const pg of p.pagos) {
+            const montoPg = Number(pg.monto);
+            if (pg.metodoPago === 'TRANSFERENCIA') {
+              transf += montoPg;
+            } else {
+              efec += montoPg;
+            }
+          }
+        } else if (p.detalle?.includes('TRANSFERENCIA')) {
+          transf += totalNum;
         } else {
-          // Por defecto efectivo si fue pagado o servido
-          totalEfectivo += p.total;
+          efec += totalNum;
         }
+
+        totalEfectivo += efec;
+        totalTransferencia += transf;
 
         // Agrupación para gráfica
         const fechaEtiqueta = new Intl.DateTimeFormat('es-CO', {
@@ -194,7 +208,7 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
         if (!mapaDesglose[fechaEtiqueta]) {
           mapaDesglose[fechaEtiqueta] = { total: 0, cantidad: 0 };
         }
-        mapaDesglose[fechaEtiqueta].total += p.total;
+        mapaDesglose[fechaEtiqueta].total += totalNum;
         mapaDesglose[fechaEtiqueta].cantidad++;
       }
     }
@@ -220,12 +234,45 @@ export async function getPeriodFinancials(periodo: PeriodoReporte = 'dia'): Prom
         dineroCancelado,
         pedidosCancelados,
         desglose,
-        pedidos: pedidos.map((p) => ({
-          ...p,
-          pagoEfectivo: p.pagoEfectivo ?? 0,
-          pagoTransferencia: p.pagoTransferencia ?? 0,
-          createdAt: p.createdAt.toISOString(),
-        })),
+        pedidos: pedidos.map((p) => {
+          let efec = 0;
+          let transf = 0;
+          if (p.pagos && p.pagos.length > 0) {
+            for (const pg of p.pagos) {
+              const montoPg = Number(pg.monto);
+              if (pg.metodoPago === 'TRANSFERENCIA') transf += montoPg;
+              else efec += montoPg;
+            }
+          } else if (p.detalle?.includes('TRANSFERENCIA')) {
+            transf = Number(p.total);
+          } else {
+            efec = Number(p.total);
+          }
+
+          let metodoPagoLabel: 'DIVIDIDO' | 'TRANSFERENCIA' | 'EFECTIVO' = 'EFECTIVO';
+          if (efec > 0 && transf > 0) {
+            metodoPagoLabel = 'DIVIDIDO';
+          } else if (transf > 0) {
+            metodoPagoLabel = 'TRANSFERENCIA';
+          }
+
+          return {
+            id: p.id,
+            mesa: p.mesa,
+            tipoPedido: p.tipoPedido,
+            cliente: p.cliente,
+            telefono: p.telefono,
+            direccion: p.direccion,
+            notas: p.notas,
+            detalle: p.detalle || '',
+            total: Number(p.total),
+            metodoPago: metodoPagoLabel,
+            pagoEfectivo: efec,
+            pagoTransferencia: transf,
+            estado: p.estado,
+            createdAt: p.createdAt.toISOString(),
+          };
+        }),
       },
     };
   } catch (error) {

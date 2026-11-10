@@ -13,7 +13,7 @@ export default async function AdminMenuPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    redirect('/login?mensaje=sesion_requerida');
   }
 
   // Protección estricta: Solo usuarios con rol ADMIN pueden administrar el menú

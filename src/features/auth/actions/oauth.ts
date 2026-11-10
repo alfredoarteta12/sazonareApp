@@ -3,6 +3,7 @@
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
 export async function signInWithGoogle() {
   const supabase = await createSupabaseServerClient();
@@ -138,5 +139,6 @@ export async function signInWithEmail(formData: { email: string; password: strin
 export async function signOut() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
-  redirect('/login');
+  revalidatePath('/', 'layout');
+  redirect('/login?mensaje=sesion_cerrada');
 }

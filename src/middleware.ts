@@ -44,21 +44,43 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ['/login', '/cocina', '/api/pedidos/activos', '/api/productos', '/auth'];
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
 
-  // Si no hay usuario y la ruta no es pública, redirigir al login
+  // Helper para aplicar cabeceras que prohíben estrictamente el guardado en BFCache del navegador
+  const aplicarHeadersSeguridad = (res: NextResponse) => {
+    res.headers.set(
+      'Cache-Control',
+      'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0'
+    );
+    res.headers.set('Pragma', 'no-cache');
+    res.headers.set('Expires', '0');
+    return res;
+  };
+
+  // Helper para redirigir preservando cookies actualizadas de Supabase y headers anti-cache
+  const redirigirConSeguridad = (url: URL) => {
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return aplicarHeadersSeguridad(redirectResponse);
+  };
+
+  // 1. Si no hay usuario y la ruta no es pública -> Redirigir al login con mensaje
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    return NextResponse.redirect(url);
+    url.searchParams.set('mensaje', 'sesion_requerida');
+    return redirigirConSeguridad(url);
   }
 
-  // Si hay usuario y está en el login, redirigir según rol
+  // 2. Si hay usuario activo y está en /login (o pulsa 'Atrás' en el navegador) -> Redirigir fuera del login
   if (user && pathname === '/login') {
     const url = request.nextUrl.clone();
-    url.pathname = '/mesero'; // Redirección default; el middleware de rol se maneja en la página
-    return NextResponse.redirect(url);
+    url.pathname = '/mesero';
+    url.search = '';
+    return redirigirConSeguridad(url);
   }
 
-  return supabaseResponse;
+  return aplicarHeadersSeguridad(supabaseResponse);
 }
 
 export const config = {

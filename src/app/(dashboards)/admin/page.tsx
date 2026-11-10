@@ -29,7 +29,7 @@ export default async function AdminPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    redirect('/login?mensaje=sesion_requerida');
   }
 
   // Protección estricta: Solo usuarios con rol ADMIN pueden ver este dashboard

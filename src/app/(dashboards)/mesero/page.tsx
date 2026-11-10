@@ -13,7 +13,7 @@ export default async function MeseroPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    redirect('/login?mensaje=sesion_requerida');
   }
 
   // Verificar que el empleado esté activo

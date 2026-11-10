@@ -125,10 +125,12 @@ export function TicketReporteZModal({ cierre, onCerrar }: TicketReporteZModalPro
               <p className="font-black uppercase text-[10px] tracking-wider text-zinc-800 pb-1 border-b border-zinc-200">
                 2. AUDITORÍA DE EFECTIVO (ARQUEO)
               </p>
-              <div className="flex justify-between">
-                <span className="text-zinc-600">(+) Base Inicial de Caja:</span>
-                <span className="font-medium">{formatearCOP(cierre.baseInicial)}</span>
-              </div>
+              {cierre.baseInicial > 0 && (
+                <div className="flex justify-between text-zinc-600">
+                  <span>Base de Caja (Fondo de cambio):</span>
+                  <span className="font-medium">{formatearCOP(cierre.baseInicial)}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-zinc-600">(+) Ventas en Efectivo:</span>
                 <span className="font-medium">{formatearCOP(cierre.ventasEfectivo)}</span>
@@ -140,11 +142,11 @@ export function TicketReporteZModal({ cierre, onCerrar }: TicketReporteZModalPro
                 </div>
               )}
               <div className="flex justify-between pt-1 border-t border-zinc-200 font-bold">
-                <span>(=) Efectivo Físico Esperado:</span>
+                <span>(=) Efectivo a Entregar (Esperado):</span>
                 <span>{formatearCOP(cierre.efectivoEsperado)}</span>
               </div>
               <div className="flex justify-between font-black text-xs pt-1">
-                <span>Efectivo Real en Mano:</span>
+                <span>Efectivo Real Entregado:</span>
                 <span className="text-sm underline">{formatearCOP(cierre.efectivoReal)}</span>
               </div>
 

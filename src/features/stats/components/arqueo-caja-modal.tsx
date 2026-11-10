@@ -38,7 +38,8 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
 
   // Estados del formulario
   const [responsable, setResponsable] = useState('');
-  const [baseInicial, setBaseInicial] = useState<number | string>(100000);
+  const [baseInicial, setBaseInicial] = useState<number | string>('');
+  const [incluirBaseEnEsperado, setIncluirBaseEnEsperado] = useState(false);
   const [retiros, setRetiros] = useState<number | string>('');
   const [efectivoReal, setEfectivoReal] = useState<number | string>('');
   const [observaciones, setObservaciones] = useState('');
@@ -88,7 +89,8 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
   const ventasEfectivo = datosHoy?.ventasEfectivo || 0;
   const ventasTransf = datosHoy?.ventasTransf || 0;
   const totalVentas = datosHoy?.totalVentas || 0;
-  const efectivoEsperado = (Number(baseInicial) || 0) + ventasEfectivo - (Number(retiros) || 0);
+  // Por defecto el efectivo esperado a entregar son las ventas en efectivo registradas menos retiros
+  const efectivoEsperado = (incluirBaseEnEsperado ? (Number(baseInicial) || 0) : 0) + ventasEfectivo - (Number(retiros) || 0);
   const diferencia = (Number(efectivoReal) || 0) - efectivoEsperado;
 
   const diferenciaEsCero = Math.abs(diferencia) < 0.01;
@@ -108,12 +110,13 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
         baseInicial: Number(baseInicial) || 0,
         retiros: Number(retiros) || 0,
         efectivoReal: Number(efectivoReal) || 0,
+        incluirBaseEnEsperado,
         observaciones: observaciones.trim() || undefined,
       });
 
       if (res.success && res.data) {
         setCierreGenerado(res.data as CierreCajaData);
-        setBaseInicial(100000);
+        setBaseInicial('');
         setRetiros('');
         setEfectivoReal('');
         setObservaciones('');
@@ -235,21 +238,33 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
 
                   {/* Base Inicial */}
                   <div>
-                    <label className="block text-xs font-medium text-zinc-300 mb-1.5">
-                      Base Inicial de Caja (Fondo de cambio)
-                    </label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-medium text-zinc-300">
+                        Base Inicial de Caja (Fondo de cambio)
+                      </label>
+                      <span className="text-[10px] text-zinc-400">Permanente en caja</span>
+                    </div>
                     <div className="relative">
                       <span className="absolute left-3.5 top-2.5 text-zinc-500 text-sm">$</span>
                       <input
                         type="number"
                         min="0"
                         step="1000"
-                        placeholder="100000"
+                        placeholder="0"
                         value={baseInicial === 0 || baseInicial === '0' ? '' : baseInicial}
                         onChange={(e) => setBaseInicial(e.target.value === '' ? '' : Number(e.target.value))}
                         className="w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-8 pr-3.5 py-2 text-sm font-bold text-white focus:border-orange-500 focus:outline-none"
                       />
                     </div>
+                    <label className="flex items-center gap-2 mt-2 cursor-pointer text-[11px] text-zinc-400 hover:text-zinc-300">
+                      <input
+                        type="checkbox"
+                        checked={incluirBaseEnEsperado}
+                        onChange={(e) => setIncluirBaseEnEsperado(e.target.checked)}
+                        className="rounded border-zinc-700 bg-zinc-800 text-orange-500 focus:ring-0"
+                      />
+                      <span>Sumar base al dinero esperado (si entregas todo el cajón junto)</span>
+                    </label>
                   </div>
 
                   {/* Retiros o Gastos Menores */}
@@ -374,7 +389,9 @@ export function ArqueoCajaModal({ onCerrar, onCierreCompletado }: ArqueoCajaModa
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold text-zinc-400">
-                        Efectivo Esperado (Base + Ventas - Retiros):
+                        {incluirBaseEnEsperado
+                          ? 'Efectivo Esperado (Ventas + Base - Retiros):'
+                          : 'Efectivo Esperado a Entregar (Ventas Efectivo - Retiros):'}
                       </p>
                       <p className="text-lg font-black text-white">
                         {formatearCOP(efectivoEsperado)}

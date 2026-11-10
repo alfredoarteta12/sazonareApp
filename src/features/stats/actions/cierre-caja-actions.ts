@@ -176,6 +176,7 @@ export interface RegistrarCierreInput {
   baseInicial: number;
   retiros: number;
   efectivoReal: number;
+  incluirBaseEnEsperado?: boolean;
   observaciones?: string;
 }
 
@@ -251,8 +252,10 @@ export async function registrarCierreCaja(input: RegistrarCierreInput) {
     const baseInicial = Number(input.baseInicial) || 0;
     const retiros = Number(input.retiros) || 0;
     const efectivoReal = Number(input.efectivoReal) || 0;
+    const incluirBase = !!input.incluirBaseEnEsperado;
 
-    const efectivoEsperado = baseInicial + ventasEfectivo - retiros;
+    // Por defecto el efectivo esperado a entregar son las ventas en efectivo del turno menos retiros
+    const efectivoEsperado = (incluirBase ? baseInicial : 0) + ventasEfectivo - retiros;
     const diferencia = efectivoReal - efectivoEsperado;
 
     const cierre = await prisma.cierreCaja.create({

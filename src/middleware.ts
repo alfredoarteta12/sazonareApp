@@ -40,9 +40,10 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Rutas públicas que no requieren autenticación
-  const publicRoutes = ['/login', '/cocina', '/api/pedidos/activos', '/api/productos', '/auth'];
-  const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route));
+  // Rutas públicas que no requieren autenticación (La página principal '/' y '/login' son públicas)
+  // NOTA: '/cocina' ahora es una zona protegida que requiere login (rol COCINA o ADMIN)
+  const publicRoutes = ['/login', '/api/pedidos/activos', '/api/productos', '/auth'];
+  const isPublicRoute = pathname === '/' || publicRoutes.some((route) => pathname.startsWith(route));
 
   // Helper para aplicar cabeceras que prohíben estrictamente el guardado en BFCache del navegador
   const aplicarHeadersSeguridad = (res: NextResponse) => {

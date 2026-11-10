@@ -96,24 +96,41 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <div className="mb-6">
             <h2 className="text-xl font-bold text-white">Acceso al Sistema</h2>
             <p className="text-xs text-zinc-400 mt-1">
-              Ingresa con tus credenciales o regístrate para iniciar como Administrador.
+              Ingresa con tus credenciales de empleado o administrador.
             </p>
+
+            {/* Badges de Roles del Sistema */}
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              <span className="rounded-lg bg-orange-950/60 border border-orange-800/60 px-2 py-0.5 text-[10px] font-bold text-orange-300">
+                👑 Admin
+              </span>
+              <span className="rounded-lg bg-blue-950/60 border border-blue-800/60 px-2 py-0.5 text-[10px] font-bold text-blue-300">
+                📱 Mesero
+              </span>
+              <span className="rounded-lg bg-amber-950/60 border border-amber-800/60 px-2 py-0.5 text-[10px] font-bold text-amber-300">
+                👨‍🍳 Cocina
+              </span>
+              <span className="rounded-lg bg-zinc-900 border border-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400">
+                🍽️ Clientes (Próx.)
+              </span>
+            </div>
           </div>
 
           <AuthForm />
 
           <p className="mt-6 text-center text-xs text-zinc-500">
-            👑 El primer usuario registrado recibe el rol de Administrador.
+            🔒 El sistema detecta y redirige automáticamente a tu estación de trabajo (Admin, Mesero o Cocina).
           </p>
         </div>
 
-        {/* Monitor de cocina - Acceso sin login */}
+        {/* Retorno a la Página Principal */}
         <div className="mt-6 text-center">
           <a
-            href="/cocina"
-            className="text-sm text-zinc-400 underline-offset-4 hover:text-orange-400 hover:underline transition-colors"
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition-colors py-1.5 px-3 rounded-xl hover:bg-zinc-900"
           >
-            📺 Abrir monitor de preparación de cocina (acceso público)
+            <span>←</span>
+            <span>Volver a la página principal</span>
           </a>
         </div>
       </div>

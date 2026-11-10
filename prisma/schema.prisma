@@ -15,6 +15,7 @@ enum Role {
 }
 
 enum OrderStatus {
+  SOLICITADO
   PENDIENTE
   PREPARANDO
   HECHO

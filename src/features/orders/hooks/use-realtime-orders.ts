@@ -93,6 +93,13 @@ export function useRealtimeOrders(
               detalle: raw.detalle || '',
               total: Number(raw.total),
             };
+
+            // Cocina (!incluirEntregados) NO debe recibir ni sonar con pedidos en estado 'SOLICITADO'
+            // ya que estos esperan confirmación previa del mesero
+            if (!incluirEntregados && nuevo.estado === 'SOLICITADO') {
+              return;
+            }
+
             setPedidos((prev) => [nuevo, ...prev]);
             onNuevoPedidoRef.current?.(nuevo);
           } else if (payload.eventType === 'UPDATE') {
@@ -104,18 +111,35 @@ export function useRealtimeOrders(
             };
             setPedidos((prev) => {
               const previo = prev.find((p) => p.id === nuevo.id);
+
+              // Si en Cocina (!incluirEntregados) un pedido pasó de SOLICITADO a PENDIENTE,
+              // significa que el mesero lo acaba de aprobar y enviar: ¡activar alerta sonora y destello!
+              if (
+                !incluirEntregados &&
+                (!previo || previo.estado === 'SOLICITADO') &&
+                nuevo.estado === 'PENDIENTE'
+              ) {
+                onNuevoPedidoRef.current?.(nuevo);
+              }
+
               // Notificar al mesero si la comanda acaba de pasar a HECHO (Listo para servir)
               if (nuevo.estado === 'HECHO' && previo?.estado !== 'HECHO') {
                 onPedidoListoRef.current?.(nuevo);
               }
 
-              return prev
-                .map((p) => (p.id === nuevo.id ? { ...p, ...nuevo } : p))
-                .filter((p) =>
-                  incluirEntregados
-                    ? p.estado !== 'CANCELADO'
-                    : p.estado !== 'ENTREGADO' && p.estado !== 'CANCELADO' && p.estado !== 'PAGADO'
-                );
+              const yaExiste = !!previo;
+              const listaBase = yaExiste
+                ? prev.map((p) => (p.id === nuevo.id ? { ...p, ...nuevo } : p))
+                : [nuevo, ...prev];
+
+              return listaBase.filter((p) =>
+                incluirEntregados
+                  ? p.estado !== 'CANCELADO'
+                  : p.estado !== 'ENTREGADO' &&
+                    p.estado !== 'CANCELADO' &&
+                    p.estado !== 'PAGADO' &&
+                    p.estado !== 'SOLICITADO'
+              );
             });
           } else if (payload.eventType === 'DELETE') {
             const idEliminado = (payload.old as { id?: string })?.id;

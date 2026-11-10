@@ -12,7 +12,8 @@ export async function GET(request: NextRequest) {
 
     let whereClause: Record<string, unknown> = {
       estado: {
-        notIn: ['ENTREGADO', 'CANCELADO', 'PAGADO'],
+        // Cocina solo atiende comandas confirmadas por mesero (excluye pedidos en espera 'SOLICITADO')
+        notIn: ['ENTREGADO', 'CANCELADO', 'PAGADO', 'SOLICITADO'],
       },
     };
 

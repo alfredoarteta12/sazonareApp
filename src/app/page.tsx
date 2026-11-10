@@ -76,11 +76,18 @@ export default async function HomePage() {
 
           {/* Botones de Llamado a la Acción (CTA) */}
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 max-w-md mx-auto sm:max-w-none">
-            <a
-              href="#menu"
+            <Link
+              href="/cliente"
               className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 px-6 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-orange-500/25 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
             >
-              <span>🍽️ Explorar Carta Digital</span>
+              <span>🛎️ Ver Carta & Pedir en Mesa</span>
+            </Link>
+
+            <a
+              href="#menu"
+              className="w-full sm:w-auto rounded-2xl border border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800 px-6 py-3.5 text-sm font-bold text-zinc-200 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span>🍽️ Vista Previa Rápida</span>
             </a>
 
             {usuarioActual ? (
@@ -311,30 +318,33 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Módulo 4: Portal Clientes (Próximamente) */}
-            <div className="rounded-3xl border border-zinc-800/60 bg-zinc-950/40 p-6 flex flex-col justify-between hover:border-purple-500/40 transition-all group relative overflow-hidden">
+            {/* Módulo 4: Portal Clientes */}
+            <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 flex flex-col justify-between hover:border-purple-500/60 transition-all group relative overflow-hidden shadow-lg shadow-purple-500/5">
               <div className="absolute top-3 right-3">
-                <span className="rounded-full bg-purple-500/20 border border-purple-500/40 px-2 py-0.5 text-[9px] font-black uppercase text-purple-300">
-                  Próximamente
+                <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-300">
+                  ¡En Vivo! 🛎️
                 </span>
               </div>
               <div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-950/40 border border-purple-800/60 text-2xl mb-4 group-hover:scale-110 transition-transform">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-950/60 border border-purple-800 text-2xl mb-4 group-hover:scale-110 transition-transform">
                   🍽️
                 </div>
                 <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors">
-                  Portal Clientes & 3D AR
+                  Carta Digital & Pedidos en Mesa
                 </h3>
                 <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-                  Experiencia para clientes mediante código QR en mesa: visualización de comida en 360° y Realidad Aumentada, pedidos digitales sin esperar al mesero.
+                  Experiencia para comensales en mesa o desde QR: explora la carta con disponibilidad en vivo, arma tu carrito con notas especiales y envía tu solicitud directa al mesero.
                 </p>
               </div>
 
               <div className="mt-6 pt-4 border-t border-zinc-800/80">
-                <span className="text-xs font-bold text-purple-400 flex items-center justify-between">
-                  <span>En desarrollo</span>
-                  <span>✨</span>
-                </span>
+                <Link
+                  href="/cliente"
+                  className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center justify-between"
+                >
+                  <span>Abrir Carta Digital y Pedir</span>
+                  <span>→</span>
+                </Link>
               </div>
             </div>
           </div>

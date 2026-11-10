@@ -16,7 +16,6 @@ interface LandingNavbarProps {
 export function LandingNavbar({ usuarioActual }: LandingNavbarProps) {
   const [menuMovilAbierto, setMenuMovilAbierto] = useState(false);
   const [dropdownAccesoAbierto, setDropdownAccesoAbierto] = useState(false);
-  const [mostrarModalClientes, setMostrarModalClientes] = useState(false);
 
   const rutaPanel =
     usuarioActual?.role === 'ADMIN'
@@ -60,16 +59,15 @@ export function LandingNavbar({ usuarioActual }: LandingNavbarProps) {
             <a href="#experiencia" className="hover:text-orange-400 transition-colors">
               ✨ Experiencia
             </a>
-            <button
-              type="button"
-              onClick={() => setMostrarModalClientes(true)}
-              className="flex items-center gap-1 text-zinc-400 hover:text-white transition-colors"
+            <Link
+              href="/cliente"
+              className="flex items-center gap-1.5 text-zinc-300 hover:text-orange-400 transition-colors"
             >
-              <span>Para Clientes</span>
-              <span className="rounded-full bg-orange-500/15 border border-orange-500/30 px-2 py-0.2 text-[10px] font-extrabold text-orange-400">
-                Pronto
+              <span>🛎️ Pedir en Mesa</span>
+              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.2 text-[10px] font-extrabold text-emerald-400">
+                Cliente
               </span>
-            </button>
+            </Link>
           </nav>
 
           {/* Botones de Acción / Login (Desktop) */}
@@ -161,25 +159,24 @@ export function LandingNavbar({ usuarioActual }: LandingNavbarProps) {
                       </div>
                     </Link>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDropdownAccesoAbierto(false);
-                        setMostrarModalClientes(true);
-                      }}
-                      className="w-full flex items-center justify-between rounded-xl p-2.5 hover:bg-zinc-900/60 transition-colors text-left border-t border-zinc-900 mt-1"
+                    <Link
+                      href="/cliente"
+                      onClick={() => setDropdownAccesoAbierto(false)}
+                      className="flex items-center justify-between rounded-xl p-2.5 hover:bg-zinc-900/60 transition-colors border-t border-zinc-900 mt-1 group"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-xl">🍽️</span>
                         <div>
-                          <p className="text-xs font-bold text-zinc-300">Clientes</p>
-                          <p className="text-[10px] text-zinc-500">Pedidos desde la mesa</p>
+                          <p className="text-xs font-bold text-zinc-300 group-hover:text-purple-300">
+                            Carta Clientes
+                          </p>
+                          <p className="text-[10px] text-zinc-500">Pedidos directos desde la mesa</p>
                         </div>
                       </div>
-                      <span className="rounded bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 text-[9px] font-bold text-orange-400">
-                        Pronto
+                      <span className="rounded bg-emerald-500/15 border border-emerald-500/30 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400">
+                        Activo
                       </span>
-                    </button>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -282,76 +279,23 @@ export function LandingNavbar({ usuarioActual }: LandingNavbarProps) {
               >
                 ✨ Experiencia
               </a>
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuMovilAbierto(false);
-                  setMostrarModalClientes(true);
-                }}
-                className="w-full text-left py-2 px-3 rounded-xl hover:bg-zinc-900 text-zinc-400 flex items-center justify-between"
+              <Link
+                href="/cliente"
+                onClick={() => setMenuMovilAbierto(false)}
+                className="w-full text-left py-2.5 px-3 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 font-bold flex items-center justify-between hover:bg-orange-500/20"
               >
-                <span>Para Clientes</span>
-                <span className="rounded bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 text-[9px] font-bold text-orange-400">
-                  Pronto
+                <span className="flex items-center gap-2">
+                  <span>🛎️</span>
+                  <span>Pedir en Mesa (Cliente)</span>
                 </span>
-              </button>
+                <span className="rounded bg-emerald-500/20 border border-emerald-500/40 px-1.5 py-0.5 text-[9px] font-black text-emerald-400">
+                  Activo
+                </span>
+              </Link>
             </div>
           </div>
         )}
       </header>
-
-      {/* Modal informativo: Módulo de Clientes Próximamente */}
-      {mostrarModalClientes && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl shadow-orange-500/10 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4">
-              <div className="flex items-center gap-2.5">
-                <span className="text-2xl">🍽️</span>
-                <div>
-                  <h3 className="text-base font-bold text-white">Portal para Clientes</h3>
-                  <span className="text-[10px] font-bold text-orange-400 uppercase tracking-wider">
-                    En Desarrollo Activo
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMostrarModalClientes(false)}
-                className="rounded-xl p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-zinc-300 leading-relaxed">
-              Muy pronto los comensales podrán escanear el código QR de su mesa para:
-            </p>
-
-            <ul className="my-4 space-y-2.5 text-xs text-zinc-400">
-              <li className="flex items-center gap-2">
-                <span className="text-emerald-400 font-bold">✓</span>
-                <span>Explorar la carta completa en tiempo real con platos disponibles y agotados.</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-orange-400 font-bold">✓</span>
-                <span>Visualizar platillos en 3D y proyectarlos en la mesa con Realidad Aumentada (AR).</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="text-blue-400 font-bold">✓</span>
-                <span>Enviar pedidos directamente a la comanda de cocina y solicitar la cuenta.</span>
-              </li>
-            </ul>
-
-            <button
-              type="button"
-              onClick={() => setMostrarModalClientes(false)}
-              className="w-full rounded-2xl bg-orange-500 hover:bg-orange-600 py-2.5 text-xs font-bold text-white transition-colors"
-            >
-              ¡Entendido, genial!
-            </button>
-          </div>
-        </div>
-      )}
     </>
   );
 }

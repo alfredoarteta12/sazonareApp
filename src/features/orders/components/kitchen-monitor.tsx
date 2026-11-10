@@ -13,6 +13,12 @@ import { formatearCOP } from '@/lib/currency';
 
 
 const ESTADO_CONFIG = {
+  SOLICITADO: {
+    label: '🛎️ Solicitado por Cliente',
+    color: 'bg-purple-950/25 text-purple-200 border-purple-800/70',
+    badge: 'bg-purple-400',
+    badgeText: 'bg-purple-950/60 text-purple-300 border-purple-800/50',
+  },
   PENDIENTE: {
     label: '⏳ Pendiente',
     color: 'bg-amber-950/25 text-amber-200 border-amber-800/70',

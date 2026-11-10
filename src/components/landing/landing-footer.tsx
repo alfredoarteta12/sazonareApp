@@ -56,10 +56,13 @@ export function LandingFooter() {
                 </Link>
               </li>
               <li>
-                <span className="text-zinc-600 flex items-center gap-1.5 cursor-not-allowed">
+                <Link
+                  href="/cliente"
+                  className="hover:text-purple-400 text-purple-300 font-semibold transition-colors flex items-center gap-1.5"
+                >
                   <span>🍽️</span>
-                  <span>Portal Clientes QR (Próximamente)</span>
-                </span>
+                  <span>Portal Clientes (Carta & Pedidos)</span>
+                </Link>
               </li>
             </ul>
           </div>

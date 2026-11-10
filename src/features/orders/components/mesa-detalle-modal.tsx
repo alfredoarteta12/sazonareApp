@@ -5,7 +5,12 @@ import { Pedido } from '../hooks/use-realtime-orders';
 import { OrderStatusStepper } from './order-status-stepper';
 import { TicketReciboModal } from './ticket-recibo-modal';
 import { parseDetallePedido } from '../utils/parse-order-detail';
-import { marcarComoEntregado, cobrarPedidoYLiberarMesa } from '../actions/order-mutations';
+import {
+  marcarComoEntregado,
+  cobrarPedidoYLiberarMesa,
+  confirmarPedidoCliente,
+  rechazarPedidoCliente,
+} from '../actions/order-mutations';
 import { formatearCOP } from '@/lib/currency';
 
 interface MesaDetalleModalProps {
@@ -67,6 +72,30 @@ export function MesaDetalleModal({
 
   const esLlevar = pedido.tipoPedido === 'LLEVAR' || pedido.detalle.includes('[PARA LLEVAR');
   const esDomicilio = pedido.tipoPedido === 'DOMICILIO' || pedido.detalle.includes('[DOMICILIO');
+
+  const handleConfirmarCliente = () => {
+    startTransition(async () => {
+      const res = await confirmarPedidoCliente(pedido.id);
+      if (res.success && res.pedido) {
+        setPedido(res.pedido as unknown as Pedido);
+        setMensaje({ tipo: 'exito', texto: '🚀 ¡Comanda confirmada y enviada a Cocina con éxito!' });
+      } else {
+        setMensaje({ tipo: 'error', texto: res.error || 'Error al enviar a cocina' });
+      }
+    });
+  };
+
+  const handleRechazarCliente = () => {
+    if (!confirm('¿Estás seguro de anular la solicitud de este cliente?')) return;
+    startTransition(async () => {
+      const res = await rechazarPedidoCliente(pedido.id);
+      if (res.success) {
+        onCerrar();
+      } else {
+        setMensaje({ tipo: 'error', texto: res.error || 'Error al rechazar' });
+      }
+    });
+  };
 
   const handleMarcarEntregado = () => {
     startTransition(async () => {
@@ -244,8 +273,44 @@ export function MesaDetalleModal({
             </div>
           )}
 
+          {/* PANEL DE CONFIRMACIÓN SI ES SOLICITUD DE CLIENTE */}
+          {pedido.estado === 'SOLICITADO' && (
+            <div className="rounded-2xl border-2 border-purple-500/70 bg-gradient-to-br from-purple-950/60 to-zinc-950 p-4 shadow-2xl space-y-3.5">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl shrink-0 animate-bounce">🛎️</span>
+                <div>
+                  <p className="text-sm font-black text-white">
+                    Solicitud Enviada por el Cliente
+                  </p>
+                  <p className="text-xs text-purple-200/90 mt-0.5 leading-relaxed">
+                    El cliente pidió estos platillos desde su mesa. Revisa los detalles y confirma para enviar la comanda formal a Cocina.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-purple-800/40">
+                <button
+                  type="button"
+                  onClick={handleRechazarCliente}
+                  disabled={isPending}
+                  className="rounded-xl border border-rose-800/80 bg-rose-950/40 hover:bg-rose-900/60 py-2.5 text-xs font-bold text-rose-300 transition-colors"
+                >
+                  ❌ Rechazar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmarCliente}
+                  disabled={isPending}
+                  className="rounded-xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 py-2.5 text-xs font-black text-white shadow-lg shadow-orange-500/25 transition-all hover:scale-105 active:scale-95"
+                >
+                  {isPending ? 'Enviando...' : '🚀 Enviar a Cocina'}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* SECCIÓN / APARTADO DE PAGO */}
-          {pedido.estado !== 'PAGADO' && (
+          {pedido.estado !== 'PAGADO' && pedido.estado !== 'SOLICITADO' && (
             <div className="rounded-2xl border-2 border-orange-500/30 bg-gradient-to-b from-orange-950/10 to-zinc-900/40 p-4 shadow-xl">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -595,7 +660,7 @@ export function MesaDetalleModal({
         {/* Acciones del pie */}
         <div className="pt-3.5 border-t border-zinc-800 space-y-2 shrink-0">
           {/* Botón para marcar entregado si aún está en preparación */}
-          {pedido.estado !== 'ENTREGADO' && pedido.estado !== 'PAGADO' && pedido.estado !== 'CANCELADO' && (
+          {pedido.estado !== 'SOLICITADO' && pedido.estado !== 'ENTREGADO' && pedido.estado !== 'PAGADO' && pedido.estado !== 'CANCELADO' && (
             <button
               type="button"
               onClick={handleMarcarEntregado}

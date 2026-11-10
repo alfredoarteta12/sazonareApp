@@ -418,3 +418,154 @@ export async function eliminarPedido(pedidoId: string) {
     return { success: false, error: 'No se pudo eliminar el pedido de la base de datos.' };
   }
 }
+
+export interface ParametrosPedidoCliente {
+  mesa: number;
+  cliente?: string;
+  telefono?: string;
+  notas?: string;
+  items: ItemCarrito[];
+}
+
+/**
+ * Crea un pedido originado directamente por un cliente desde la carta QR o portal web.
+ * Se crea en estado 'SOLICITADO'.
+ * NO llega a la cocina directamente; queda a la espera de ser aprobado por el mesero.
+ */
+export async function crearPedidoCliente(params: ParametrosPedidoCliente) {
+  if (!params.mesa || params.mesa < 1) {
+    return { success: false, error: 'Debes seleccionar el número de tu mesa.' };
+  }
+  if (!params.items || params.items.length === 0) {
+    return { success: false, error: 'Tu carrito está vacío. Agrega al menos un platillo.' };
+  }
+
+  try {
+    const total = params.items.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+
+    const detalleItems = params.items
+      .map((item) => {
+        const notaStr = item.notas && item.notas.trim() ? ` {Nota: ${item.notas.trim()}}` : '';
+        return `${item.cantidad}x ${item.nombre} (${formatearCOP(item.precio)})${notaStr}`;
+      })
+      .join(', ');
+
+    const nombreCliente = params.cliente?.trim() || `Cliente Mesa ${params.mesa}`;
+    const detalle = `[SOLICITUD CLIENTE - ${nombreCliente}] ${detalleItems}${
+      params.notas ? ` (Nota: ${params.notas.trim()})` : ''
+    }`;
+
+    const pedido = await prisma.pedido.create({
+      data: {
+        mesa: params.mesa,
+        tipoPedido: TipoPedido.MESA,
+        cliente: nombreCliente,
+        telefono: params.telefono?.trim() || null,
+        notas: params.notas?.trim() || null,
+        detalle,
+        total: Number(total.toFixed(2)),
+        estado: OrderStatus.SOLICITADO,
+        creadoPorId: null, // Creado por el cliente
+        items: {
+          create: params.items.map((item) => ({
+            productoId: item.productoId && item.productoId.length > 5 ? item.productoId : null,
+            nombre: item.nombre,
+            precioUnitario: item.precio,
+            cantidad: item.cantidad,
+            subtotal: Number((item.precio * item.cantidad).toFixed(2)),
+            notas: item.notas || null,
+          })),
+        },
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    revalidatePath('/mesero');
+    revalidatePath('/admin');
+    revalidatePath('/cliente');
+
+    return {
+      success: true,
+      pedido: {
+        id: pedido.id,
+        mesa: pedido.mesa,
+        total: Number(pedido.total),
+        estado: pedido.estado,
+        cliente: pedido.cliente,
+        detalle: pedido.detalle,
+      },
+    };
+  } catch (error: any) {
+    console.error('Error al crear pedido cliente:', error);
+    return { success: false, error: error?.message || 'Error al enviar pedido.' };
+  }
+}
+
+/**
+ * Confirmación por parte del mesero: aprueba el pedido solicitado por el cliente
+ * y lo envía formalmente a la cocina (cambia estado a 'PENDIENTE').
+ * En este instante se activa el sonido y destello en la Cocina vía Realtime.
+ */
+export async function confirmarPedidoCliente(pedidoId: string) {
+  try {
+    let creadoPorId: string | null = null;
+    try {
+      const supabase = await createSupabaseServerClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        creadoPorId = user.id;
+      }
+    } catch (e) {
+      // Auth opcional
+    }
+
+    const pedido = await prisma.pedido.update({
+      where: { id: pedidoId },
+      data: {
+        estado: OrderStatus.PENDIENTE,
+        creadoPorId,
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    revalidatePath('/mesero');
+    revalidatePath('/cocina');
+    revalidatePath('/admin');
+    revalidatePath('/cliente');
+
+    return { success: true, pedido: serializePedido(pedido) };
+  } catch (error: any) {
+    console.error('Error al confirmar pedido de cliente:', error);
+    return { success: false, error: error?.message || 'Error al confirmar pedido.' };
+  }
+}
+
+/**
+ * Rechaza o anula una solicitud de cliente (ej: orden falsa o cliente retirado).
+ */
+export async function rechazarPedidoCliente(pedidoId: string, motivo?: string) {
+  try {
+    const pedido = await prisma.pedido.update({
+      where: { id: pedidoId },
+      data: {
+        estado: OrderStatus.CANCELADO,
+        notas: motivo ? `Rechazado por mesero: ${motivo}` : 'Rechazado por mesero',
+      },
+    });
+
+    revalidatePath('/mesero');
+    revalidatePath('/admin');
+    revalidatePath('/cliente');
+
+    return { success: true, pedido: serializePedido(pedido) };
+  } catch (error: any) {
+    console.error('Error al rechazar pedido de cliente:', error);
+    return { success: false, error: error?.message || 'Error al rechazar pedido.' };
+  }
+}

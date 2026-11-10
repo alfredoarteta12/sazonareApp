@@ -46,6 +46,7 @@ export function CroquisTerraza({
 
   // Contadores para el resumen en vivo
   const totalMesas = MESAS_TERRAZA.length;
+  let mesasSolicitadas = 0;
   let mesasEnCocina = 0;
   let mesasListas = 0;
   let mesasServidas = 0;
@@ -53,13 +54,14 @@ export function CroquisTerraza({
   MESAS_TERRAZA.forEach((m) => {
     const p = getPedidoMesa(m.id);
     if (p) {
+      if (p.estado === 'SOLICITADO') mesasSolicitadas++;
       if (p.estado === 'PENDIENTE' || p.estado === 'PREPARANDO') mesasEnCocina++;
       if (p.estado === 'HECHO') mesasListas++;
       if (p.estado === 'ENTREGADO') mesasServidas++;
     }
   });
 
-  const mesasLibres = totalMesas - (mesasEnCocina + mesasListas + mesasServidas);
+  const mesasLibres = totalMesas - (mesasSolicitadas + mesasEnCocina + mesasListas + mesasServidas);
 
   const handleClickMesa = (numeroMesa: number) => {
     const pedido = getPedidoMesa(numeroMesa);
@@ -99,6 +101,12 @@ export function CroquisTerraza({
 
           {/* BADGES DE ESTADO RÁPIDO */}
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs">
+            {mesasSolicitadas > 0 && (
+              <span className="flex items-center gap-1.5 rounded-xl bg-purple-950/80 border border-purple-500 px-2.5 sm:px-3 py-1 sm:py-1.5 font-black text-purple-200 shadow-lg shadow-purple-500/30 animate-bounce">
+                <span>🛎️</span> {mesasSolicitadas} {mesasSolicitadas === 1 ? 'Cliente pidiendo' : 'Clientes pidiendo'}
+              </span>
+            )}
+
             <span className="flex items-center gap-1.5 rounded-xl bg-emerald-950/40 border border-emerald-800/60 px-2.5 sm:px-3 py-1 sm:py-1.5 font-bold text-emerald-300">
               <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
               {mesasLibres} {mesasLibres === 1 ? 'Libre' : 'Libres'}
@@ -139,6 +147,7 @@ export function CroquisTerraza({
           {MESAS_TERRAZA.map((mesa) => {
             const pedido = getPedidoMesa(mesa.id);
             const estaOcupada = !!pedido;
+            const esSolicitado = pedido?.estado === 'SOLICITADO';
             const esListo = pedido?.estado === 'HECHO';
             const esPreparando = pedido?.estado === 'PREPARANDO' || pedido?.estado === 'PENDIENTE';
             const esServido = pedido?.estado === 'ENTREGADO';
@@ -155,7 +164,9 @@ export function CroquisTerraza({
                 key={mesa.id}
                 onClick={() => handleClickMesa(mesa.id)}
                 className={`group relative flex flex-col justify-between rounded-3xl border p-5 cursor-pointer transition-all duration-300 active:scale-95 select-none ${
-                  esListo
+                  esSolicitado
+                    ? 'border-purple-500 bg-purple-950/40 ring-2 ring-purple-400/80 shadow-2xl shadow-purple-500/30'
+                    : esListo
                     ? 'border-blue-500 bg-blue-950/30 ring-2 ring-blue-400/80 shadow-2xl shadow-blue-500/20'
                     : esPreparando
                     ? 'border-amber-600/70 bg-amber-950/20 shadow-lg shadow-amber-950/30 hover:border-amber-500'
@@ -172,7 +183,9 @@ export function CroquisTerraza({
 
                   <span
                     className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${
-                      esListo
+                      esSolicitado
+                        ? 'bg-purple-600 text-white shadow-md animate-bounce'
+                        : esListo
                         ? 'bg-blue-500 text-white shadow-md animate-pulse'
                         : esPreparando
                         ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
@@ -181,6 +194,7 @@ export function CroquisTerraza({
                         : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
                     }`}
                   >
+                    {esSolicitado && '🛎️ ¡Cliente Pidiendo!'}
                     {esListo && '🍽️ ¡Listo para servir!'}
                     {esPreparando && '🔥 En Cocina'}
                     {esServido && '✅ Comensales en Mesa'}
@@ -203,13 +217,15 @@ export function CroquisTerraza({
                     {/* Tablero central de la mesa */}
                     <div
                       className={`relative flex h-24 w-28 sm:h-28 sm:w-32 flex-col items-center justify-center rounded-2xl border shadow-inner transition-transform group-hover:scale-105 ${
-                        esListo
+                        esSolicitado
+                          ? 'border-purple-400 bg-gradient-to-br from-purple-900/60 to-purple-950 text-white'
+                          : esListo
                           ? 'border-blue-400 bg-gradient-to-br from-blue-900/60 to-blue-950 text-white'
                           : esPreparando
                           ? 'border-amber-500/50 bg-gradient-to-br from-amber-950/40 to-zinc-900 text-amber-200'
                           : esServido
-                          ? 'border-zinc-700 bg-gradient-to-br from-zinc-800 to-zinc-900 text-zinc-200'
-                          : 'border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 text-white'
+                          ? 'border-zinc-700 bg-zinc-900/90 text-zinc-300'
+                          : 'border-zinc-800 bg-zinc-950 text-zinc-500 group-hover:border-emerald-500/40'
                       }`}
                     >
                       <span className="text-2xl sm:text-3xl mb-0.5">
@@ -235,8 +251,12 @@ export function CroquisTerraza({
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        <span className="rounded-xl bg-orange-500/10 border border-orange-500/30 px-2.5 py-1 text-[11px] font-bold text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-colors">
-                          Ver Cuenta 🧾
+                        <span className={`rounded-xl border px-2.5 py-1 text-[11px] font-bold transition-colors ${
+                          esSolicitado
+                            ? 'bg-purple-500 text-white border-purple-400 animate-pulse'
+                            : 'bg-orange-500/10 border-orange-500/30 text-orange-400 group-hover:bg-orange-500 group-hover:text-white'
+                        }`}>
+                          {esSolicitado ? '🚀 Enviar a Cocina' : 'Ver Cuenta 🧾'}
                         </span>
                       </div>
                     </div>

@@ -28,6 +28,22 @@ export function OrderStatusStepper({ estado, size = 'md' }: OrderStatusStepperPr
     );
   }
 
+  if (estado === 'SOLICITADO') {
+    return (
+      <div className="flex items-center gap-3 rounded-2xl bg-purple-950/40 border border-purple-500/60 p-3 text-purple-200">
+        <span className="text-2xl animate-bounce">🛎️</span>
+        <div>
+          <p className="text-xs font-black uppercase tracking-wider text-purple-300">
+            Solicitud Pendiente de Confirmar por el Mesero
+          </p>
+          <p className="text-[11px] text-purple-200/80">
+            Aún no se ha enviado a Cocina. Confirma para que los cocineros inicien la preparación.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const indexActual = PASOS.findIndex((p) => p.key === estado);
 
   return (

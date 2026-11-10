@@ -66,23 +66,23 @@ export async function signUpWithEmail(formData: { email: string; password: strin
         },
       });
 
-      if (perfil.role === 'ADMIN') {
-        redirect('/admin');
-      } else if (perfil.role === 'COCINA') {
-        redirect('/cocina');
-      } else {
-        redirect('/mesero');
-      }
+      const destino =
+        perfil.role === 'ADMIN' ? '/admin' : perfil.role === 'COCINA' ? '/cocina' : '/mesero';
+      return { success: true, redirectTo: destino };
     } catch (e: any) {
-      if (e?.digest?.startsWith('NEXT_REDIRECT')) throw e;
       console.error('Error al sincronizar perfil en signUp:', e);
+      return { success: true, redirectTo: '/mesero' };
     }
   }
 
-  redirect('/mesero');
+  return { success: true, redirectTo: '/mesero' };
 }
 
-export async function signInWithEmail(formData: { email: string; password: string }) {
+export async function signInWithEmail(formData: { email: string; password: string }): Promise<{
+  success: boolean;
+  error?: string;
+  redirectTo?: string;
+}> {
   const supabase = await createSupabaseServerClient();
   const email = formData.email.trim().toLowerCase();
   const password = formData.password;
@@ -120,20 +120,21 @@ export async function signInWithEmail(formData: { email: string; password: strin
         });
       }
 
-      if (perfil.role === 'ADMIN') {
-        redirect('/admin');
-      } else if (perfil.role === 'COCINA') {
-        redirect('/cocina');
-      } else {
-        redirect('/mesero');
+      if (!perfil.activo) {
+        await supabase.auth.signOut();
+        return { success: false, error: 'Tu cuenta de empleado ha sido desactivada.' };
       }
+
+      const destino =
+        perfil.role === 'ADMIN' ? '/admin' : perfil.role === 'COCINA' ? '/cocina' : '/mesero';
+      return { success: true, redirectTo: destino };
     } catch (e: any) {
-      if (e?.digest?.startsWith('NEXT_REDIRECT')) throw e;
-      console.error('Error al redirigir usuario en signIn:', e);
+      console.error('Error al sincronizar perfil en signIn:', e);
+      return { success: true, redirectTo: '/mesero' };
     }
   }
 
-  redirect('/mesero');
+  return { success: true, redirectTo: '/mesero' };
 }
 
 export async function signOut() {

@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { BotonInstalarPwa } from '@/components/boton-instalar-pwa';
+import { DashboardHistoryLock } from '@/components/dashboard-history-lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,7 @@ export default async function MeseroPage() {
 
   return (
     <div className="flex h-[100dvh] min-h-[100dvh] w-full max-w-full flex-col bg-black text-white overflow-hidden">
+      <DashboardHistoryLock />
       {/* Header exclusivo de Estación de Mesero (POS táctil) */}
       <header className="border-b border-zinc-800 bg-zinc-950 px-3 py-2 sm:px-6 sm:py-3.5 shadow-sm shrink-0">
         <div className="flex items-center justify-between gap-1.5 sm:gap-2">

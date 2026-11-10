@@ -7,6 +7,7 @@ import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { formatearFechaLargaColombia } from '@/lib/date-utils';
 import { BotonInstalarPwa } from '@/components/boton-instalar-pwa';
+import { DashboardHistoryLock } from '@/components/dashboard-history-lock';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,7 @@ export default async function AdminPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      <DashboardHistoryLock />
       {/* Header exclusivo de Administrador */}
       <header className="border-b border-zinc-800 bg-zinc-950 px-3.5 py-3 sm:px-6 sm:py-4 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">

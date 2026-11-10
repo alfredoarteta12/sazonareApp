@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { signInWithEmail, signUpWithEmail } from '../actions/oauth';
 import { supabase } from '@/lib/supabase';
 
@@ -12,6 +12,15 @@ export function AuthForm() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Si el navegador ya tiene sesión activa en Supabase, no permitir ver el login
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        window.location.replace('/mesero');
+      }
+    });
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -21,11 +30,17 @@ export function AuthForm() {
         const res = await signUpWithEmail({ nombre, email, password });
         if (res && !res.success) {
           setErrorMsg(res.error || 'Error al registrar.');
+        } else if (res?.success && res.redirectTo) {
+          // Reemplazar la entrada en el historial para que 'Atrás' no regrese al login
+          window.location.replace(res.redirectTo);
         }
       } else {
         const res = await signInWithEmail({ email, password });
         if (res && !res.success) {
           setErrorMsg(res.error || 'Error al iniciar sesión.');
+        } else if (res?.success && res.redirectTo) {
+          // Reemplazar la entrada en el historial para que 'Atrás' no regrese al login
+          window.location.replace(res.redirectTo);
         }
       }
     });

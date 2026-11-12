@@ -92,7 +92,8 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
   const [notasComanda, setNotasComanda] = useState('');
 
   // Modal para ver y cobrar cualquier pedido seleccionado (Terraza, Llevar o Domicilio)
-  const [pedidoDetalleSeleccionado, setPedidoDetalleSeleccionado] = useState<Pedido | null>(null);
+  const [pedidoDetalleId, setPedidoDetalleId] = useState<string | null>(null);
+  const [pedidoDetalleFallback, setPedidoDetalleFallback] = useState<Pedido | null>(null);
 
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
   const [categoriaActiva, setCategoriaActiva] = useState<string>('todas');
@@ -124,10 +125,25 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
   }, []);
 
   // Escuchamos pedidos en tiempo real con polling inteligente y callbacks para meseros
-  const { pedidos: pedidosActivos } = useRealtimeOrders(handleNuevoPedidoMesero, {
+  const { pedidos: pedidosActivos, refrescar } = useRealtimeOrders(handleNuevoPedidoMesero, {
     incluirEntregados: true,
     onPedidoListo: handlePedidoListo,
   });
+
+  // Pedido vivo reactivo para el modal: siempre extrae el dato fresco de pedidosActivos
+  const pedidoDetalleSeleccionado = pedidoDetalleId
+    ? pedidosActivos.find((p) => p.id === pedidoDetalleId) || pedidoDetalleFallback
+    : null;
+
+  const abrirDetallePedido = (p: Pedido) => {
+    setPedidoDetalleId(p.id);
+    setPedidoDetalleFallback(p);
+  };
+
+  const cerrarDetallePedido = () => {
+    setPedidoDetalleId(null);
+    setPedidoDetalleFallback(null);
+  };
 
   // Desbloqueo automático del AudioContext en el primer toque de pantalla
   useEffect(() => {
@@ -325,6 +341,8 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
 
         setMensaje({ tipo: 'exito', texto: `✅ Comanda enviada a Cocina (${destinoTexto})` });
         setCarritoAbiertoEnMovil(false);
+        // Sincronización instantánea en vivo
+        refrescar();
         // Abrir automáticamente el ticket/recibo para que el mesero lo pueda imprimir si lo desea
         setPedidoRecienteRecibo(result.pedido as unknown as Pedido);
       } else {
@@ -677,7 +695,7 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
             <button
               type="button"
               onClick={() => {
-                setPedidoDetalleSeleccionado(pedidoListoAlerta);
+                abrirDetallePedido(pedidoListoAlerta);
                 setPedidoListoAlerta(null);
               }}
               className="rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-extrabold text-white hover:bg-blue-500 transition-colors shadow-md shadow-blue-600/30"
@@ -834,7 +852,7 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
             pedidos={pedidosActivos}
             tipo="LLEVAR"
             onNuevoPedido={() => iniciarPedidoLlevar()}
-            onAbrirDetalle={(p) => setPedidoDetalleSeleccionado(p)}
+            onAbrirDetalle={(p) => abrirDetallePedido(p)}
           />
         </div>
       )}
@@ -846,7 +864,7 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
             pedidos={pedidosActivos}
             tipo="DOMICILIO"
             onNuevoPedido={() => iniciarPedidoDomicilio()}
-            onAbrirDetalle={(p) => setPedidoDetalleSeleccionado(p)}
+            onAbrirDetalle={(p) => abrirDetallePedido(p)}
           />
         </div>
       )}
@@ -1070,7 +1088,7 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
           mesa={pedidoDetalleSeleccionado.mesa}
           pedido={pedidoDetalleSeleccionado}
           nombreMesero={nombreMesero}
-          onCerrar={() => setPedidoDetalleSeleccionado(null)}
+          onCerrar={cerrarDetallePedido}
           onAgregarPlatillos={() => {
             setTipoPedido((pedidoDetalleSeleccionado.tipoPedido as TipoPedido) || 'MESA');
             if (pedidoDetalleSeleccionado.mesa > 0) {
@@ -1083,7 +1101,7 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
               direccion: pedidoDetalleSeleccionado.direccion || '',
               notas: pedidoDetalleSeleccionado.notas || '',
             });
-            setPedidoDetalleSeleccionado(null);
+            cerrarDetallePedido();
             setVista('menu');
           }}
         />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { Pedido } from '../hooks/use-realtime-orders';
 import { OrderStatusStepper } from './order-status-stepper';
 import { TicketReciboModal } from './ticket-recibo-modal';
@@ -29,6 +29,10 @@ export function MesaDetalleModal({
   onAgregarPlatillos,
 }: MesaDetalleModalProps) {
   const [pedido, setPedido] = useState<Pedido>(pedidoInicial);
+
+  useEffect(() => {
+    setPedido(pedidoInicial);
+  }, [pedidoInicial]);
   const [mostrandoRecibo, setMostrandoRecibo] = useState(false);
   const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TRANSFERENCIA' | 'DIVIDIDO'>('EFECTIVO');
   const [montoRecibido, setMontoRecibido] = useState<string>('');

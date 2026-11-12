@@ -25,10 +25,8 @@ export function CroquisTerraza({
   onSeleccionarMesaParaMenu,
   nombreMesero,
 }: CroquisTerrazaProps) {
-  const [mesaSeleccionadaDetalle, setMesaSeleccionadaDetalle] = useState<{
-    numero: number;
-    pedido: Pedido;
-  } | null>(null);
+  const [mesaSeleccionadaNumero, setMesaSeleccionadaNumero] = useState<number | null>(null);
+  const [modoUltimoTicket, setModoUltimoTicket] = useState(false);
 
   // Obtener el pedido activo actual de cada mesa (excluye CANCELADO y PAGADO)
   const getPedidoMesa = (numeroMesa: number) => {
@@ -43,6 +41,14 @@ export function CroquisTerraza({
       (p) => p.mesa === numeroMesa && p.estado === 'PAGADO'
     );
   };
+
+  // Pedido vivo reactivo: siempre se extrae de pedidosActivos en tiempo real
+  const pedidoModalVivo =
+    mesaSeleccionadaNumero !== null
+      ? modoUltimoTicket
+        ? getUltimoPedidoPagado(mesaSeleccionadaNumero)
+        : getPedidoMesa(mesaSeleccionadaNumero) || getUltimoPedidoPagado(mesaSeleccionadaNumero)
+      : null;
 
   // Contadores para el resumen en vivo
   const totalMesas = MESAS_TERRAZA.length;
@@ -70,7 +76,8 @@ export function CroquisTerraza({
       onSeleccionarMesaParaMenu(numeroMesa);
     } else {
       // Si la mesa tiene pedido activo, abrir el modal de estado y recibo
-      setMesaSeleccionadaDetalle({ numero: numeroMesa, pedido });
+      setModoUltimoTicket(false);
+      setMesaSeleccionadaNumero(numeroMesa);
     }
   };
 
@@ -269,8 +276,8 @@ export function CroquisTerraza({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const pagado = getUltimoPedidoPagado(mesa.id);
-                              if (pagado) setMesaSeleccionadaDetalle({ numero: mesa.id, pedido: pagado });
+                              setModoUltimoTicket(true);
+                              setMesaSeleccionadaNumero(mesa.id);
                             }}
                             className="text-[10px] text-zinc-500 hover:text-orange-400 underline text-left transition-colors"
                           >
@@ -292,14 +299,14 @@ export function CroquisTerraza({
       </div>
 
       {/* MODAL DE DETALLE DE LA MESA Y RECIBO SI HAY MESA SELECCIONADA CON PEDIDO */}
-      {mesaSeleccionadaDetalle && (
+      {mesaSeleccionadaNumero !== null && pedidoModalVivo && (
         <MesaDetalleModal
-          mesa={mesaSeleccionadaDetalle.numero}
-          pedido={mesaSeleccionadaDetalle.pedido}
+          mesa={mesaSeleccionadaNumero}
+          pedido={pedidoModalVivo}
           nombreMesero={nombreMesero}
-          onCerrar={() => setMesaSeleccionadaDetalle(null)}
+          onCerrar={() => setMesaSeleccionadaNumero(null)}
           onAgregarPlatillos={(mesaNum) => {
-            setMesaSeleccionadaDetalle(null);
+            setMesaSeleccionadaNumero(null);
             onSeleccionarMesaParaMenu(mesaNum);
           }}
         />

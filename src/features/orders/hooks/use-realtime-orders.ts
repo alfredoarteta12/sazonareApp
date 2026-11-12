@@ -62,13 +62,16 @@ export function useRealtimeOrders(
     if (ejecutandoFetchRef.current) return;
     ejecutandoFetchRef.current = true;
 
-    const url = incluirEntregados ? '/api/pedidos/activos?todosHoy=true' : '/api/pedidos/activos';
+    // Cache-buster con timestamp para forzar petición real sin que AWS o el navegador almacenen caché
+    const base = incluirEntregados ? '/api/pedidos/activos?todosHoy=true' : '/api/pedidos/activos';
+    const sep = base.includes('?') ? '&' : '?';
+    const url = `${base}${sep}_t=${Date.now()}`;
 
     try {
       const res = await fetch(url, {
         cache: 'no-store',
         headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           Pragma: 'no-cache',
         },
       });
@@ -128,27 +131,8 @@ export function useRealtimeOrders(
       pedidosPreviosMapRef.current = nuevoMapa;
       primeraCargaRef.current = false;
 
-      // Optimización de re-render: solo actualizar estado si hubo cambios reales
-      setPedidos((prev) => {
-        if (prev.length === filtrados.length) {
-          let sinCambios = true;
-          for (let i = 0; i < prev.length; i++) {
-            if (
-              prev[i].id !== filtrados[i].id ||
-              prev[i].estado !== filtrados[i].estado ||
-              prev[i].total !== filtrados[i].total ||
-              prev[i].metodoPago !== filtrados[i].metodoPago ||
-              prev[i].updatedAt !== filtrados[i].updatedAt
-            ) {
-              sinCambios = false;
-              break;
-            }
-          }
-          if (sinCambios) return prev;
-        }
-        return filtrados;
-      });
-
+      // Actualizar estado siempre con la lista fresca de pedidos
+      setPedidos(filtrados);
       setError(null);
       setCargando(false);
     } catch (err: any) {
@@ -167,7 +151,7 @@ export function useRealtimeOrders(
     // Sincronización inmediata al montar
     sincronizarPedidos();
 
-    // Polling inteligente cada 2.5 segundos
+    // Polling inteligente cada 2 segundos
     // En segundo plano o pestaña oculta se reduce para optimizar batería y recursos de red
     let timerId: NodeJS.Timeout;
 
@@ -175,11 +159,11 @@ export function useRealtimeOrders(
       if (!activo) return;
       await sincronizarPedidos();
       if (!activo) return;
-      const actualMs = typeof document !== 'undefined' && document.hidden ? 8000 : 2500;
+      const actualMs = typeof document !== 'undefined' && document.hidden ? 6000 : 2000;
       timerId = setTimeout(tick, actualMs);
     };
 
-    timerId = setTimeout(tick, 2500);
+    timerId = setTimeout(tick, 2000);
 
     // Si la pestaña vuelve al frente (visibilidad), forzar refresco inmediato
     const handleVisibilidad = () => {

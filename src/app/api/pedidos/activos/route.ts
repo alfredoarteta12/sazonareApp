@@ -20,8 +20,12 @@ export async function GET(request: NextRequest) {
     if (todosHoy) {
       const { inicio: inicioHoy, fin: finHoy } = getRangoDiaColombia();
       whereClause = {
-        createdAt: { gte: inicioHoy, lte: finHoy },
-        estado: { not: 'CANCELADO' },
+        OR: [
+          // 1. Todos los pedidos activos actualmente (mesas ocupadas o pendientes de atender, sin importar la hora)
+          { estado: { notIn: ['CANCELADO', 'PAGADO'] } },
+          // 2. Pedidos pagados en el día de hoy (para historial de caja y reimpresión de comprobantes)
+          { createdAt: { gte: inicioHoy, lte: finHoy }, estado: 'PAGADO' },
+        ],
       };
     }
 
@@ -63,12 +67,23 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json(serialized);
+    return NextResponse.json(serialized, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+    });
   } catch (error) {
     console.error('Error al obtener pedidos activos:', error);
     return NextResponse.json(
       { error: 'No se pudieron obtener los pedidos' },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate',
+        },
+      }
     );
   }
 }

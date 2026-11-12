@@ -13,7 +13,14 @@ export async function GET() {
       productos.map((p) => ({
         ...p,
         precio: Number(p.precio),
-      }))
+      })),
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      }
     );
   } catch (error) {
     console.error('Error al obtener productos:', error);

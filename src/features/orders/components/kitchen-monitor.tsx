@@ -64,7 +64,15 @@ const BOTON_AVANZAR = {
   HECHO: '🍽️ Marcar Entregado',
 };
 
-function TarjetaPedido({ pedido, esNuevo }: { pedido: Pedido; esNuevo?: boolean }) {
+function TarjetaPedido({
+  pedido,
+  esNuevo,
+  onAvanzar,
+}: {
+  pedido: Pedido;
+  esNuevo?: boolean;
+  onAvanzar?: () => void;
+}) {
   const [isPending, startTransition] = useTransition();
   const config = ESTADO_CONFIG[pedido.estado];
   const puedeAvanzar = pedido.estado !== 'ENTREGADO' && pedido.estado !== 'CANCELADO';
@@ -72,6 +80,7 @@ function TarjetaPedido({ pedido, esNuevo }: { pedido: Pedido; esNuevo?: boolean 
   const handleAvanzar = () => {
     startTransition(async () => {
       await avanzarEstadoPedido(pedido.id);
+      onAvanzar?.();
     });
   };
 
@@ -309,7 +318,7 @@ export function KitchenMonitor() {
     }, 30000);
   }, []);
 
-  const { pedidos, cargando, error } = useRealtimeOrders(handleNuevoPedido);
+  const { pedidos, cargando, error, refrescar } = useRealtimeOrders(handleNuevoPedido);
 
   const activarAudioManual = async () => {
     const ok = await kitchenAudio.unlock();
@@ -488,7 +497,12 @@ export function KitchenMonitor() {
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {pendientes.map((p) => (
-              <TarjetaPedido key={p.id} pedido={p} esNuevo={nuevosPedidosIds.has(p.id)} />
+              <TarjetaPedido
+                key={p.id}
+                pedido={p}
+                esNuevo={nuevosPedidosIds.has(p.id)}
+                onAvanzar={refrescar}
+              />
             ))}
           </div>
         </section>
@@ -504,7 +518,12 @@ export function KitchenMonitor() {
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {preparando.map((p) => (
-              <TarjetaPedido key={p.id} pedido={p} esNuevo={nuevosPedidosIds.has(p.id)} />
+              <TarjetaPedido
+                key={p.id}
+                pedido={p}
+                esNuevo={nuevosPedidosIds.has(p.id)}
+                onAvanzar={refrescar}
+              />
             ))}
           </div>
         </section>
@@ -520,7 +539,12 @@ export function KitchenMonitor() {
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {hechos.map((p) => (
-              <TarjetaPedido key={p.id} pedido={p} esNuevo={nuevosPedidosIds.has(p.id)} />
+              <TarjetaPedido
+                key={p.id}
+                pedido={p}
+                esNuevo={nuevosPedidosIds.has(p.id)}
+                onAvanzar={refrescar}
+              />
             ))}
           </div>
         </section>

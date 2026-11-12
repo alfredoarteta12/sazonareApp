@@ -119,7 +119,7 @@ export function ClientePortal({
     // Sincronización periódica resiliente (compatible con AWS y Supabase)
     const sincronizarProductos = async () => {
       try {
-        const res = await fetch('/api/productos', { cache: 'no-store' });
+        const res = await fetch(`/api/productos?_t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
         if (!activo) return;
@@ -177,7 +177,7 @@ export function ClientePortal({
 
     const verificarEstado = async () => {
       try {
-        const res = await fetch('/api/pedidos/activos?todosHoy=true', { cache: 'no-store' });
+        const res = await fetch(`/api/pedidos/activos?todosHoy=true&_t=${Date.now()}`, { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
         if (!activo) return;
@@ -201,7 +201,7 @@ export function ClientePortal({
       } catch (e) {}
     };
 
-    const intervalo = setInterval(verificarEstado, 3500);
+    const intervalo = setInterval(verificarEstado, 2500);
 
     const canalPedido = supabase
       .channel(`seguimiento-pedido-${pedidoActivo.id}`)

@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { OrderStatus, TipoPedido, MetodoPago } from '@prisma/client';
 
 export type { TipoPedido, MetodoPago };
@@ -55,106 +54,152 @@ export function useRealtimeOrders(
   }, [options?.onPedidoListo]);
 
   const incluirEntregados = options?.incluirEntregados ?? false;
+  const primeraCargaRef = useRef(true);
+  const pedidosPreviosMapRef = useRef<Map<string, OrderStatus>>(new Map());
+  const ejecutandoFetchRef = useRef(false);
 
-  useEffect(() => {
-    // Carga inicial de pedidos
+  const sincronizarPedidos = useCallback(async () => {
+    if (ejecutandoFetchRef.current) return;
+    ejecutandoFetchRef.current = true;
+
     const url = incluirEntregados ? '/api/pedidos/activos?todosHoy=true' : '/api/pedidos/activos';
-    fetch(url)
-      .then((res) => {
-        if (!res.ok) throw new Error('Error al cargar pedidos');
-        return res.json();
-      })
-      .then((data: Pedido[]) => {
-        setPedidos(
-          data.map((p) => ({
-            ...p,
-            total: Number(p.total),
-            detalle: p.detalle || '',
-          }))
-        );
-        setCargando(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setCargando(false);
+
+    try {
+      const res = await fetch(url, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+        },
       });
 
-    // Suscripción en tiempo real a cambios en la tabla Pedido
-    const canal = supabase
-      .channel(incluirEntregados ? 'cambios-mesas-terraza' : 'cambios-comandas')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'Pedido' },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const raw = payload.new as any;
-            const nuevo: Pedido = {
-              ...raw,
-              detalle: raw.detalle || '',
-              total: Number(raw.total),
-            };
+      if (!res.ok) throw new Error('Error al cargar pedidos');
+      const data: Pedido[] = await res.json();
 
-            // Cocina (!incluirEntregados) NO debe recibir ni sonar con pedidos en estado 'SOLICITADO'
-            // ya que estos esperan confirmación previa del mesero
-            if (!incluirEntregados && nuevo.estado === 'SOLICITADO') {
-              return;
-            }
+      const normalizados: Pedido[] = data.map((p) => ({
+        ...p,
+        total: Number(p.total),
+        detalle: p.detalle || '',
+      }));
 
-            setPedidos((prev) => [nuevo, ...prev]);
-            onNuevoPedidoRef.current?.(nuevo);
-          } else if (payload.eventType === 'UPDATE') {
-            const raw = payload.new as any;
-            const nuevo: Pedido = {
-              ...raw,
-              detalle: raw.detalle || '',
-              total: Number(raw.total),
-            };
-            setPedidos((prev) => {
-              const previo = prev.find((p) => p.id === nuevo.id);
+      const filtrados = normalizados.filter((p) =>
+        incluirEntregados
+          ? p.estado !== 'CANCELADO'
+          : p.estado !== 'ENTREGADO' &&
+            p.estado !== 'CANCELADO' &&
+            p.estado !== 'PAGADO' &&
+            p.estado !== 'SOLICITADO'
+      );
 
-              // Si en Cocina (!incluirEntregados) un pedido pasó de SOLICITADO a PENDIENTE,
-              // significa que el mesero lo acaba de aprobar y enviar: ¡activar alerta sonora y destello!
-              if (
-                !incluirEntregados &&
-                (!previo || previo.estado === 'SOLICITADO') &&
-                nuevo.estado === 'PENDIENTE'
-              ) {
-                onNuevoPedidoRef.current?.(nuevo);
-              }
+      // Detectar novedades y cambios de estado respecto al ciclo anterior (a partir del segundo ciclo)
+      if (!primeraCargaRef.current) {
+        const mapaAnterior = pedidosPreviosMapRef.current;
 
-              // Notificar al mesero si la comanda acaba de pasar a HECHO (Listo para servir)
-              if (nuevo.estado === 'HECHO' && previo?.estado !== 'HECHO') {
-                onPedidoListoRef.current?.(nuevo);
-              }
+        for (const pedido of filtrados) {
+          const estadoAnterior = mapaAnterior.get(pedido.id);
 
-              const yaExiste = !!previo;
-              const listaBase = yaExiste
-                ? prev.map((p) => (p.id === nuevo.id ? { ...p, ...nuevo } : p))
-                : [nuevo, ...prev];
+          // 1. Nuevo pedido para cocina (!incluirEntregados):
+          // O es un nuevo pedido que entró directo en PENDIENTE, o pasó de SOLICITADO a PENDIENTE
+          if (
+            !incluirEntregados &&
+            (!estadoAnterior || estadoAnterior === 'SOLICITADO') &&
+            pedido.estado === 'PENDIENTE'
+          ) {
+            onNuevoPedidoRef.current?.(pedido);
+          }
 
-              return listaBase.filter((p) =>
-                incluirEntregados
-                  ? p.estado !== 'CANCELADO'
-                  : p.estado !== 'ENTREGADO' &&
-                    p.estado !== 'CANCELADO' &&
-                    p.estado !== 'PAGADO' &&
-                    p.estado !== 'SOLICITADO'
-              );
-            });
-          } else if (payload.eventType === 'DELETE') {
-            const idEliminado = (payload.old as { id?: string })?.id;
-            if (idEliminado) {
-              setPedidos((prev) => prev.filter((p) => p.id !== idEliminado));
-            }
+          // 2. Nuevo pedido solicitado por cliente en mesa para meseros (incluirEntregados):
+          if (incluirEntregados && !estadoAnterior && pedido.estado === 'SOLICITADO') {
+            onNuevoPedidoRef.current?.(pedido);
+          }
+
+          // 3. Pedido listo en cocina (pasó a HECHO) -> campanilla Ding-Ding para mesero
+          if (pedido.estado === 'HECHO' && estadoAnterior && estadoAnterior !== 'HECHO') {
+            onPedidoListoRef.current?.(pedido);
           }
         }
-      )
-      .subscribe();
+      }
 
-    return () => {
-      supabase.removeChannel(canal);
-    };
+      // Actualizar el mapa de estados conocidos
+      const nuevoMapa = new Map<string, OrderStatus>();
+      for (const p of filtrados) {
+        nuevoMapa.set(p.id, p.estado);
+      }
+      pedidosPreviosMapRef.current = nuevoMapa;
+      primeraCargaRef.current = false;
+
+      // Optimización de re-render: solo actualizar estado si hubo cambios reales
+      setPedidos((prev) => {
+        if (prev.length === filtrados.length) {
+          let sinCambios = true;
+          for (let i = 0; i < prev.length; i++) {
+            if (
+              prev[i].id !== filtrados[i].id ||
+              prev[i].estado !== filtrados[i].estado ||
+              prev[i].total !== filtrados[i].total ||
+              prev[i].metodoPago !== filtrados[i].metodoPago ||
+              prev[i].updatedAt !== filtrados[i].updatedAt
+            ) {
+              sinCambios = false;
+              break;
+            }
+          }
+          if (sinCambios) return prev;
+        }
+        return filtrados;
+      });
+
+      setError(null);
+      setCargando(false);
+    } catch (err: any) {
+      setError(err.message || 'Error de conexión');
+      setCargando(false);
+    } finally {
+      ejecutandoFetchRef.current = false;
+    }
   }, [incluirEntregados]);
 
-  return { pedidos, cargando, error };
+  useEffect(() => {
+    let activo = true;
+    primeraCargaRef.current = true;
+    pedidosPreviosMapRef.current.clear();
+
+    // Sincronización inmediata al montar
+    sincronizarPedidos();
+
+    // Polling inteligente cada 2.5 segundos
+    // En segundo plano o pestaña oculta se reduce para optimizar batería y recursos de red
+    let timerId: NodeJS.Timeout;
+
+    const tick = async () => {
+      if (!activo) return;
+      await sincronizarPedidos();
+      if (!activo) return;
+      const actualMs = typeof document !== 'undefined' && document.hidden ? 8000 : 2500;
+      timerId = setTimeout(tick, actualMs);
+    };
+
+    timerId = setTimeout(tick, 2500);
+
+    // Si la pestaña vuelve al frente (visibilidad), forzar refresco inmediato
+    const handleVisibilidad = () => {
+      if (typeof document !== 'undefined' && !document.hidden && activo) {
+        sincronizarPedidos();
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVisibilidad);
+    }
+
+    return () => {
+      activo = false;
+      clearTimeout(timerId);
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVisibilidad);
+      }
+    };
+  }, [sincronizarPedidos]);
+
+  return { pedidos, cargando, error, refrescar: sincronizarPedidos };
 }

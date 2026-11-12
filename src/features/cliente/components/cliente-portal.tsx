@@ -112,8 +112,32 @@ export function ClientePortal({
     }
   }, [mesa]);
 
-  // 2. Suscripción en tiempo real a la disponibilidad de productos en cocina
+  // 2. Sincronización de disponibilidad de productos en cocina
   useEffect(() => {
+    let activo = true;
+
+    // Sincronización periódica resiliente (compatible con AWS y Supabase)
+    const sincronizarProductos = async () => {
+      try {
+        const res = await fetch('/api/productos', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!activo) return;
+        setProductos((prev) =>
+          prev.map((p) => {
+            const actualizado = data.find((d: any) => d.id === p.id);
+            if (actualizado && actualizado.disponible !== p.disponible) {
+              return { ...p, disponible: actualizado.disponible, precio: Number(actualizado.precio) };
+            }
+            return p;
+          })
+        );
+      } catch (e) {}
+    };
+
+    const intervalo = setInterval(sincronizarProductos, 12000);
+
+    // Canal opcional en tiempo real
     const canalProductos = supabase
       .channel('cambios-productos-cliente')
       .on(
@@ -140,13 +164,44 @@ export function ClientePortal({
       .subscribe();
 
     return () => {
+      activo = false;
+      clearInterval(intervalo);
       supabase.removeChannel(canalProductos);
     };
   }, []);
 
-  // 3. Suscripción en tiempo real al estado del pedido activo del cliente
+  // 3. Sincronización en tiempo real del estado del pedido activo del cliente (Polling AWS + Supabase)
   useEffect(() => {
     if (!pedidoActivo?.id) return;
+    let activo = true;
+
+    const verificarEstado = async () => {
+      try {
+        const res = await fetch('/api/pedidos/activos?todosHoy=true', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!activo) return;
+
+        const actual = data.find((p: any) => p.id === pedidoActivo.id);
+        if (actual && actual.estado !== pedidoActivo.estado) {
+          setPedidoActivo((prev) => {
+            if (!prev) return null;
+            const updated = {
+              ...prev,
+              estado: actual.estado,
+              total: Number(actual.total),
+              detalle: actual.detalle || prev.detalle,
+            };
+            try {
+              localStorage.setItem(`sazonare_pedido_cliente_m${mesa}`, JSON.stringify(updated));
+            } catch (e) {}
+            return updated;
+          });
+        }
+      } catch (e) {}
+    };
+
+    const intervalo = setInterval(verificarEstado, 3500);
 
     const canalPedido = supabase
       .channel(`seguimiento-pedido-${pedidoActivo.id}`)
@@ -178,9 +233,11 @@ export function ClientePortal({
       .subscribe();
 
     return () => {
+      activo = false;
+      clearInterval(intervalo);
       supabase.removeChannel(canalPedido);
     };
-  }, [pedidoActivo?.id, mesa]);
+  }, [pedidoActivo?.id, pedidoActivo?.estado, mesa]);
 
   // Filtro de productos
   const productosFiltrados = productos.filter((p) => {

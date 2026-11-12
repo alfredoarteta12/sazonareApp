@@ -116,8 +116,15 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
     waiterAudio.playReadyBell();
   }, []);
 
-  // Escuchamos pedidos en tiempo real con callback de aviso para meseros
-  const { pedidos: pedidosActivos } = useRealtimeOrders(undefined, {
+  const handleNuevoPedidoMesero = useCallback((pedido: Pedido) => {
+    // Si un cliente solicita una orden desde su mesa (SOLICITADO), alertar al mesero
+    if (pedido.estado === 'SOLICITADO') {
+      waiterAudio.playOrderChime();
+    }
+  }, []);
+
+  // Escuchamos pedidos en tiempo real con polling inteligente y callbacks para meseros
+  const { pedidos: pedidosActivos } = useRealtimeOrders(handleNuevoPedidoMesero, {
     incluirEntregados: true,
     onPedidoListo: handlePedidoListo,
   });

@@ -37,8 +37,45 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
     setProductos(productosIniciales);
   }, [productosIniciales]);
 
-  // Suscripción en tiempo real a cambios de disponibilidad en la tabla Producto
+  // Sincronización en tiempo real de productos y disponibilidad (Polling AWS + Supabase)
   useEffect(() => {
+    let activo = true;
+
+    const actualizarProductos = () => {
+      fetch(`/api/productos?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, max-age=0',
+          Pragma: 'no-cache',
+        },
+      })
+        .then((res) => res.json())
+        .then((data: Producto[]) => {
+          if (!activo || !Array.isArray(data)) return;
+
+          setProductos((prev) => {
+            // Solo actualizar el estado si realmente hubo cambios en la disponibilidad o precio
+            let huboCambios = false;
+            if (prev.length !== data.length) {
+              huboCambios = true;
+            } else {
+              for (const nuevo of data) {
+                const viejo = prev.find((p) => p.id === nuevo.id);
+                if (!viejo || viejo.disponible !== nuevo.disponible || viejo.precio !== nuevo.precio) {
+                  huboCambios = true;
+                  break;
+                }
+              }
+            }
+            return huboCambios ? data : prev;
+          });
+        })
+        .catch(() => {});
+    };
+
+    // Consulta periódica cada 4 segundos compatible al 100% con AWS
+    const intervalo = setInterval(actualizarProductos, 4000);
+
     const canal = supabase
       .channel('cambios-disponibilidad-mesero')
       .on(
@@ -53,18 +90,15 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
               )
             );
           } else if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-            fetch('/api/productos')
-              .then((res) => res.json())
-              .then((data) => {
-                if (Array.isArray(data)) setProductos(data);
-              })
-              .catch(() => {});
+            actualizarProductos();
           }
         }
       )
       .subscribe();
 
     return () => {
+      activo = false;
+      clearInterval(intervalo);
       supabase.removeChannel(canal);
     };
   }, []);

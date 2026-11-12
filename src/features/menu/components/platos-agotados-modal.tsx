@@ -44,8 +44,35 @@ export function PlatosAgotadosModal({ onCerrar, productosIniciales }: PlatosAgot
     }
   }, [productosIniciales]);
 
-  // Sincronización en tiempo real vía Supabase Realtime
+  // Sincronización en tiempo real (Polling AWS + Supabase)
   useEffect(() => {
+    let activo = true;
+
+    const actualizarAgotados = () => {
+      fetch(`/api/productos?_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store, max-age=0' },
+      })
+        .then((res) => res.json())
+        .then((data: ProductoAgotadoItem[]) => {
+          if (!activo || !Array.isArray(data)) return;
+          setProductos((prev) => {
+            let huboCambios = false;
+            for (const d of data) {
+              const viejo = prev.find((p) => p.id === d.id);
+              if (viejo && viejo.disponible !== d.disponible) {
+                huboCambios = true;
+                break;
+              }
+            }
+            return huboCambios ? data : prev;
+          });
+        })
+        .catch(() => {});
+    };
+
+    const intervalo = setInterval(actualizarAgotados, 4000);
+
     const canal = supabase
       .channel('cambios-modal-agotados')
       .on(
@@ -60,15 +87,15 @@ export function PlatosAgotadosModal({ onCerrar, productosIniciales }: PlatosAgot
               )
             );
           } else if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-            getTodosLosProductos().then((res) => {
-              if (res.success && res.data) setProductos(res.data);
-            });
+            actualizarAgotados();
           }
         }
       )
       .subscribe();
 
     return () => {
+      activo = false;
+      clearInterval(intervalo);
       supabase.removeChannel(canal);
     };
   }, []);

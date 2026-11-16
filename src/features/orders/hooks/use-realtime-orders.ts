@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { OrderStatus, TipoPedido, MetodoPago } from '@prisma/client';
+import { supabase } from '@/lib/supabase';
 
 export type { TipoPedido, MetodoPago };
 
@@ -148,22 +149,79 @@ export function useRealtimeOrders(
     primeraCargaRef.current = true;
     pedidosPreviosMapRef.current.clear();
 
-    // Sincronización inmediata al montar
+    // 1. Carga inicial inmediata al montar
     sincronizarPedidos();
 
-    // Polling inteligente cada 2 segundos
-    // En segundo plano o pestaña oculta se reduce para optimizar batería y recursos de red
+    // 2. Suscripción en TIEMPO REAL NATIVO (WebSockets vía Supabase Realtime)
+    // Permite recibir novedades en <100ms instantáneamente en cualquier dispositivo
+    const canal = supabase
+      .channel(`pedidos-live-${incluirEntregados ? 'mesero' : 'cocina'}-${Date.now()}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Pedido' },
+        (payload) => {
+          if (!activo) return;
+
+          if (payload.eventType === 'INSERT') {
+            const raw = payload.new as any;
+            const nuevo: Pedido = {
+              ...raw,
+              total: Number(raw.total),
+              detalle: raw.detalle || '',
+            };
+
+            // Notificación instantánea sonora y visual
+            if (!incluirEntregados && nuevo.estado === 'PENDIENTE') {
+              onNuevoPedidoRef.current?.(nuevo);
+            }
+            if (incluirEntregados && nuevo.estado === 'SOLICITADO') {
+              onNuevoPedidoRef.current?.(nuevo);
+            }
+
+            sincronizarPedidos();
+          } else if (payload.eventType === 'UPDATE') {
+            const raw = payload.new as any;
+            const estadoAnterior = pedidosPreviosMapRef.current.get(raw.id);
+            const nuevoEstado = raw.estado;
+            const nuevo: Pedido = {
+              ...raw,
+              total: Number(raw.total),
+              detalle: raw.detalle || '',
+            };
+
+            // Notificación instantánea de transición de estado
+            if (
+              !incluirEntregados &&
+              (!estadoAnterior || estadoAnterior === 'SOLICITADO') &&
+              nuevoEstado === 'PENDIENTE'
+            ) {
+              onNuevoPedidoRef.current?.(nuevo);
+            }
+            if (incluirEntregados && nuevoEstado === 'HECHO' && estadoAnterior !== 'HECHO') {
+              onPedidoListoRef.current?.(nuevo);
+            }
+
+            sincronizarPedidos();
+          } else if (payload.eventType === 'DELETE') {
+            sincronizarPedidos();
+          }
+        }
+      )
+      .subscribe();
+
+    // 3. Polling de respaldo resiliente (compatible con AWS Amplify / CloudFront)
+    // Garantiza sincronización periódica si se produce alguna reconexión WebSocket
     let timerId: NodeJS.Timeout;
 
     const tick = async () => {
       if (!activo) return;
       await sincronizarPedidos();
       if (!activo) return;
-      const actualMs = typeof document !== 'undefined' && document.hidden ? 6000 : 2000;
+      const actualMs = typeof document !== 'undefined' && document.hidden ? 8000 : 3500;
       timerId = setTimeout(tick, actualMs);
     };
 
-    timerId = setTimeout(tick, 2000);
+    timerId = setTimeout(tick, 3500);
 
     // Si la pestaña vuelve al frente (visibilidad), forzar refresco inmediato
     const handleVisibilidad = () => {
@@ -179,11 +237,12 @@ export function useRealtimeOrders(
     return () => {
       activo = false;
       clearTimeout(timerId);
+      supabase.removeChannel(canal);
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVisibilidad);
       }
     };
-  }, [sincronizarPedidos]);
+  }, [sincronizarPedidos, incluirEntregados]);
 
   return { pedidos, cargando, error, refrescar: sincronizarPedidos };
 }

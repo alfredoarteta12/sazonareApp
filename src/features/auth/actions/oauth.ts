@@ -4,14 +4,31 @@ import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 
 export async function signInWithGoogle() {
   const supabase = await createSupabaseServerClient();
+  const headersList = await headers();
+
+  // Detectar el host y protocolo real del navegador (indispensable para AWS / CloudFront)
+  const host = headersList.get('x-forwarded-host') || headersList.get('host');
+  const proto = headersList.get('x-forwarded-proto') || 'https';
+  
+  // Construir origen dinámico: si está en AWS usará el dominio de AWS, si está en localhost usará localhost
+  let origin = '';
+  if (host) {
+    const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+    origin = `${isLocal ? 'http' : proto}://${host}`;
+  } else if (process.env.NEXT_PUBLIC_SITE_URL) {
+    origin = process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/, '');
+  } else {
+    origin = 'http://localhost:3000';
+  }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/callback`,
+      redirectTo: `${origin}/auth/callback`,
     },
   });
 
@@ -106,18 +123,45 @@ export async function signInWithEmail(formData: { email: string; password: strin
         where: { id: data.user.id },
       });
 
-      // Si no existe perfil en DB pero existe en Supabase Auth, crearlo
+      // Si no existe perfil por ID, buscar si ya fue pre-registrado por correo
       if (!perfil) {
-        const total = await prisma.perfil.count();
-        perfil = await prisma.perfil.create({
-          data: {
-            id: data.user.id,
-            email,
-            nombre: data.user.user_metadata?.full_name || email.split('@')[0],
-            role: total === 0 ? 'ADMIN' : 'MESERO',
-            activo: true,
-          },
+        const preRegistrado = await prisma.perfil.findFirst({
+          where: { email: { equals: email, mode: 'insensitive' } },
         });
+
+        if (preRegistrado) {
+          if (preRegistrado.id !== data.user.id) {
+            try {
+              await prisma.pedido.updateMany({
+                where: { creadoPorId: preRegistrado.id },
+                data: { creadoPorId: data.user.id },
+              });
+              await prisma.cierreCaja.updateMany({
+                where: { responsableId: preRegistrado.id },
+                data: { responsableId: data.user.id },
+              });
+              perfil = await prisma.perfil.update({
+                where: { id: preRegistrado.id },
+                data: { id: data.user.id },
+              });
+            } catch {
+              perfil = preRegistrado;
+            }
+          } else {
+            perfil = preRegistrado;
+          }
+        } else {
+          const total = await prisma.perfil.count();
+          perfil = await prisma.perfil.create({
+            data: {
+              id: data.user.id,
+              email,
+              nombre: data.user.user_metadata?.full_name || email.split('@')[0],
+              role: total === 0 ? 'ADMIN' : 'MESERO',
+              activo: true,
+            },
+          });
+        }
       }
 
       if (!perfil.activo) {

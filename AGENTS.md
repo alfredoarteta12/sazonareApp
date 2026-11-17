@@ -28,3 +28,20 @@ Keep a qualifying candidate through the reporting pass even if you resolve or wo
 Before the final response, run one reporting pass. If candidates remain, from this file's directory run `node node_modules/next/dist/bin/next internal agent-feedback-instructions` once without piping or truncating its output. Follow its output or error guidance. If a network sandbox blocks it, retry with network access; if it still returns no output, continue normally.
 
 <!-- END:nextjs-agent-feedback -->
+
+---
+
+## 🎯 Reglas Fundamentales del Proyecto SazonareFood (Lectura Obligatoria)
+
+Antes de iniciar cualquier tarea, implementación, corrección o refactorización, el agente **DEBE LEER OBLIGATORIAMENTE**:
+
+1. **`ARCHITECTURE.md` (Arquitectura y Modularización):**
+   - **Feature-First:** Todo nuevo desarrollo debe organizarse en `src/features/<modulo>/` con carpetas separadas para `types/`, `actions/` y `components/`.
+   - **Cero Monolitos:** Componentes ligeros (< 250 líneas).
+   - **Modales Desacoplados:** Cada modal en su propio archivo (`*-modal.tsx`) reutilizando `@/components/ui/modal.tsx`.
+   - **Moneda:** 100% Pesos Colombianos (COP) mediante `@/lib/currency`.
+   - **Despliegue AWS:** Polling reactivo desacoplado para bases de datos externas e IPs dinámicas en OAuth.
+
+2. **`ROADMAP.md` (Hoja de Ruta del Proyecto):**
+   - Consultar el Roadmap antes de proponer cambios para no perder el foco estratégico del negocio.
+   - Actualizar el estado de cada módulo al completarlo.

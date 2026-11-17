@@ -90,3 +90,4 @@ export function InventarioMetricas({ resumen }: InventarioMetricasProps) {
     </div>
   );
 }
+

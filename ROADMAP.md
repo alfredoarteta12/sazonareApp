@@ -136,6 +136,42 @@ graph TD
 
 ---
 
+## 6. 🍾 Control de Inventario de Bebidas y Kardex en COP — ✅ COMPLETADO
+
+### Objetivo
+Permitir al administrador controlar con precisión matemática el stock de bebidas, calculando la valoración total en Pesos Colombianos (al costo y a la venta), proyectando ganancias y descontando automáticamente del inventario cada vez que se pide una bebida en una comanda.
+
+### Funcionalidades Implementadas
+1. **Modelos en Prisma y Base de Datos:**
+   - Tablas `InventarioBebida` y `MovimientoInventario` con enum `TipoMovimientoInventario` (`ENTRADA`, `VENTA`, `AJUSTE`, `MERMA`, `DEVOLUCION`).
+2. **Descuento Automático en Comandas:**
+   - Al crear o confirmar comanda (mesero o cliente vía QR), descuenta automáticamente las unidades y genera registro de auditoría en el Kardex.
+   - Si el stock llega a 0, marca automáticamente el plato/bebida como `Agotado` en el menú.
+   - Si la comanda se cancela, reintegra automáticamente las unidades con motivo de devolución.
+3. **Valoración Financiera en Pesos Colombianos (COP):**
+   - Costo total de inventario en bodega, venta proyectada en carta, margen bruto estimado y margen porcentual.
+   - Indicadores por bebida: costo unitario, precio de venta, margen unitario y estado (`Óptimo`, `Bajo Stock`, `Agotado`).
+4. **Arquitectura Modular:**
+   - Tipos dedicados en `src/features/inventario/types/inventario.ts`.
+   - Modales independientes reutilizando `@/components/ui/modal.tsx` (`nueva-bebida-modal.tsx`, `abastecer-modal.tsx`, `ajuste-stock-modal.tsx`, `editar-bebida-modal.tsx`, `kardex-historial-modal.tsx`).
+
+---
+
+## 7. ☁️ Sincronización en Tiempo Real Desacoplada para AWS & OAuth Dinámico — ✅ COMPLETADO
+
+### Objetivo
+Garantizar que la aplicación funcione al 100% desplegada en AWS con bases de datos PostgreSQL externas independientes de Supabase Realtime, manteniendo actualización inmediata en comandas, monitores de cocina y mesas.
+
+### Funcionalidades Implementadas
+1. **Polling Reactivo Ultra-Rápido:**
+   - Intervalos de refresco de 2 segundos en `/cocina`, `/mesero`, `/admin` y `/admin/inventario`.
+   - Desacople completo de la capa WebSocket de Supabase para compatibilidad con cualquier proveedor de Postgres.
+2. **Detección Dinámica de Origen en OAuth:**
+   - Lectura de cabeceras `x-forwarded-host` y `x-forwarded-proto` para resolver redirecciones OAuth en AWS evitando enlaces rotos hacia `localhost:3000`.
+   - Manejo tolerante a mayúsculas/minúsculas en perfiles de usuario.
+
+---
+
 ## 🛠️ Matriz de Priorización y Estado
  
 | Módulo | Complejidad | Impacto en Operación | Estado |
@@ -144,6 +180,8 @@ graph TD
 | **2. Plato Agotado en Tiempo Real** | Baja | ⭐⭐⭐⭐ (Evita reclamos en cocina) | ✅ **Completado** |
 | **3. Adiciones / Indicaciones en Comanda** | Baja-Media | ⭐⭐⭐⭐⭐ (Agilidad en cocina y meseros) | ✅ **Completado** |
 | **4. PWA Móvil Instalable** | Baja | ⭐⭐⭐⭐ (Comodidad meseros/cocina) | ✅ **Completado** |
-| **5. Página Dinámica con 3D / AR** | Media-Alta | ⭐⭐⭐⭐⭐ (Experiencia interactiva WOW) | ⏳ Pendiente |
+| **5. Inventario de Bebidas y Kardex COP** | Media-Alta | ⭐⭐⭐⭐⭐ (Control de mermas y costos) | ✅ **Completado** |
+| **6. Realtime Desacoplado para AWS** | Media | ⭐⭐⭐⭐⭐ (Alta disponibilidad en nube) | ✅ **Completado** |
+| **7. Página Dinámica con 3D / AR** | Media-Alta | ⭐⭐⭐⭐⭐ (Experiencia interactiva WOW) | ⏳ Pendiente |
 
 

@@ -4,35 +4,12 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { TipoMovimientoInventario } from '@prisma/client';
 
-export interface BebidaInventarioDTO {
-  id: string;
-  nombre: string;
-  stockActual: number;
-  stockMinimo: number;
-  costoUnitario: number;
-  precioVenta: number;
-  valorCostoTotal: number;
-  valorVentaTotal: number;
-  margenUnitario: number;
-  margenTotal: number;
-  estadoStock: 'OPTIMO' | 'BAJO' | 'AGOTADO';
-  productoId?: string | null;
-  productoNombre?: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ResumenInventario {
-  totalItems: number;
-  totalUnidades: number;
-  valorCostoTotal: number;
-  valorVentaTotal: number;
-  gananciaProyectada: number;
-  margenPorcentual: number;
-  totalAgotadas: number;
-  totalBajoStock: number;
-  bebidas: BebidaInventarioDTO[];
-}
+export * from '../types/inventario';
+import type {
+  BebidaInventarioDTO,
+  ResumenInventario,
+  MovimientoInventarioDTO,
+} from '../types/inventario';
 
 /**
  * Obtiene todas las bebidas con valoración en Pesos Colombianos (COP) y métricas globales

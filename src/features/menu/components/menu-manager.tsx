@@ -42,28 +42,44 @@ export function MenuManager({
     setProductos(productosIniciales);
   }, [productosIniciales]);
 
-  // Sincronización en tiempo real vía Supabase
+  // Sincronización en tiempo real para AWS
   useEffect(() => {
-    const canal = supabase
-      .channel('cambios-admin-menu-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'Producto' },
-        (payload) => {
-          if (payload.eventType === 'UPDATE') {
-            const actualizado = payload.new as { id: string; disponible: boolean };
-            setProductos((prev) =>
-              prev.map((p) =>
-                p.id === actualizado.id ? { ...p, disponible: actualizado.disponible } : p
-              )
-            );
-          }
-        }
-      )
-      .subscribe();
+    let activo = true;
+
+    const actualizarProductos = () => {
+      const url = `/api/productos?_cb=${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      fetch(url, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0' },
+      })
+        .then((res) => res.json())
+        .then((data: Producto[]) => {
+          if (!activo || !Array.isArray(data)) return;
+          setProductos((prev) => {
+            let huboCambios = false;
+            if (prev.length !== data.length) {
+              huboCambios = true;
+            } else {
+              for (const nuevo of data) {
+                const viejo = prev.find((p) => p.id === nuevo.id);
+                if (!viejo || viejo.disponible !== nuevo.disponible || viejo.precio !== nuevo.precio || viejo.nombre !== nuevo.nombre) {
+                  huboCambios = true;
+                  break;
+                }
+              }
+            }
+            return huboCambios ? data : prev;
+          });
+        })
+        .catch(() => {});
+    };
+
+    actualizarProductos();
+    const intervalo = setInterval(actualizarProductos, 1500);
 
     return () => {
-      supabase.removeChannel(canal);
+      activo = false;
+      clearInterval(intervalo);
     };
   }, []);
 

@@ -44,14 +44,15 @@ export function PlatosAgotadosModal({ onCerrar, productosIniciales }: PlatosAgot
     }
   }, [productosIniciales]);
 
-  // Sincronización en tiempo real (Polling AWS + Supabase)
+  // Sincronización en tiempo real para AWS
   useEffect(() => {
     let activo = true;
 
     const actualizarAgotados = () => {
-      fetch(`/api/productos?_t=${Date.now()}`, {
+      const url = `/api/productos?_cb=${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      fetch(url, {
         cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache, no-store, max-age=0' },
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0' },
       })
         .then((res) => res.json())
         .then((data: ProductoAgotadoItem[]) => {
@@ -71,32 +72,12 @@ export function PlatosAgotadosModal({ onCerrar, productosIniciales }: PlatosAgot
         .catch(() => {});
     };
 
-    const intervalo = setInterval(actualizarAgotados, 4000);
-
-    const canal = supabase
-      .channel('cambios-modal-agotados')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'Producto' },
-        (payload) => {
-          if (payload.eventType === 'UPDATE') {
-            const actualizado = payload.new as { id: string; disponible: boolean };
-            setProductos((prev) =>
-              prev.map((p) =>
-                p.id === actualizado.id ? { ...p, disponible: actualizado.disponible } : p
-              )
-            );
-          } else if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-            actualizarAgotados();
-          }
-        }
-      )
-      .subscribe();
+    actualizarAgotados();
+    const intervalo = setInterval(actualizarAgotados, 1500);
 
     return () => {
       activo = false;
       clearInterval(intervalo);
-      supabase.removeChannel(canal);
     };
   }, []);
 

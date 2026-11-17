@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { OrderStatus, TipoPedido, MetodoPago } from '@prisma/client';
-import { supabase } from '@/lib/supabase';
 
 export type { TipoPedido, MetodoPago };
 
@@ -63,10 +62,11 @@ export function useRealtimeOrders(
     if (ejecutandoFetchRef.current) return;
     ejecutandoFetchRef.current = true;
 
-    // Cache-buster con timestamp para forzar petición real sin que AWS o el navegador almacenen caché
+    // Generador de cache-buster de alta entropía para anular cualquier proxy o CloudFront en AWS
     const base = incluirEntregados ? '/api/pedidos/activos?todosHoy=true' : '/api/pedidos/activos';
     const sep = base.includes('?') ? '&' : '?';
-    const url = `${base}${sep}_t=${Date.now()}`;
+    const cacheBuster = `_cb=${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const url = `${base}${sep}${cacheBuster}`;
 
     try {
       const res = await fetch(url, {
@@ -95,15 +95,15 @@ export function useRealtimeOrders(
             p.estado !== 'SOLICITADO'
       );
 
-      // Detectar novedades y cambios de estado respecto al ciclo anterior (a partir del segundo ciclo)
+      // Detectar novedades y cambios de estado en tiempo real (a partir del 2do ciclo)
       if (!primeraCargaRef.current) {
         const mapaAnterior = pedidosPreviosMapRef.current;
 
         for (const pedido of filtrados) {
           const estadoAnterior = mapaAnterior.get(pedido.id);
 
-          // 1. Nuevo pedido para cocina (!incluirEntregados):
-          // O es un nuevo pedido que entró directo en PENDIENTE, o pasó de SOLICITADO a PENDIENTE
+          // 1. Nueva comanda para Cocina (!incluirEntregados):
+          // Ya sea que entró directo en PENDIENTE o el mesero aprobó una orden SOLICITADO
           if (
             !incluirEntregados &&
             (!estadoAnterior || estadoAnterior === 'SOLICITADO') &&
@@ -112,12 +112,12 @@ export function useRealtimeOrders(
             onNuevoPedidoRef.current?.(pedido);
           }
 
-          // 2. Nuevo pedido solicitado por cliente en mesa para meseros (incluirEntregados):
+          // 2. Nueva orden solicitada por cliente en mesa (vista Mesero: incluirEntregados):
           if (incluirEntregados && !estadoAnterior && pedido.estado === 'SOLICITADO') {
             onNuevoPedidoRef.current?.(pedido);
           }
 
-          // 3. Pedido listo en cocina (pasó a HECHO) -> campanilla Ding-Ding para mesero
+          // 3. Pedido terminado en cocina (pasó a HECHO) -> Timbre Ding-Ding para Mesero
           if (pedido.estado === 'HECHO' && estadoAnterior && estadoAnterior !== 'HECHO') {
             onPedidoListoRef.current?.(pedido);
           }
@@ -132,8 +132,32 @@ export function useRealtimeOrders(
       pedidosPreviosMapRef.current = nuevoMapa;
       primeraCargaRef.current = false;
 
-      // Actualizar estado siempre con la lista fresca de pedidos
-      setPedidos(filtrados);
+      // Optimización reactiva: evitar re-renders si la lista de datos no tuvo cambios reales
+      setPedidos((prev) => {
+        if (prev.length === filtrados.length) {
+          let cambioDetectado = false;
+          for (let i = 0; i < prev.length; i++) {
+            const pViejo = prev[i];
+            const pNuevo = filtrados[i];
+            if (
+              pViejo.id !== pNuevo.id ||
+              pViejo.estado !== pNuevo.estado ||
+              pViejo.total !== pNuevo.total ||
+              pViejo.updatedAt !== pNuevo.updatedAt ||
+              pViejo.detalle !== pNuevo.detalle ||
+              pViejo.metodoPago !== pNuevo.metodoPago
+            ) {
+              cambioDetectado = true;
+              break;
+            }
+          }
+          if (!cambioDetectado) {
+            return prev; // Mantiene misma referencia en memoria -> cero re-render en React
+          }
+        }
+        return filtrados;
+      });
+
       setError(null);
       setCargando(false);
     } catch (err: any) {
@@ -149,81 +173,23 @@ export function useRealtimeOrders(
     primeraCargaRef.current = true;
     pedidosPreviosMapRef.current.clear();
 
-    // 1. Carga inicial inmediata al montar
+    // Sincronización inicial inmediata
     sincronizarPedidos();
 
-    // 2. Suscripción en TIEMPO REAL NATIVO (WebSockets vía Supabase Realtime)
-    // Permite recibir novedades en <100ms instantáneamente en cualquier dispositivo
-    const canal = supabase
-      .channel(`pedidos-live-${incluirEntregados ? 'mesero' : 'cocina'}-${Date.now()}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'Pedido' },
-        (payload) => {
-          if (!activo) return;
-
-          if (payload.eventType === 'INSERT') {
-            const raw = payload.new as any;
-            const nuevo: Pedido = {
-              ...raw,
-              total: Number(raw.total),
-              detalle: raw.detalle || '',
-            };
-
-            // Notificación instantánea sonora y visual
-            if (!incluirEntregados && nuevo.estado === 'PENDIENTE') {
-              onNuevoPedidoRef.current?.(nuevo);
-            }
-            if (incluirEntregados && nuevo.estado === 'SOLICITADO') {
-              onNuevoPedidoRef.current?.(nuevo);
-            }
-
-            sincronizarPedidos();
-          } else if (payload.eventType === 'UPDATE') {
-            const raw = payload.new as any;
-            const estadoAnterior = pedidosPreviosMapRef.current.get(raw.id);
-            const nuevoEstado = raw.estado;
-            const nuevo: Pedido = {
-              ...raw,
-              total: Number(raw.total),
-              detalle: raw.detalle || '',
-            };
-
-            // Notificación instantánea de transición de estado
-            if (
-              !incluirEntregados &&
-              (!estadoAnterior || estadoAnterior === 'SOLICITADO') &&
-              nuevoEstado === 'PENDIENTE'
-            ) {
-              onNuevoPedidoRef.current?.(nuevo);
-            }
-            if (incluirEntregados && nuevoEstado === 'HECHO' && estadoAnterior !== 'HECHO') {
-              onPedidoListoRef.current?.(nuevo);
-            }
-
-            sincronizarPedidos();
-          } else if (payload.eventType === 'DELETE') {
-            sincronizarPedidos();
-          }
-        }
-      )
-      .subscribe();
-
-    // 3. Polling de respaldo resiliente (compatible con AWS Amplify / CloudFront)
-    // Garantiza sincronización periódica si se produce alguna reconexión WebSocket
+    // Loop reactivo de alta velocidad para AWS (cada 1.2 segundos activo / 5 segundos en background)
     let timerId: NodeJS.Timeout;
 
     const tick = async () => {
       if (!activo) return;
       await sincronizarPedidos();
       if (!activo) return;
-      const actualMs = typeof document !== 'undefined' && document.hidden ? 8000 : 3500;
-      timerId = setTimeout(tick, actualMs);
+      const intervaloMs = typeof document !== 'undefined' && document.hidden ? 5000 : 1200;
+      timerId = setTimeout(tick, intervaloMs);
     };
 
-    timerId = setTimeout(tick, 3500);
+    timerId = setTimeout(tick, 1200);
 
-    // Si la pestaña vuelve al frente (visibilidad), forzar refresco inmediato
+    // Si la pantalla se desbloquea o la app pasa a primer plano, forzar refresco inmediato
     const handleVisibilidad = () => {
       if (typeof document !== 'undefined' && !document.hidden && activo) {
         sincronizarPedidos();
@@ -237,12 +203,11 @@ export function useRealtimeOrders(
     return () => {
       activo = false;
       clearTimeout(timerId);
-      supabase.removeChannel(canal);
       if (typeof document !== 'undefined') {
         document.removeEventListener('visibilitychange', handleVisibilidad);
       }
     };
-  }, [sincronizarPedidos, incluirEntregados]);
+  }, [sincronizarPedidos]);
 
   return { pedidos, cargando, error, refrescar: sincronizarPedidos };
 }

@@ -112,21 +112,27 @@ export function ClientePortal({
     }
   }, [mesa]);
 
-  // 2. Sincronización de disponibilidad de productos en cocina
+  // 2. Sincronización de disponibilidad de productos en cocina para AWS
   useEffect(() => {
     let activo = true;
 
-    // Sincronización periódica resiliente (compatible con AWS y Supabase)
     const sincronizarProductos = async () => {
       try {
-        const res = await fetch(`/api/productos?_t=${Date.now()}`, { cache: 'no-store' });
+        const url = `/api/productos?_cb=${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        const res = await fetch(url, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+            Pragma: 'no-cache',
+          },
+        });
         if (!res.ok) return;
         const data = await res.json();
-        if (!activo) return;
+        if (!activo || !Array.isArray(data)) return;
         setProductos((prev) =>
           prev.map((p) => {
             const actualizado = data.find((d: any) => d.id === p.id);
-            if (actualizado && actualizado.disponible !== p.disponible) {
+            if (actualizado && (actualizado.disponible !== p.disponible || actualizado.precio !== p.precio)) {
               return { ...p, disponible: actualizado.disponible, precio: Number(actualizado.precio) };
             }
             return p;
@@ -135,52 +141,33 @@ export function ClientePortal({
       } catch (e) {}
     };
 
-    const intervalo = setInterval(sincronizarProductos, 12000);
-
-    // Canal opcional en tiempo real
-    const canalProductos = supabase
-      .channel('cambios-productos-cliente')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'Producto' },
-        (payload) => {
-          if (payload.eventType === 'UPDATE') {
-            const prodActualizado = payload.new as any;
-            setProductos((prev) =>
-              prev.map((p) =>
-                p.id === prodActualizado.id
-                  ? {
-                      ...p,
-                      disponible: prodActualizado.disponible,
-                      precio: Number(prodActualizado.precio),
-                      nombre: prodActualizado.nombre,
-                    }
-                  : p
-              )
-            );
-          }
-        }
-      )
-      .subscribe();
+    sincronizarProductos();
+    const intervalo = setInterval(sincronizarProductos, 2500);
 
     return () => {
       activo = false;
       clearInterval(intervalo);
-      supabase.removeChannel(canalProductos);
     };
   }, []);
 
-  // 3. Sincronización en tiempo real del estado del pedido activo del cliente (Polling AWS + Supabase)
+  // 3. Sincronización en tiempo real del estado del pedido activo del cliente para AWS
   useEffect(() => {
     if (!pedidoActivo?.id) return;
     let activo = true;
 
     const verificarEstado = async () => {
       try {
-        const res = await fetch(`/api/pedidos/activos?todosHoy=true&_t=${Date.now()}`, { cache: 'no-store' });
+        const url = `/api/pedidos/activos?todosHoy=true&_cb=${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+        const res = await fetch(url, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+            Pragma: 'no-cache',
+          },
+        });
         if (!res.ok) return;
         const data = await res.json();
-        if (!activo) return;
+        if (!activo || !Array.isArray(data)) return;
 
         const actual = data.find((p: any) => p.id === pedidoActivo.id);
         if (actual && actual.estado !== pedidoActivo.estado) {
@@ -201,41 +188,12 @@ export function ClientePortal({
       } catch (e) {}
     };
 
-    const intervalo = setInterval(verificarEstado, 2500);
-
-    const canalPedido = supabase
-      .channel(`seguimiento-pedido-${pedidoActivo.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'Pedido',
-          filter: `id=eq.${pedidoActivo.id}`,
-        },
-        (payload) => {
-          const nuevo = payload.new as any;
-          setPedidoActivo((prev) => {
-            if (!prev) return null;
-            const updated = {
-              ...prev,
-              estado: nuevo.estado,
-              total: Number(nuevo.total),
-              detalle: nuevo.detalle || prev.detalle,
-            };
-            try {
-              localStorage.setItem(`sazonare_pedido_cliente_m${mesa}`, JSON.stringify(updated));
-            } catch (e) {}
-            return updated;
-          });
-        }
-      )
-      .subscribe();
+    verificarEstado();
+    const intervalo = setInterval(verificarEstado, 1500);
 
     return () => {
       activo = false;
       clearInterval(intervalo);
-      supabase.removeChannel(canalPedido);
     };
   }, [pedidoActivo?.id, pedidoActivo?.estado, mesa]);
 

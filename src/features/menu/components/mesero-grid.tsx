@@ -37,15 +37,16 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
     setProductos(productosIniciales);
   }, [productosIniciales]);
 
-  // Sincronización en tiempo real de productos y disponibilidad (Polling AWS + Supabase)
+  // Sincronización en tiempo real de productos y disponibilidad para AWS
   useEffect(() => {
     let activo = true;
 
     const actualizarProductos = () => {
-      fetch(`/api/productos?_t=${Date.now()}`, {
+      const url = `/api/productos?_cb=${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      fetch(url, {
         cache: 'no-store',
         headers: {
-          'Cache-Control': 'no-cache, no-store, max-age=0',
+          'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
           Pragma: 'no-cache',
         },
       })
@@ -54,7 +55,6 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
           if (!activo || !Array.isArray(data)) return;
 
           setProductos((prev) => {
-            // Solo actualizar el estado si realmente hubo cambios en la disponibilidad o precio
             let huboCambios = false;
             if (prev.length !== data.length) {
               huboCambios = true;
@@ -73,33 +73,13 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
         .catch(() => {});
     };
 
-    // Consulta periódica cada 4 segundos compatible al 100% con AWS
-    const intervalo = setInterval(actualizarProductos, 4000);
-
-    const canal = supabase
-      .channel('cambios-disponibilidad-mesero')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'Producto' },
-        (payload) => {
-          if (payload.eventType === 'UPDATE') {
-            const actualizado = payload.new as { id: string; disponible: boolean };
-            setProductos((prev) =>
-              prev.map((p) =>
-                p.id === actualizado.id ? { ...p, disponible: actualizado.disponible } : p
-              )
-            );
-          } else if (payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-            actualizarProductos();
-          }
-        }
-      )
-      .subscribe();
+    // Consulta reactiva cada 1.5 segundos
+    actualizarProductos();
+    const intervalo = setInterval(actualizarProductos, 1500);
 
     return () => {
       activo = false;
       clearInterval(intervalo);
-      supabase.removeChannel(canal);
     };
   }, []);
 

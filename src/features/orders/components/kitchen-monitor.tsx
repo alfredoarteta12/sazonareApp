@@ -239,14 +239,15 @@ export function KitchenMonitor() {
   const [modalAgotadosAbierto, setModalAgotadosAbierto] = useState(false);
   const [conteoAgotados, setConteoAgotados] = useState(0);
 
-  // Escuchar y contar platos agotados en tiempo real (Polling AWS + Supabase)
+  // Escuchar y contar platos agotados en tiempo real para AWS
   useEffect(() => {
     let activo = true;
 
     const cargarAgotados = () => {
-      fetch(`/api/productos?_t=${Date.now()}`, {
+      const url = `/api/productos?_cb=${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      fetch(url, {
         cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache, no-store, max-age=0' },
+        headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0' },
       })
         .then((res) => res.json())
         .then((data: any[]) => {
@@ -258,23 +259,11 @@ export function KitchenMonitor() {
     };
 
     cargarAgotados();
-    const intervalo = setInterval(cargarAgotados, 5000);
-
-    const canal = supabase
-      .channel('cambios-cocina-agotados')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'Producto' },
-        () => {
-          cargarAgotados();
-        }
-      )
-      .subscribe();
+    const intervalo = setInterval(cargarAgotados, 1500);
 
     return () => {
       activo = false;
       clearInterval(intervalo);
-      supabase.removeChannel(canal);
     };
   }, []);
 

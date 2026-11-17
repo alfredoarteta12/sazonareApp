@@ -80,6 +80,12 @@ export default async function AdminMenuPage() {
                 🍽️ Menú y Platos
               </a>
               <a
+                href="/admin/inventario"
+                className="rounded-lg px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition-colors whitespace-nowrap"
+              >
+                🍾 Inventario Bebidas
+              </a>
+              <a
                 href="/admin/empleados"
                 className="rounded-lg px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition-colors whitespace-nowrap"
               >

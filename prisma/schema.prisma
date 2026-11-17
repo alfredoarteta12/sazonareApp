@@ -56,14 +56,15 @@ model Categoria {
 }
 
 model Producto {
-  id          String          @id @default(uuid())
+  id          String            @id @default(uuid())
   nombre      String
-  precio      Decimal         @db.Decimal(10, 2)
+  precio      Decimal           @db.Decimal(10, 2)
   imagen      String?
-  disponible  Boolean         @default(true)
+  disponible  Boolean           @default(true)
   categoriaId String
-  categoria   Categoria       @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+  categoria   Categoria         @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
   detalles    DetallePedido[]
+  inventario  InventarioBebida?
 
   @@index([categoriaId])
 }
@@ -145,3 +146,50 @@ model CierreCaja {
 
   @@index([fecha])
 }
+
+enum TipoMovimientoInventario {
+  ENTRADA
+  VENTA
+  AJUSTE
+  MERMA
+  DEVOLUCION
+}
+
+model InventarioBebida {
+  id            String                  @id @default(uuid())
+  nombre        String                  @unique
+  stockActual   Int                     @default(0)
+  stockMinimo   Int                     @default(5)
+  costoUnitario Decimal                 @default(0) @db.Decimal(10, 2)
+  precioVenta   Decimal                 @default(0) @db.Decimal(10, 2)
+
+  // Enlace opcional a un producto del menú
+  productoId    String?                 @unique
+  producto      Producto?               @relation(fields: [productoId], references: [id], onDelete: SetNull)
+
+  movimientos   MovimientoInventario[]
+
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  @@index([nombre])
+}
+
+model MovimientoInventario {
+  id                   String                   @id @default(uuid())
+  bebidaId             String
+  bebida               InventarioBebida         @relation(fields: [bebidaId], references: [id], onDelete: Cascade)
+  tipo                 TipoMovimientoInventario @default(AJUSTE)
+  cantidad             Int                      // Unidades movidas
+  stockAnterior        Int
+  stockNuevo           Int
+  costoUnitarioMomento Decimal                  @default(0) @db.Decimal(10, 2)
+  motivo               String?
+  pedidoId             String?
+  responsable          String?
+  createdAt            DateTime                 @default(now())
+
+  @@index([bebidaId])
+  @@index([createdAt])
+}
+

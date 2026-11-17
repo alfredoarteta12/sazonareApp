@@ -5,6 +5,10 @@ import { revalidatePath } from 'next/cache';
 import { OrderStatus, TipoPedido, MetodoPago } from '@prisma/client';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { formatearCOP } from '@/lib/currency';
+import {
+  descontarBebidasDeComanda,
+  restaurarBebidasDeComanda,
+} from '@/features/inventario/actions/inventario-actions';
 
 // Tipos para las acciones
 export interface ItemCarrito {
@@ -158,7 +162,15 @@ export async function crearPedido(
       },
     });
 
+    // Descontar automáticamente las bebidas del inventario
+    await descontarBebidasDeComanda(
+      items,
+      pedido.id,
+      tipoPedido === TipoPedido.MESA ? `Comanda Mesa ${mesa}` : `Comanda ${tipoPedido}`
+    );
+
     revalidatePath('/admin');
+    revalidatePath('/admin/inventario');
     revalidatePath('/cocina');
     revalidatePath('/mesero');
     return { success: true, pedido: serializePedido(pedido) };
@@ -383,7 +395,11 @@ export async function cancelarPedido(pedidoId: string, motivo: string) {
       },
     });
 
+    // Restaurar automáticamente las bebidas canceladas al inventario
+    await restaurarBebidasDeComanda(pedidoId, motivo.trim());
+
     revalidatePath('/admin');
+    revalidatePath('/admin/inventario');
     return { success: true, pedido: serializePedido(pedidoCancelado) };
   } catch (error) {
     console.error('Error al cancelar pedido:', error);
@@ -534,9 +550,17 @@ export async function confirmarPedidoCliente(pedidoId: string) {
       },
     });
 
+    // Descontar automáticamente las bebidas aprobadas para la comanda
+    await descontarBebidasDeComanda(
+      pedido.items,
+      pedido.id,
+      `Aprobación comanda cliente Mesa ${pedido.mesa}`
+    );
+
     revalidatePath('/mesero');
     revalidatePath('/cocina');
     revalidatePath('/admin');
+    revalidatePath('/admin/inventario');
     revalidatePath('/cliente');
 
     return { success: true, pedido: serializePedido(pedido) };

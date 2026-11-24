@@ -7,8 +7,6 @@ import { kitchenAudio } from '../utils/audio-alerts';
 import { formatearHoraColombia } from '@/lib/date-utils';
 import { parseDetallePedido } from '../utils/parse-order-detail';
 import { PlatosAgotadosModal } from '@/features/menu/components/platos-agotados-modal';
-import { getTodosLosProductos } from '@/features/menu/actions/menu-queries';
-import { supabase } from '@/lib/supabase';
 import { formatearCOP } from '@/lib/currency';
 
 

@@ -8,7 +8,6 @@ export * from '../types/inventario';
 import type {
   BebidaInventarioDTO,
   ResumenInventario,
-  MovimientoInventarioDTO,
 } from '../types/inventario';
 
 /**

@@ -109,7 +109,7 @@ export async function crearPedido(
       if (user) {
         creadoPorId = user.id;
       }
-    } catch (e) {
+    } catch (_e) {
       // Auth opcional
     }
 
@@ -535,7 +535,7 @@ export async function confirmarPedidoCliente(pedidoId: string) {
       if (user) {
         creadoPorId = user.id;
       }
-    } catch (e) {
+    } catch (_e) {
       // Auth opcional
     }
 

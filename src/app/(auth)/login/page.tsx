@@ -3,6 +3,7 @@ import { BotonInstalarPwa } from '@/components/boton-instalar-pwa';
 import { createSupabaseServerClient } from '@/lib/supabase-server';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,13 +126,13 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         {/* Retorno a la Página Principal */}
         <div className="mt-6 text-center">
-          <a
+          <Link
             href="/"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition-colors py-1.5 px-3 rounded-xl hover:bg-zinc-900"
           >
             <span>←</span>
             <span>Volver a la página principal</span>
-          </a>
+          </Link>
         </div>
       </div>
     </div>

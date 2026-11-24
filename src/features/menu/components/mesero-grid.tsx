@@ -12,7 +12,6 @@ import {
   DatosPedidoExterno,
 } from '@/features/orders/components/datos-pedido-externo-modal';
 import { waiterAudio } from '@/features/orders/utils/audio-alerts';
-import { supabase } from '@/lib/supabase';
 import { formatearCOP } from '@/lib/currency';
 
 interface Producto {

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
 import { formatearCOP } from '@/lib/currency';
 import { crearPedidoCliente, ItemCarrito } from '@/features/orders/actions/order-mutations';
 

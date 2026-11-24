@@ -9,7 +9,6 @@ import {
   toggleDisponibilidad,
   eliminarProducto,
 } from '../actions/menu-queries';
-import { supabase } from '@/lib/supabase';
 import { formatearCOP } from '@/lib/currency';
 
 interface Categoria {

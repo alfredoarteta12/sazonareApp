@@ -65,7 +65,7 @@ export function InventarioManager({
         if (activo && res.success && res.data) {
           setResumen(res.data);
         }
-      } catch (e) {}
+      } catch (_e) {}
     };
 
     const intervalo = setInterval(refrescarInventario, 2000);

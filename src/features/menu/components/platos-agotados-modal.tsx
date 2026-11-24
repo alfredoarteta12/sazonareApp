@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useTransition } from 'react';
 import { toggleDisponibilidad, getTodosLosProductos } from '../actions/menu-queries';
-import { supabase } from '@/lib/supabase';
 import { formatearCOP } from '@/lib/currency';
 
 export interface ProductoAgotadoItem {

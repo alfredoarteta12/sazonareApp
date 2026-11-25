@@ -4,7 +4,6 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { TipoMovimientoInventario } from '@prisma/client';
 
-export * from '../types/inventario';
 import type {
   BebidaInventarioDTO,
   ResumenInventario,

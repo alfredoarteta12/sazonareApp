@@ -6,6 +6,19 @@ import { formatearCOP } from '@/lib/currency';
 import { LandingNavbar } from '@/components/landing/landing-navbar';
 import { LandingFooter } from '@/components/landing/landing-footer';
 import { BotonInstalarPwa } from '@/components/boton-instalar-pwa';
+import {
+  Flame,
+  Zap,
+  CreditCard,
+  FileSpreadsheet,
+  QrCode,
+  Smartphone,
+  ChefHat,
+  ShieldCheck,
+  ArrowUpRight,
+  UtensilsCrossed,
+  Sparkles,
+} from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,8 +48,8 @@ export default async function HomePage() {
         };
       }
     }
-  } catch (e) {
-    // Si falla supabase o no hay cookies, se presenta como visitante público
+  } catch (_e) {
+    // Modo visitante
   }
 
   // 2. Obtener platillos de la carta
@@ -44,50 +57,52 @@ export default async function HomePage() {
   const productos = productosRes.success && productosRes.data ? productosRes.data : [];
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col selection:bg-orange-500 selection:text-white">
-      {/* 1. NAVBAR SUPERIOR CON ACCESOS A LOGIN */}
+    <div className="min-h-screen bg-[#08080a] text-[#f4f4f5] flex flex-col selection:bg-orange-500 selection:text-black">
+      {/* 1. NAVBAR SUPERIOR NEO-BRUTALIST */}
       <LandingNavbar usuarioActual={usuarioActual} />
 
-      {/* 2. HERO PRINCIPAL */}
-      <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-28 border-b border-zinc-900 bg-gradient-to-b from-zinc-950 via-black to-black">
-        {/* Luces y efectos de fondo */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-orange-500/10 blur-[130px] pointer-events-none rounded-full" />
-        <div className="absolute top-1/3 right-10 w-[350px] h-[250px] bg-amber-500/10 blur-[110px] pointer-events-none rounded-full" />
+      {/* 2. HERO PRINCIPAL STREET FOOD */}
+      <section className="relative overflow-hidden pt-12 pb-20 sm:pt-20 sm:pb-28 border-b-2 border-zinc-800 bg-[#08080a]">
+        {/* Glow de brasa / ámbar de fondo */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[320px] bg-orange-600/15 blur-[140px] pointer-events-none rounded-full" />
+        <div className="absolute top-1/3 right-10 w-[350px] h-[250px] bg-amber-500/10 blur-[120px] pointer-events-none rounded-full" />
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          {/* Badge superior */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-950/20 px-3.5 py-1 text-xs font-bold text-orange-400 mb-6 shadow-lg shadow-orange-500/10">
-            <span className="animate-pulse">🔥</span>
-            <span>Sistema Gastronómico & POS en Vivo</span>
+          {/* Badge superior estilo sticker */}
+          <div className="inline-flex items-center gap-2 neo-sticker bg-orange-500 text-black border-black shadow-[3px_3px_0px_0px_#fff] mb-6 rotate-[-1deg]">
+            <Flame className="w-3.5 h-3.5 fill-black" />
+            <span>SISTEMA STREET FOOD & POS GASTRONÓMICO</span>
           </div>
 
-          {/* Título Principal */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-tight">
-            El Sabor de la Buena Comida con la{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-400 to-orange-500">
-              Velocidad de la Tecnología
+          {/* Título Principal Neo-Brutalist */}
+          <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-black uppercase tracking-tight text-white max-w-5xl mx-auto leading-[0.95]">
+            EL SABOR DE LA BUENA COMIDA CON LA{' '}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 via-amber-300 to-orange-500 underline decoration-orange-500 decoration-wavy decoration-4">
+              VELOCIDAD DEL FUEGO
             </span>
           </h1>
 
           {/* Subtítulo */}
-          <p className="mt-5 text-sm sm:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-            Comandas táctiles para meseros, monitor KDS en cocina en tiempo real, arqueo Z sin descuadres y una experiencia diseñada para deleitar a cada cliente.
+          <p className="mt-6 text-sm sm:text-lg text-zinc-400 max-w-2xl mx-auto leading-relaxed font-medium">
+            Comandas táctiles para meseros en terraza, monitor KDS en cocina en tiempo real, arqueo Z sin descuadres y pedidos en mesa desde QR para tus comensales.
           </p>
 
           {/* Botones de Llamado a la Acción (CTA) */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3.5 sm:gap-4 max-w-md mx-auto sm:max-w-none">
+          <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-lg mx-auto sm:max-w-none">
             <Link
               href="/cliente"
-              className="w-full sm:w-auto rounded-2xl bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 px-6 py-3.5 text-sm font-extrabold text-white shadow-xl shadow-orange-500/25 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+              className="neo-btn-primary w-full sm:w-auto rounded-xl px-7 py-4 text-sm font-black uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-[4px_4px_0px_0px_#fff]"
             >
-              <span>🛎️ Ver Carta & Pedir en Mesa</span>
+              <QrCode className="w-5 h-5 text-black" />
+              <span>Ver Carta & Pedir en Mesa</span>
             </Link>
 
             <a
               href="#menu"
-              className="w-full sm:w-auto rounded-2xl border border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800 px-6 py-3.5 text-sm font-bold text-zinc-200 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+              className="neo-btn w-full sm:w-auto rounded-xl bg-zinc-900 hover:bg-zinc-800 px-6 py-4 text-xs font-black uppercase tracking-wider text-zinc-200 flex items-center justify-center gap-2 border-2 border-zinc-700"
             >
-              <span>🍽️ Vista Previa Rápida</span>
+              <UtensilsCrossed className="w-4 h-4 text-orange-400" />
+              <span>Explorar Especialidades</span>
             </a>
 
             {usuarioActual ? (
@@ -99,16 +114,18 @@ export default async function HomePage() {
                     ? '/cocina'
                     : '/mesero'
                 }
-                className="w-full sm:w-auto rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 px-6 py-3.5 text-sm font-extrabold text-white shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                className="neo-btn w-full sm:w-auto rounded-xl bg-orange-600 hover:bg-orange-500 text-white px-6 py-4 text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border-2 border-black shadow-[3px_3px_0px_0px_#000]"
               >
-                <span>🚀 Entrar a mi Estación ({usuarioActual.role})</span>
+                <Zap className="w-4 h-4 fill-white" />
+                <span>Mi Estación ({usuarioActual.role})</span>
               </Link>
             ) : (
               <Link
                 href="/login"
-                className="w-full sm:w-auto rounded-2xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 px-6 py-3.5 text-sm font-extrabold text-white shadow-lg transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                className="neo-btn w-full sm:w-auto rounded-xl bg-zinc-900 hover:bg-zinc-800 border-2 border-zinc-700 px-6 py-4 text-xs font-black uppercase tracking-wider text-zinc-200 flex items-center justify-center gap-2"
               >
-                <span>🔐 Iniciar Sesión (Personal)</span>
+                <span>Acceso Personal</span>
+                <ArrowUpRight className="w-4 h-4 text-orange-400" />
               </Link>
             )}
 
@@ -117,108 +134,112 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Métricas destacadas */}
+          {/* Métricas destacadas Neo-Brutalist */}
           <div className="mt-14 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto">
-            <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 text-center">
-              <span className="text-2xl">⚡</span>
-              <p className="mt-1 text-lg sm:text-xl font-black text-white">&lt; 30 seg</p>
-              <p className="text-[11px] text-zinc-400 font-medium">Comanda en Cocina</p>
+            <div className="neo-box rounded-2xl p-4 text-center border-2 border-zinc-800 hover:border-orange-500 transition-colors">
+              <Zap className="w-6 h-6 text-orange-400 mx-auto mb-1 stroke-[2.5]" />
+              <p className="font-display text-xl sm:text-2xl font-black text-white">&lt; 30 SEG</p>
+              <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400">Comanda en Cocina</p>
             </div>
-            <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 text-center">
-              <span className="text-2xl">💳</span>
-              <p className="mt-1 text-lg sm:text-xl font-black text-emerald-400">Pago Dividido</p>
-              <p className="text-[11px] text-zinc-400 font-medium">Efectivo + Transferencia</p>
+            <div className="neo-box rounded-2xl p-4 text-center border-2 border-zinc-800 hover:border-emerald-500 transition-colors">
+              <CreditCard className="w-6 h-6 text-emerald-400 mx-auto mb-1 stroke-[2.5]" />
+              <p className="font-display text-xl sm:text-2xl font-black text-emerald-400">PAGO DIVIDIDO</p>
+              <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400">Efectivo + Nequi</p>
             </div>
-            <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 text-center">
-              <span className="text-2xl">📋</span>
-              <p className="mt-1 text-lg sm:text-xl font-black text-white">Reporte Z</p>
-              <p className="text-[11px] text-zinc-400 font-medium">Arqueo Diario Exacto</p>
+            <div className="neo-box rounded-2xl p-4 text-center border-2 border-zinc-800 hover:border-amber-500 transition-colors">
+              <FileSpreadsheet className="w-6 h-6 text-amber-400 mx-auto mb-1 stroke-[2.5]" />
+              <p className="font-display text-xl sm:text-2xl font-black text-white">REPORTE Z</p>
+              <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400">Cierre Térmico</p>
             </div>
-            <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-4 text-center">
-              <span className="text-2xl">🇨🇴</span>
-              <p className="mt-1 text-lg sm:text-xl font-black text-amber-400">COP Oficial</p>
-              <p className="text-[11px] text-zinc-400 font-medium">Billetes y Denominaciones</p>
+            <div className="neo-box rounded-2xl p-4 text-center border-2 border-zinc-800 hover:border-orange-500 transition-colors">
+              <Sparkles className="w-6 h-6 text-orange-400 mx-auto mb-1 stroke-[2.5]" />
+              <p className="font-display text-xl sm:text-2xl font-black text-amber-400">100% EN COP</p>
+              <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-zinc-400">Pesos Colombianos</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* 3. SECCIÓN: NUESTRA CARTA DIGITAL (#menu) */}
-      <section id="menu" className="py-16 sm:py-24 border-b border-zinc-900 bg-zinc-950/60">
+      <section id="menu" className="py-16 sm:py-24 border-b-2 border-zinc-800 bg-[#0c0c10]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
             <div>
-              <span className="rounded-md bg-orange-500/10 border border-orange-500/20 px-2.5 py-1 text-xs font-bold text-orange-400 uppercase tracking-wider">
-                Especialidades de la Casa
+              <span className="neo-sticker bg-orange-500/15 text-orange-400 border-orange-500/50 shadow-none mb-2">
+                ESPECIALIDADES STREET FOOD
               </span>
-              <h2 className="mt-2 text-2xl sm:text-4xl font-black text-white">
+              <h2 className="font-display text-3xl sm:text-5xl font-black uppercase tracking-tight text-white mt-1">
                 Nuestra Carta en Vivo
               </h2>
               <p className="mt-1 text-xs sm:text-sm text-zinc-400">
-                Platillos preparados al momento. Disponibilidad sincronizada en tiempo real con cocina.
+                Platillos preparados al momento. Disponibilidad sincronizada al instante con la cocina.
               </p>
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="rounded-full bg-emerald-950/70 border border-emerald-800/80 px-3 py-1 text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="neo-sticker bg-emerald-950/80 text-emerald-300 border-emerald-600 shadow-[2px_2px_0px_0px_#10b981]">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping mr-1" />
                 <span>Precios en Pesos Colombianos ($ COP)</span>
               </span>
             </div>
           </div>
 
-          {/* Grid de Platillos */}
+          {/* Grid de Platillos Neo-Brutalist */}
           {productos.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
               {productos.map((prod) => (
                 <div
                   key={prod.id}
-                  className={`group rounded-3xl border p-5 transition-all flex flex-col justify-between ${
+                  className={`group rounded-2xl border-2 p-5 sm:p-6 transition-all flex flex-col justify-between ${
                     prod.disponible
-                      ? 'border-zinc-800 bg-zinc-900/50 hover:border-orange-500/40 hover:bg-zinc-900/80 shadow-lg hover:shadow-orange-500/5'
-                      : 'border-zinc-900 bg-zinc-950/40 opacity-60'
+                      ? 'border-zinc-700 bg-zinc-900/90 shadow-[5px_5px_0px_0px_#f97316] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[7px_7px_0px_0px_#facc15]'
+                      : 'border-zinc-800 bg-zinc-950/60 opacity-60 shadow-[3px_3px_0px_0px_#27272a]'
                   }`}
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="rounded-lg bg-zinc-800 px-2.5 py-1 text-[11px] font-semibold text-zinc-300">
+                      <span className="font-display text-[11px] font-black uppercase tracking-wider text-orange-400 border border-orange-500/30 bg-orange-950/40 px-2 py-0.5 rounded-lg">
                         {prod.categoria?.nombre || 'Platillo'}
                       </span>
                       <span
-                        className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
+                        className={`neo-sticker text-[9px] ${
                           prod.disponible
-                            ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                            : 'bg-rose-950 text-rose-300 border-rose-800'
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-700 shadow-none'
+                            : 'bg-rose-950 text-rose-300 border-rose-700 shadow-none'
                         }`}
                       >
-                        {prod.disponible ? '🟢 Disponible' : '🔴 Agotado'}
+                        {prod.disponible ? '✓ DISPONIBLE' : '✕ AGOTADO'}
                       </span>
                     </div>
 
-                    <h3 className="text-lg font-bold text-white group-hover:text-orange-400 transition-colors">
+                    <h3 className="font-display text-xl sm:text-2xl font-black uppercase tracking-tight text-white group-hover:text-orange-400 transition-colors">
                       {prod.nombre}
                     </h3>
                   </div>
 
-                  <div className="mt-5 pt-4 border-t border-zinc-800/80 flex items-center justify-between">
+                  <div className="mt-6 pt-4 border-t-2 border-zinc-800 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-zinc-500">Precio</span>
-                      <p className="text-xl font-black text-orange-400">
+                      <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-wider">Precio Carta</span>
+                      <p className="font-display text-2xl font-black text-amber-400">
                         {formatearCOP(prod.precio)}
                       </p>
                     </div>
 
-                    <span className="text-xs font-semibold text-zinc-500 group-hover:text-zinc-300 transition-colors">
-                      Pedir en Mesa 🧾
-                    </span>
+                    <Link
+                      href="/cliente"
+                      className="neo-btn rounded-xl bg-orange-500 hover:bg-orange-400 text-black px-3.5 py-2 text-xs font-black uppercase tracking-wider border-2 border-black flex items-center gap-1.5 shadow-[2px_2px_0px_0px_#fff]"
+                    >
+                      <span>Pedir</span>
+                      <ArrowUpRight className="w-3.5 h-3.5 stroke-[3]" />
+                    </Link>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="rounded-3xl border border-zinc-800 bg-zinc-900/30 p-12 text-center text-zinc-400">
-              <span className="text-4xl mb-2 block">🍽️</span>
-              <p className="text-base font-bold text-white">Catálogo en preparación</p>
+            <div className="neo-box rounded-2xl border-2 border-zinc-800 p-12 text-center text-zinc-400">
+              <UtensilsCrossed className="w-10 h-10 text-orange-500 mx-auto mb-2" />
+              <p className="font-display text-lg font-black uppercase text-white">Catálogo en preparación</p>
               <p className="text-xs text-zinc-500 mt-1">
                 Los platillos registrados desde el panel administrativo aparecerán aquí automáticamente.
               </p>
@@ -228,13 +249,13 @@ export default async function HomePage() {
       </section>
 
       {/* 4. SECCIÓN: SISTEMAS DEL RESTAURANTE (#modulos) */}
-      <section id="modulos" className="py-16 sm:py-24 border-b border-zinc-900 bg-black">
+      <section id="modulos" className="py-16 sm:py-24 border-b-2 border-zinc-800 bg-[#08080a]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-14">
-            <span className="rounded-md bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 text-xs font-bold text-blue-400 uppercase tracking-wider">
-              Ecosistema Operativo
+            <span className="neo-sticker bg-blue-500/15 text-blue-400 border-blue-500/50 shadow-none mb-2">
+              ESTACIONES DE TRABAJO
             </span>
-            <h2 className="mt-3 text-2xl sm:text-4xl font-black text-white">
+            <h2 className="font-display text-3xl sm:text-5xl font-black uppercase tracking-tight text-white mt-1">
               Herramientas Diseñadas para tu Personal
             </h2>
             <p className="mt-2 text-xs sm:text-sm text-zinc-400">
@@ -244,12 +265,12 @@ export default async function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {/* Módulo 1: Meseros */}
-            <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 flex flex-col justify-between hover:border-blue-500/50 transition-all group">
+            <div className="neo-box rounded-2xl border-2 border-zinc-700 p-6 flex flex-col justify-between hover:border-blue-500 shadow-[5px_5px_0px_0px_#3b82f6] transition-all group">
               <div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-950/60 border border-blue-800 text-2xl mb-4 group-hover:scale-110 transition-transform">
-                  📱
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/15 border-2 border-blue-500/40 text-blue-400 mb-4 group-hover:scale-105 transition-transform">
+                  <Smartphone className="w-6 h-6 stroke-[2.5]" />
                 </div>
-                <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors">
+                <h3 className="font-display text-lg font-black uppercase tracking-tight text-white group-hover:text-blue-400 transition-colors">
                   Estación de Mesero
                 </h3>
                 <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
@@ -257,10 +278,10 @@ export default async function HomePage() {
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-800/80">
+              <div className="mt-6 pt-4 border-t-2 border-zinc-800">
                 <Link
                   href="/login?rol=mesero"
-                  className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center justify-between"
+                  className="font-display text-xs font-black uppercase tracking-wider text-blue-400 hover:text-blue-300 flex items-center justify-between"
                 >
                   <span>Ingresar como Mesero</span>
                   <span>→</span>
@@ -269,12 +290,12 @@ export default async function HomePage() {
             </div>
 
             {/* Módulo 2: Cocina */}
-            <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 flex flex-col justify-between hover:border-amber-500/50 transition-all group">
+            <div className="neo-box rounded-2xl border-2 border-zinc-700 p-6 flex flex-col justify-between hover:border-amber-500 shadow-[5px_5px_0px_0px_#f59e0b] transition-all group">
               <div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-950/60 border border-amber-800 text-2xl mb-4 group-hover:scale-110 transition-transform">
-                  👨‍🍳
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/15 border-2 border-amber-500/40 text-amber-400 mb-4 group-hover:scale-105 transition-transform">
+                  <ChefHat className="w-6 h-6 stroke-[2.5]" />
                 </div>
-                <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors">
+                <h3 className="font-display text-lg font-black uppercase tracking-tight text-white group-hover:text-amber-400 transition-colors">
                   Monitor KDS de Cocina
                 </h3>
                 <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
@@ -282,10 +303,10 @@ export default async function HomePage() {
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-800/80">
+              <div className="mt-6 pt-4 border-t-2 border-zinc-800">
                 <Link
                   href="/login?rol=cocina"
-                  className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center justify-between"
+                  className="font-display text-xs font-black uppercase tracking-wider text-amber-400 hover:text-amber-300 flex items-center justify-between"
                 >
                   <span>Ingresar a Cocina</span>
                   <span>→</span>
@@ -294,23 +315,23 @@ export default async function HomePage() {
             </div>
 
             {/* Módulo 3: Administración */}
-            <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 flex flex-col justify-between hover:border-orange-500/50 transition-all group">
+            <div className="neo-box rounded-2xl border-2 border-zinc-700 p-6 flex flex-col justify-between hover:border-orange-500 shadow-[5px_5px_0px_0px_#f97316] transition-all group">
               <div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-orange-950/60 border border-orange-800 text-2xl mb-4 group-hover:scale-110 transition-transform">
-                  👑
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/15 border-2 border-orange-500/40 text-orange-400 mb-4 group-hover:scale-105 transition-transform">
+                  <ShieldCheck className="w-6 h-6 stroke-[2.5]" />
                 </div>
-                <h3 className="text-lg font-bold text-white group-hover:text-orange-400 transition-colors">
+                <h3 className="font-display text-lg font-black uppercase tracking-tight text-white group-hover:text-orange-400 transition-colors">
                   Panel Administrativo
                 </h3>
                 <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-                  Control financiero en tiempo real, arqueo ciego diario y generación de Reportes Z térmicos imprimibles, catálogo de menú y nómina de meseros con auditoría.
+                  Control financiero en tiempo real, inventario de bebidas en COP con Kardex, arqueo ciego diario y Reportes Z térmicos, catálogo de menú y nómina.
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-800/80">
+              <div className="mt-6 pt-4 border-t-2 border-zinc-800">
                 <Link
                   href="/login?rol=admin"
-                  className="text-xs font-bold text-orange-400 hover:text-orange-300 flex items-center justify-between"
+                  className="font-display text-xs font-black uppercase tracking-wider text-orange-400 hover:text-orange-300 flex items-center justify-between"
                 >
                   <span>Acceso Administrador</span>
                   <span>→</span>
@@ -319,30 +340,30 @@ export default async function HomePage() {
             </div>
 
             {/* Módulo 4: Portal Clientes */}
-            <div className="rounded-3xl border border-zinc-800 bg-zinc-950 p-6 flex flex-col justify-between hover:border-purple-500/60 transition-all group relative overflow-hidden shadow-lg shadow-purple-500/5">
+            <div className="neo-box rounded-2xl border-2 border-zinc-700 p-6 flex flex-col justify-between hover:border-emerald-500 shadow-[5px_5px_0px_0px_#10b981] transition-all group relative overflow-hidden">
               <div className="absolute top-3 right-3">
-                <span className="rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[9px] font-black uppercase text-emerald-300">
-                  ¡En Vivo! 🛎️
+                <span className="neo-sticker text-[8px] bg-emerald-500 text-black border-black">
+                  EN VIVO
                 </span>
               </div>
               <div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-950/60 border border-purple-800 text-2xl mb-4 group-hover:scale-110 transition-transform">
-                  🍽️
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/15 border-2 border-emerald-500/40 text-emerald-400 mb-4 group-hover:scale-105 transition-transform">
+                  <QrCode className="w-6 h-6 stroke-[2.5]" />
                 </div>
-                <h3 className="text-lg font-bold text-white group-hover:text-purple-300 transition-colors">
-                  Carta Digital & Pedidos en Mesa
+                <h3 className="font-display text-lg font-black uppercase tracking-tight text-white group-hover:text-emerald-300 transition-colors">
+                  Carta QR Clientes
                 </h3>
                 <p className="text-xs text-zinc-400 mt-2 leading-relaxed">
-                  Experiencia para comensales en mesa o desde QR: explora la carta con disponibilidad en vivo, arma tu carrito con notas especiales y envía tu solicitud directa al mesero.
+                  Experiencia para comensales en mesa o desde QR: explora la carta con disponibilidad en vivo, arma tu carrito con notas especiales y envía directo a la cocina.
                 </p>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-800/80">
+              <div className="mt-6 pt-4 border-t-2 border-zinc-800">
                 <Link
                   href="/cliente"
-                  className="text-xs font-bold text-purple-400 hover:text-purple-300 flex items-center justify-between"
+                  className="font-display text-xs font-black uppercase tracking-wider text-emerald-400 hover:text-emerald-300 flex items-center justify-between"
                 >
-                  <span>Abrir Carta Digital y Pedir</span>
+                  <span>Pedir en Mesa Ahora</span>
                   <span>→</span>
                 </Link>
               </div>
@@ -352,51 +373,51 @@ export default async function HomePage() {
       </section>
 
       {/* 5. SECCIÓN: EXPERIENCIA Y BENEFICIOS (#experiencia) */}
-      <section id="experiencia" className="py-16 sm:py-24 border-b border-zinc-900 bg-zinc-950/30">
+      <section id="experiencia" className="py-16 sm:py-24 border-b-2 border-zinc-800 bg-[#0c0c10]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
-              <span className="rounded-md bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-xs font-bold text-emerald-400 uppercase tracking-wider">
-                Eficiencia Garantizada
+              <span className="neo-sticker bg-emerald-500/15 text-emerald-400 border-emerald-500/50 shadow-none mb-2">
+                EFICIENCIA EN HORAS PICO
               </span>
-              <h2 className="mt-3 text-2xl sm:text-4xl font-black text-white leading-tight">
-                Diseñado para la Realidad y Presión de un Restaurante
+              <h2 className="font-display text-3xl sm:text-5xl font-black uppercase tracking-tight text-white leading-[1.05] mt-1">
+                Diseñado para la Realidad y Presión de la Cocina
               </h2>
-              <p className="mt-3 text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                Sin configuraciones complejas ni retrasos de red. SazonareFood opera con persistencia local y sincronización atómica con Supabase.
+              <p className="mt-3 text-xs sm:text-sm text-zinc-400 leading-relaxed font-medium">
+                Sin configuraciones complejas ni retrasos de red. SazonareFood opera con persistencia local y sincronización inmediata en la nube.
               </p>
 
               <div className="mt-8 space-y-4">
-                <div className="flex items-start gap-3.5">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-orange-500/10 border border-orange-500/30 text-sm">
-                    ✔️
+                <div className="neo-box p-4 rounded-xl flex items-start gap-3.5 border-2 border-zinc-800">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-black font-black text-sm border border-black shadow-[2px_2px_0px_0px_#fff]">
+                    ✓
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">Sin Descuadres en Caja</h4>
+                    <h4 className="font-display text-sm font-black uppercase text-white">Sin Descuadres en Caja</h4>
                     <p className="text-xs text-zinc-400 mt-0.5">
                       El sistema distingue con exactitud el fondo de cambio (base) de las ventas netas en efectivo y transferencias.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3.5">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 border border-blue-500/30 text-sm">
-                    ✔️
+                <div className="neo-box p-4 rounded-xl flex items-start gap-3.5 border-2 border-zinc-800">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500 text-black font-black text-sm border border-black shadow-[2px_2px_0px_0px_#fff]">
+                    ✓
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">Auditoría Individual por Mesero</h4>
+                    <h4 className="font-display text-sm font-black uppercase text-white">Auditoría Individual por Mesero</h4>
                     <p className="text-xs text-zinc-400 mt-0.5">
                       Cada comanda y ticket térmico registra automáticamente qué mesero atendió la mesa.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3.5">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-sm">
-                    ✔️
+                <div className="neo-box p-4 rounded-xl flex items-start gap-3.5 border-2 border-zinc-800">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500 text-black font-black text-sm border border-black shadow-[2px_2px_0px_0px_#fff]">
+                    ✓
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white">Instalable como PWA en Teléfonos</h4>
+                    <h4 className="font-display text-sm font-black uppercase text-white">Instalable como PWA en Teléfonos</h4>
                     <p className="text-xs text-zinc-400 mt-0.5">
                       Funciona a pantalla completa en Android, iPhone y tablets sin barras de navegador ni gestos accidentales.
                     </p>
@@ -406,62 +427,62 @@ export default async function HomePage() {
             </div>
 
             {/* Tarjeta Visual de Resumen Operativo */}
-            <div className="rounded-3xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-950 p-6 sm:p-8 shadow-2xl relative">
-              <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-6">
+            <div className="neo-box rounded-2xl border-2 border-zinc-700 bg-zinc-950 p-6 sm:p-8 shadow-[8px_8px_0px_0px_#f97316] relative">
+              <div className="flex items-center justify-between border-b-2 border-zinc-800 pb-4 mb-6">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-2xl">🧾</span>
+                  <Flame className="w-6 h-6 text-orange-500" />
                   <div>
-                    <p className="text-sm font-bold text-white">Flujo de Pedido Típico</p>
-                    <p className="text-[11px] text-zinc-400">Terraza Jardín • Mesa 3</p>
+                    <p className="font-display text-base font-black uppercase text-white">Flujo de Pedido Típico</p>
+                    <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Terraza • Mesa 3</p>
                   </div>
                 </div>
-                <span className="rounded-full bg-emerald-950 border border-emerald-700 px-3 py-1 text-xs font-extrabold text-emerald-300">
-                  En Tiempo Real
+                <span className="neo-sticker bg-emerald-500 text-black border-black text-[9px]">
+                  EN TIEMPO REAL
                 </span>
               </div>
 
               <div className="space-y-3.5 text-xs">
-                <div className="rounded-2xl border border-zinc-800 bg-black/50 p-3.5 flex items-center justify-between">
+                <div className="rounded-xl border-2 border-zinc-800 bg-[#08080a] p-3.5 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">1️⃣</span>
+                    <span className="font-display text-sm font-black text-orange-400 border border-orange-500/50 px-2 py-0.5 rounded">01</span>
                     <div>
-                      <p className="font-bold text-white">Mesero envía comanda</p>
-                      <p className="text-[11px] text-zinc-400">2x Hamburguesa Clásica {`{Sin cebolla}`}</p>
+                      <p className="font-display font-black uppercase text-white">Mesero envía comanda</p>
+                      <p className="text-[11px] text-zinc-400">2x Hamburguesa {`{Sin cebolla}`}</p>
                     </div>
                   </div>
-                  <span className="text-orange-400 font-extrabold">Instantáneo</span>
+                  <span className="text-orange-400 font-black text-[11px] uppercase">Instantáneo</span>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-800 bg-black/50 p-3.5 flex items-center justify-between">
+                <div className="rounded-xl border-2 border-zinc-800 bg-[#08080a] p-3.5 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">2️⃣</span>
+                    <span className="font-display text-sm font-black text-amber-400 border border-amber-500/50 px-2 py-0.5 rounded">02</span>
                     <div>
-                      <p className="font-bold text-white">Cocina recibe campanazo y destello</p>
-                      <p className="text-[11px] text-zinc-400">Monitor KDS cambia a Preparando</p>
+                      <p className="font-display font-black uppercase text-white">Campanazo KDS Cocina</p>
+                      <p className="text-[11px] text-zinc-400">Audio alert y pasa a Preparando</p>
                     </div>
                   </div>
-                  <span className="text-blue-400 font-extrabold">🔔 Audio KDS</span>
+                  <span className="text-amber-400 font-black text-[11px] uppercase">Alerta KDS</span>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-800 bg-black/50 p-3.5 flex items-center justify-between">
+                <div className="rounded-xl border-2 border-zinc-800 bg-[#08080a] p-3.5 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-lg">3️⃣</span>
+                    <span className="font-display text-sm font-black text-emerald-400 border border-emerald-500/50 px-2 py-0.5 rounded">03</span>
                     <div>
-                      <p className="font-bold text-white">Cobro Dividido en Mesa</p>
-                      <p className="text-[11px] text-zinc-400">50% Efectivo COP + 50% Transferencia</p>
+                      <p className="font-display font-black uppercase text-white">Cobro Dividido en Mesa</p>
+                      <p className="text-[11px] text-zinc-400">50% Efectivo COP + 50% Nequi</p>
                     </div>
                   </div>
-                  <span className="text-emerald-400 font-extrabold">✓ Cuadrado</span>
+                  <span className="text-emerald-400 font-black text-[11px] uppercase">Cuadrado</span>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-800 text-center">
+              <div className="mt-6 pt-4 border-t-2 border-zinc-800 text-center">
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 rounded-xl bg-orange-500 hover:bg-orange-600 px-5 py-2.5 text-xs font-bold text-white transition-colors"
+                  className="neo-btn-primary inline-flex items-center gap-2 rounded-xl px-6 py-3 text-xs uppercase"
                 >
                   <span>Probar Sistema Ahora</span>
-                  <span>→</span>
+                  <ArrowUpRight className="w-4 h-4 stroke-[3]" />
                 </Link>
               </div>
             </div>

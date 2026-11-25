@@ -8,58 +8,78 @@ import { formatearHoraColombia } from '@/lib/date-utils';
 import { parseDetallePedido } from '../utils/parse-order-detail';
 import { PlatosAgotadosModal } from '@/features/menu/components/platos-agotados-modal';
 import { formatearCOP } from '@/lib/currency';
-
+import {
+  Bell,
+  Flame,
+  CheckCircle2,
+  Clock,
+  ShoppingBag,
+  Bike,
+  Volume2,
+  VolumeX,
+  Slash,
+  Sparkles,
+  FileText,
+  ChefHat,
+  UtensilsCrossed,
+} from 'lucide-react';
 
 const ESTADO_CONFIG = {
   SOLICITADO: {
-    label: '🛎️ Solicitado por Cliente',
-    color: 'bg-purple-950/25 text-purple-200 border-purple-800/70',
+    label: 'Solicitado por Cliente',
+    icon: Bell,
+    color: 'bg-zinc-950 text-purple-200 border-2 border-purple-500 shadow-[4px_4px_0px_0px_#a855f7]',
     badge: 'bg-purple-400',
-    badgeText: 'bg-purple-950/60 text-purple-300 border-purple-800/50',
+    badgeText: 'bg-purple-950 text-purple-300 border-2 border-purple-700',
   },
   PENDIENTE: {
-    label: '⏳ Pendiente',
-    color: 'bg-amber-950/25 text-amber-200 border-amber-800/70',
+    label: 'Pendiente',
+    icon: Clock,
+    color: 'bg-zinc-950 text-amber-200 border-2 border-amber-400 shadow-[4px_4px_0px_0px_#f59e0b]',
     badge: 'bg-amber-400',
-    badgeText: 'bg-amber-950/60 text-amber-300 border-amber-800/50',
+    badgeText: 'bg-amber-950 text-amber-300 border-2 border-amber-700',
   },
   PREPARANDO: {
-    label: '🔥 En preparación',
-    color: 'bg-blue-950/25 text-blue-200 border-blue-800/70',
+    label: 'En preparación',
+    icon: Flame,
+    color: 'bg-zinc-950 text-blue-200 border-2 border-blue-500 shadow-[4px_4px_0px_0px_#3b82f6]',
     badge: 'bg-blue-400',
-    badgeText: 'bg-blue-950/60 text-blue-300 border-blue-800/50',
+    badgeText: 'bg-blue-950 text-blue-300 border-2 border-blue-700',
   },
   HECHO: {
-    label: '✅ Listo para servir',
-    color: 'bg-emerald-950/25 text-emerald-200 border-emerald-800/70',
+    label: 'Listo para servir',
+    icon: CheckCircle2,
+    color: 'bg-zinc-950 text-emerald-200 border-2 border-emerald-500 shadow-[4px_4px_0px_0px_#10b981]',
     badge: 'bg-emerald-400',
-    badgeText: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/50',
+    badgeText: 'bg-emerald-950 text-emerald-300 border-2 border-emerald-700',
   },
   ENTREGADO: {
-    label: '🎉 Entregado',
-    color: 'bg-zinc-950 text-zinc-400 border-zinc-800',
+    label: 'Entregado',
+    icon: CheckCircle2,
+    color: 'bg-zinc-950 text-zinc-400 border-2 border-zinc-800 shadow-[3px_3px_0px_0px_#27272a]',
     badge: 'bg-zinc-600',
-    badgeText: 'bg-zinc-900 text-zinc-400 border-zinc-800',
+    badgeText: 'bg-zinc-900 text-zinc-400 border-2 border-zinc-700',
   },
   CANCELADO: {
-    label: '❌ Cancelado',
-    color: 'bg-rose-950/25 text-rose-200 border-rose-800/70',
+    label: 'Cancelado',
+    icon: Slash,
+    color: 'bg-zinc-950 text-rose-200 border-2 border-rose-500 shadow-[4px_4px_0px_0px_#f43f5e]',
     badge: 'bg-rose-400',
-    badgeText: 'bg-rose-950/60 text-rose-300 border-rose-800/50',
+    badgeText: 'bg-rose-950 text-rose-300 border-2 border-rose-700',
   },
   PAGADO: {
-    label: '💰 Pagado',
-    color: 'bg-emerald-950/25 text-emerald-200 border-emerald-800/70',
+    label: 'Pagado',
+    icon: CheckCircle2,
+    color: 'bg-zinc-950 text-emerald-200 border-2 border-emerald-500 shadow-[4px_4px_0px_0px_#10b981]',
     badge: 'bg-emerald-400',
-    badgeText: 'bg-emerald-950/60 text-emerald-300 border-emerald-800/50',
+    badgeText: 'bg-emerald-950 text-emerald-300 border-2 border-emerald-700',
   },
 };
 
-
 const BOTON_AVANZAR = {
-  PENDIENTE: '🔥 Iniciar Preparación',
-  PREPARANDO: '✅ Marcar como Listo',
-  HECHO: '🍽️ Marcar Entregado',
+  PENDIENTE: { texto: 'Iniciar Preparación', color: 'bg-amber-400 text-black border-amber-300 shadow-[3px_3px_0px_0px_#fff] hover:bg-amber-300' },
+  PREPARANDO: { texto: 'Marcar como Listo', color: 'bg-emerald-500 text-black border-emerald-400 shadow-[3px_3px_0px_0px_#fff] hover:bg-emerald-400' },
+  HECHO: { texto: 'Marcar Entregado', color: 'bg-zinc-800 text-white border-zinc-600 shadow-[3px_3px_0px_0px_#52525b] hover:bg-zinc-700' },
 };
 
 function TarjetaPedido({
@@ -87,72 +107,72 @@ function TarjetaPedido({
 
   return (
     <div
-      className={`relative flex flex-col justify-between rounded-2xl border p-5 shadow-lg backdrop-blur-sm transition-all ${config.color} ${
+      className={`relative flex flex-col justify-between rounded-2xl p-5 transition-all ${config.color} ${
         esNuevo
-          ? 'ring-2 ring-amber-400 border-amber-400/80 shadow-2xl shadow-amber-500/30'
+          ? 'ring-4 ring-amber-400 shadow-[6px_6px_0px_0px_#f59e0b]'
           : ''
       }`}
     >
       {/* Badge flotante de nuevo pedido */}
       {esNuevo && (
-        <span className="absolute -top-3 right-4 flex items-center gap-1 rounded-full bg-amber-400 px-3 py-0.5 text-[11px] font-black uppercase tracking-wider text-black shadow-md animate-bounce">
-          <span>🔔</span> ¡NUEVO!
+        <span className="neo-sticker absolute -top-3.5 right-4 flex items-center gap-1.5 bg-amber-400 px-3 py-1 text-xs font-black uppercase tracking-wider text-black border-2 border-black shadow-[2px_2px_0px_0px_#fff] animate-bounce">
+          <Sparkles className="h-3 w-3 stroke-[3]" /> ¡NUEVO!
         </span>
       )}
 
       <div>
         {/* Cabecera de la comanda */}
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div className="flex items-start gap-2 min-w-0">
-            <span className={`mt-1 h-3 w-3 shrink-0 rounded-full ${config.badge} ${esNuevo ? 'animate-ping' : 'animate-pulse'}`} />
+        <div className="mb-3.5 flex items-start justify-between gap-2">
+          <div className="flex items-start gap-2.5 min-w-0">
+            <span className={`mt-1.5 h-3 w-3 shrink-0 rounded-full ${config.badge} ${esNuevo ? 'animate-ping' : 'animate-pulse'}`} />
             <div className="min-w-0">
               {pedido.tipoPedido === 'LLEVAR' || pedido.detalle.includes('[PARA LLEVAR') ? (
                 <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-xs font-black text-amber-300">
-                    🛍️ PARA LLEVAR
+                  <span className="inline-flex items-center gap-1 rounded bg-amber-500/20 border-2 border-amber-500/60 px-2 py-0.5 text-xs font-black uppercase text-amber-300">
+                    <ShoppingBag className="h-3 w-3" /> PARA LLEVAR
                   </span>
-                  <p className="text-sm font-bold text-white mt-0.5 truncate">
+                  <p className="font-display text-sm font-black text-white mt-1 truncate">
                     {pedido.cliente ? `Cliente: ${pedido.cliente}` : 'Mostrador / Barra'}
                   </p>
                 </div>
               ) : pedido.tipoPedido === 'DOMICILIO' || pedido.detalle.includes('[DOMICILIO') ? (
                 <div>
-                  <span className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-500/20 border border-cyan-500/40 px-2 py-0.5 text-xs font-black text-cyan-300">
-                    🛵 DOMICILIO
+                  <span className="inline-flex items-center gap-1 rounded bg-cyan-500/20 border-2 border-cyan-500/60 px-2 py-0.5 text-xs font-black uppercase text-cyan-300">
+                    <Bike className="h-3 w-3" /> DOMICILIO
                   </span>
-                  <p className="text-sm font-bold text-white mt-0.5 truncate">
+                  <p className="font-display text-sm font-black text-white mt-1 truncate">
                     {pedido.cliente ? `${pedido.cliente}` : 'Domicilio'}
                   </p>
                   {pedido.direccion && (
-                    <p className="text-xs text-zinc-300 font-medium truncate">
+                    <p className="text-xs text-zinc-300 font-semibold truncate mt-0.5">
                       📍 {pedido.direccion}
                     </p>
                   )}
                   {pedido.telefono && (
-                    <p className="text-[11px] text-zinc-400">
+                    <p className="text-[11px] text-zinc-400 font-bold mt-0.5">
                       📞 {pedido.telefono}
                     </p>
                   )}
                 </div>
               ) : (
                 <div>
-                  <span className="text-xl font-black text-white">Mesa {pedido.mesa}</span>
-                  <p className="text-[11px] text-zinc-400">Terraza</p>
+                  <span className="font-display text-2xl font-black uppercase tracking-tight text-white">Mesa {pedido.mesa}</span>
+                  <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider">Terraza Sazonare</p>
                 </div>
               )}
             </div>
           </div>
-          <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${config.badgeText}`}>
+          <span className={`shrink-0 neo-sticker text-[10px] font-black uppercase tracking-wider px-2.5 py-1 ${config.badgeText}`}>
             {config.label}
           </span>
         </div>
 
         {/* Indicaciones / Notas de la comanda para cocina */}
         {pedido.notas && (
-          <div className="mb-3 rounded-xl bg-amber-500/15 border-2 border-amber-500/50 p-2.5 text-xs text-amber-200 flex items-start gap-2 shadow-sm">
-            <span className="shrink-0 text-base">📝</span>
+          <div className="mb-3.5 rounded-xl bg-amber-500/15 border-2 border-amber-400 p-2.5 text-xs text-amber-200 flex items-start gap-2 shadow-[2px_2px_0px_0px_#f59e0b]">
+            <FileText className="shrink-0 h-4 w-4 text-amber-400 mt-0.5" />
             <div className="min-w-0">
-              <p className="font-extrabold text-amber-400 uppercase tracking-wider text-[10px]">
+              <p className="font-black text-amber-400 uppercase tracking-wider text-[10px]">
                 Indicaciones de la Comanda:
               </p>
               <p className="font-bold text-white text-xs sm:text-sm mt-0.5 whitespace-pre-wrap">
@@ -167,13 +187,13 @@ function TarjetaPedido({
           {items.map((item, idx) => (
             <div
               key={idx}
-              className="rounded-xl bg-black/50 border border-zinc-800/80 p-2.5 space-y-1"
+              className="rounded-xl bg-black/70 border-2 border-zinc-800 p-2.5 space-y-1.5"
             >
               <div className="flex items-center gap-2">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-orange-500/20 text-orange-400 text-xs font-black border border-orange-500/30">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-orange-500 text-black text-xs font-black border border-orange-400 shadow-[1px_1px_0px_0px_#fff]">
                   {item.cantidad}x
                 </span>
-                <span className="text-sm font-bold text-white leading-snug">{item.nombre}</span>
+                <span className="font-display text-sm font-black text-white leading-snug">{item.nombre}</span>
               </div>
 
               {/* Adiciones destacadas para cocina */}
@@ -182,7 +202,7 @@ function TarjetaPedido({
                   {item.adiciones.map((adic, aIdx) => (
                     <span
                       key={aIdx}
-                      className="inline-flex items-center gap-1 rounded-md bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-xs font-black text-amber-300"
+                      className="inline-flex items-center gap-1 rounded bg-amber-500/20 border border-amber-400/60 px-2 py-0.5 text-xs font-black text-amber-300"
                     >
                       🥓 {adic}
                     </span>
@@ -192,9 +212,9 @@ function TarjetaPedido({
 
               {/* Nota o instrucción especial de preparación */}
               {item.notas && (
-                <div className="ml-8 rounded-lg bg-zinc-900 border border-zinc-700/70 px-2 py-1 text-xs text-orange-200 flex items-center gap-1.5 font-medium">
-                  <span className="shrink-0">📝</span>
-                  <span className="italic font-semibold">{item.notas}</span>
+                <div className="ml-8 rounded-lg bg-zinc-900 border border-zinc-700 px-2 py-1 text-xs text-orange-200 flex items-center gap-1.5 font-medium">
+                  <FileText className="h-3 w-3 text-orange-400 shrink-0" />
+                  <span className="font-bold">{item.notas}</span>
                 </div>
               )}
             </div>
@@ -204,12 +224,13 @@ function TarjetaPedido({
 
       <div>
         {/* Hora y total */}
-        <div className="mb-4 flex items-center justify-between border-t border-zinc-800/60 pt-3 text-xs text-zinc-400">
-          <span>
-            🕒 {formatearHoraColombia(pedido.createdAt)}
+        <div className="mb-4 flex items-center justify-between border-t-2 border-zinc-800 pt-3 text-xs text-zinc-400">
+          <span className="flex items-center gap-1 font-bold text-zinc-400">
+            <Clock className="h-3.5 w-3.5 text-zinc-400" />
+            {formatearHoraColombia(pedido.createdAt)}
           </span>
 
-          <span className="text-base font-extrabold text-white">{formatearCOP(pedido.total)}</span>
+          <span className="font-display text-base font-black text-white tracking-tight">{formatearCOP(pedido.total)}</span>
         </div>
 
         {/* Botón táctil para pasar de estado */}
@@ -218,9 +239,11 @@ function TarjetaPedido({
             type="button"
             onClick={handleAvanzar}
             disabled={isPending}
-            className="w-full rounded-xl bg-zinc-900 border border-zinc-700/80 px-4 py-2.5 text-sm font-bold text-white shadow transition-all hover:bg-zinc-800 hover:border-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+            className={`w-full rounded-xl border-2 px-4 py-2.5 text-xs font-black uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed active:translate-x-[2px] active:translate-y-[2px] ${
+              BOTON_AVANZAR[pedido.estado as keyof typeof BOTON_AVANZAR]?.color || 'bg-zinc-800 text-white border-zinc-700'
+            }`}
           >
-            {isPending ? 'Actualizando...' : BOTON_AVANZAR[pedido.estado as keyof typeof BOTON_AVANZAR]}
+            {isPending ? 'Actualizando...' : BOTON_AVANZAR[pedido.estado as keyof typeof BOTON_AVANZAR]?.texto}
           </button>
         )}
       </div>
@@ -396,20 +419,20 @@ export function KitchenMonitor() {
       )}
 
       {/* BARRA DE ESTADO Y CONTROLES DE AUDIO PARA COCINEROS */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-800/80 bg-zinc-950 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-zinc-800 bg-zinc-950 px-4 py-3 shadow-[4px_4px_0px_0px_#18181b]">
         <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-            Comandas activas:
-          </span>
-          <div className="flex items-center gap-2 text-xs font-bold">
-            <span className="rounded-lg bg-amber-950/60 border border-amber-800/60 px-2.5 py-1 text-amber-300">
-              ⏳ {pendientes.length} pendientes
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-black font-black border border-orange-400">
+            <ChefHat className="h-4 w-4" />
+          </div>
+          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider">
+            <span className="rounded-lg bg-amber-400 text-black border-2 border-amber-300 px-2.5 py-1 shadow-[2px_2px_0px_0px_#fff]">
+              {pendientes.length} pendientes
             </span>
-            <span className="rounded-lg bg-blue-950/60 border border-blue-800/60 px-2.5 py-1 text-blue-300">
-              🔥 {preparando.length} preparando
+            <span className="rounded-lg bg-blue-500 text-white border-2 border-blue-400 px-2.5 py-1 shadow-[2px_2px_0px_0px_#fff]">
+              {preparando.length} preparando
             </span>
-            <span className="rounded-lg bg-emerald-950/60 border border-emerald-800/60 px-2.5 py-1 text-emerald-300">
-              ✅ {hechos.length} listas
+            <span className="rounded-lg bg-emerald-500 text-black border-2 border-emerald-400 px-2.5 py-1 shadow-[2px_2px_0px_0px_#fff]">
+              {hechos.length} listas
             </span>
           </div>
         </div>
@@ -420,9 +443,9 @@ export function KitchenMonitor() {
             <button
               type="button"
               onClick={activarAudioManual}
-              className="flex items-center gap-2 rounded-xl bg-amber-500/20 border border-amber-500/50 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/30 transition-all animate-pulse"
+              className="inline-flex items-center gap-2 rounded-xl bg-amber-400 text-black border-2 border-amber-300 px-3 py-1.5 text-xs font-black uppercase tracking-wider shadow-[3px_3px_0px_0px_#fff] hover:bg-amber-300 transition-all animate-pulse"
             >
-              <span>🔔</span>
+              <Bell className="h-3.5 w-3.5 stroke-[2.5]" />
               <span>Activar sonido de campana</span>
             </button>
           ) : (
@@ -430,21 +453,32 @@ export function KitchenMonitor() {
               <button
                 type="button"
                 onClick={toggleSonido}
-                className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
+                className={`inline-flex items-center gap-1.5 rounded-xl border-2 px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all active:translate-x-[1px] active:translate-y-[1px] ${
                   sonidoHabilitado
-                    ? 'border-emerald-800/80 bg-emerald-950/40 text-emerald-300 hover:bg-emerald-900/50'
-                    : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white'
+                    ? 'border-emerald-400 bg-emerald-500 text-black shadow-[2px_2px_0px_0px_#fff]'
+                    : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white'
                 }`}
               >
-                <span>{sonidoHabilitado ? '🔔 Timbre activado' : '🔇 Silenciado'}</span>
+                {sonidoHabilitado ? (
+                  <>
+                    <Volume2 className="h-3.5 w-3.5 stroke-[2.5]" />
+                    <span>Timbre Activo</span>
+                  </>
+                ) : (
+                  <>
+                    <VolumeX className="h-3.5 w-3.5" />
+                    <span>Silenciado</span>
+                  </>
+                )}
               </button>
               <button
                 type="button"
                 onClick={probarSonido}
-                className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-xl border-2 border-zinc-700 bg-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-300 hover:bg-zinc-800 hover:text-white hover:border-zinc-500 transition-all active:translate-x-[1px] active:translate-y-[1px]"
                 title="Probar sonido de campanilla"
               >
-                🔊 Probar timbre
+                <Volume2 className="h-3.5 w-3.5" />
+                <span>Probar</span>
               </button>
             </>
           )}
@@ -453,17 +487,17 @@ export function KitchenMonitor() {
           <button
             type="button"
             onClick={() => setModalAgotadosAbierto(true)}
-            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition-all active:scale-95 ${
+            className={`inline-flex items-center gap-2 rounded-xl border-2 px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all active:translate-x-[1px] active:translate-y-[1px] ${
               conteoAgotados > 0
-                ? 'bg-rose-950/70 border-rose-600/80 text-rose-300 hover:bg-rose-900 shadow-md shadow-rose-950/50'
-                : 'border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white'
+                ? 'bg-rose-500 text-black border-rose-400 shadow-[3px_3px_0px_0px_#fff]'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-zinc-500 hover:text-white'
             }`}
             title="Marcar o reactivar productos agotados en cocina"
           >
-            <span>🚫</span>
+            <Slash className="h-3.5 w-3.5 stroke-[2.5]" />
             <span>Platos Agotados</span>
             {conteoAgotados > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-600 text-[10px] font-black text-white">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-black text-[10px] font-black text-rose-400">
                 {conteoAgotados}
               </span>
             )}
@@ -473,11 +507,13 @@ export function KitchenMonitor() {
 
       {/* CUANDO NO HAY COMANDAS ACTIVAS */}
       {pedidos.length === 0 && (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 text-zinc-600">
-          <span className="text-5xl">🍽️</span>
-          <p className="text-lg font-medium text-zinc-300">Sin comandas activas</p>
-          <p className="text-sm text-zinc-500">
-            Los pedidos nuevos aparecerán aquí con alerta sonora y visual
+        <div className="flex h-72 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-zinc-800 bg-zinc-950/60 p-8 text-center shadow-[4px_4px_0px_0px_#18181b]">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-900 border-2 border-zinc-700 text-zinc-500 shadow-[3px_3px_0px_0px_#27272a]">
+            <UtensilsCrossed className="h-8 w-8 stroke-[1.5]" />
+          </div>
+          <p className="font-display text-xl font-black uppercase tracking-tight text-white">Sin comandas activas</p>
+          <p className="text-xs text-zinc-400 font-medium max-w-sm">
+            Los pedidos nuevos aparecerán aquí automáticamente con alertas sonoras y destello visual.
           </p>
         </div>
       )}
@@ -485,12 +521,11 @@ export function KitchenMonitor() {
       {/* LISTA DE COMANDAS AGRUPADAS POR PRIORIDAD */}
       {pendientes.length > 0 && (
         <section>
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-            <span>⏳ Pendientes por preparar</span>
-            <span className="rounded-full bg-amber-950/80 border border-amber-800 px-2 py-0.5 text-xs text-amber-300">
-              {pendientes.length}
+          <div className="mb-3.5 flex items-center gap-2">
+            <span className="neo-sticker bg-amber-400 text-black border-2 border-amber-300 text-xs font-black uppercase tracking-wider px-3 py-1 shadow-[2px_2px_0px_0px_#fff]">
+              Pendientes ({pendientes.length})
             </span>
-          </h2>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {pendientes.map((p) => (
               <TarjetaPedido
@@ -506,12 +541,11 @@ export function KitchenMonitor() {
 
       {preparando.length > 0 && (
         <section>
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-2">
-            <span>🔥 En preparación</span>
-            <span className="rounded-full bg-blue-950/80 border border-blue-800 px-2 py-0.5 text-xs text-blue-300">
-              {preparando.length}
+          <div className="mb-3.5 flex items-center gap-2">
+            <span className="neo-sticker bg-blue-500 text-white border-2 border-blue-400 text-xs font-black uppercase tracking-wider px-3 py-1 shadow-[2px_2px_0px_0px_#fff]">
+              En preparación ({preparando.length})
             </span>
-          </h2>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {preparando.map((p) => (
               <TarjetaPedido
@@ -527,12 +561,11 @@ export function KitchenMonitor() {
 
       {hechos.length > 0 && (
         <section>
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
-            <span>✅ Listos para servir</span>
-            <span className="rounded-full bg-emerald-950/80 border border-emerald-800 px-2 py-0.5 text-xs text-emerald-300">
-              {hechos.length}
+          <div className="mb-3.5 flex items-center gap-2">
+            <span className="neo-sticker bg-emerald-500 text-black border-2 border-emerald-400 text-xs font-black uppercase tracking-wider px-3 py-1 shadow-[2px_2px_0px_0px_#fff]">
+              Listos para servir ({hechos.length})
             </span>
-          </h2>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {hechos.map((p) => (
               <TarjetaPedido

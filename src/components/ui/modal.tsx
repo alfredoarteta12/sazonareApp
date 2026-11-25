@@ -8,7 +8,7 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  icon?: string;
+  icon?: string | React.ReactNode;
   size?: ModalSize;
   children: React.ReactNode;
   footer?: React.ReactNode;
@@ -51,7 +51,7 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-4 overflow-y-auto"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -59,18 +59,24 @@ export function Modal({
       aria-modal="true"
     >
       <div
-        className={`w-full ${sizeClasses[size]} rounded-3xl border border-zinc-800 bg-zinc-950 p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-200 ${className}`}
+        className={`w-full ${sizeClasses[size]} rounded-2xl border-2 border-zinc-700 bg-zinc-950 p-5 sm:p-6 shadow-[6px_6px_0px_0px_#f97316] space-y-4 animate-in fade-in zoom-in-95 duration-150 ${className}`}
       >
         {/* Cabecera del Modal */}
-        <div className="flex items-center justify-between pb-3 border-b border-zinc-800 shrink-0">
-          <h3 className="text-base font-bold text-white flex items-center gap-2">
-            {icon && <span className="text-lg">{icon}</span>}
-            <span>{title}</span>
-          </h3>
+        <div className="flex items-center justify-between pb-3.5 border-b-2 border-zinc-800 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {icon && (
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 border-2 border-orange-500/40 text-orange-400 text-base font-bold shadow-[2px_2px_0px_0px_#f97316]">
+                {icon}
+              </div>
+            )}
+            <h3 className="font-display text-base sm:text-lg font-black uppercase tracking-tight text-white truncate">
+              {title}
+            </h3>
+          </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800/60 transition-colors"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border-2 border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white hover:border-zinc-500 hover:bg-zinc-800 active:translate-x-[1px] active:translate-y-[1px] transition-all"
             aria-label="Cerrar modal"
           >
             ✕
@@ -82,7 +88,7 @@ export function Modal({
 
         {/* Footer Opcional */}
         {footer && (
-          <div className="pt-3 border-t border-zinc-800 flex items-center justify-end gap-2 shrink-0">
+          <div className="pt-3.5 border-t-2 border-zinc-800 flex items-center justify-end gap-2 shrink-0">
             {footer}
           </div>
         )}
@@ -90,4 +96,3 @@ export function Modal({
     </div>
   );
 }
-

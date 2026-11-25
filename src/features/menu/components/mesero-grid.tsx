@@ -13,6 +13,16 @@ import {
 } from '@/features/orders/components/datos-pedido-externo-modal';
 import { waiterAudio } from '@/features/orders/utils/audio-alerts';
 import { formatearCOP } from '@/lib/currency';
+import {
+  LayoutGrid,
+  ShoppingBag,
+  Bike,
+  UtensilsCrossed,
+  Volume2,
+  VolumeX,
+  ArrowLeft,
+  Sparkles,
+} from 'lucide-react';
 
 interface Producto {
   id: string;
@@ -727,19 +737,19 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
       )}
 
       {/* BARRA SUPERIOR DE NAVEGACIÓN ENTRE TERRAZA, LLEVAR, DOMICILIOS Y MENÚ */}
-      <div className="mb-2.5 flex items-center justify-between gap-1.5 shrink-0 overflow-x-auto no-scrollbar py-0.5">
-        <div className="flex items-center gap-1.5 shrink-0">
-          <div className="flex items-center gap-1 rounded-2xl bg-zinc-950 border border-zinc-800 p-1">
+      <div className="mb-3 flex items-center justify-between gap-2 shrink-0 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 rounded-xl bg-zinc-950 border-2 border-zinc-800 p-1 shadow-[3px_3px_0px_0px_#18181b]">
             <button
               type="button"
               onClick={() => setVista('croquis')}
-              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap active:translate-x-[1px] active:translate-y-[1px] ${
                 vista === 'croquis'
-                  ? 'bg-orange-500 text-white shadow-md'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                  ? 'bg-orange-500 text-black border-2 border-orange-400 shadow-[2px_2px_0px_0px_#fff]'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900 border-2 border-transparent'
               }`}
             >
-              <span>🌿</span>
+              <LayoutGrid className="h-3.5 w-3.5 stroke-[2.5]" />
               <span className="hidden sm:inline">Terraza (5 Mesas)</span>
               <span className="sm:hidden">Mesas</span>
             </button>
@@ -747,17 +757,17 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
             <button
               type="button"
               onClick={() => setVista('llevar')}
-              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap active:translate-x-[1px] active:translate-y-[1px] ${
                 vista === 'llevar'
-                  ? 'bg-amber-500 text-white shadow-md'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                  ? 'bg-amber-400 text-black border-2 border-amber-300 shadow-[2px_2px_0px_0px_#fff]'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900 border-2 border-transparent'
               }`}
             >
-              <span>🛍️</span>
+              <ShoppingBag className="h-3.5 w-3.5 stroke-[2.5]" />
               <span className="hidden sm:inline">Para Llevar</span>
               <span className="sm:hidden">Llevar</span>
               {pedidosLlevarActivos > 0 && (
-                <span className="rounded-full bg-amber-400 text-black text-[9px] sm:text-[10px] font-black px-1.5 py-0.2">
+                <span className="rounded bg-black text-amber-400 text-[10px] font-black px-1.5 py-0.5 border border-amber-400">
                   {pedidosLlevarActivos}
                 </span>
               )}
@@ -766,17 +776,17 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
             <button
               type="button"
               onClick={() => setVista('domicilio')}
-              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap active:translate-x-[1px] active:translate-y-[1px] ${
                 vista === 'domicilio'
-                  ? 'bg-cyan-600 text-white shadow-md'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                  ? 'bg-cyan-500 text-black border-2 border-cyan-400 shadow-[2px_2px_0px_0px_#fff]'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900 border-2 border-transparent'
               }`}
             >
-              <span>🛵</span>
+              <Bike className="h-3.5 w-3.5 stroke-[2.5]" />
               <span className="hidden sm:inline">Domicilios</span>
               <span className="sm:hidden">Domicilio</span>
               {pedidosDomicilioActivos > 0 && (
-                <span className="rounded-full bg-cyan-400 text-black text-[9px] sm:text-[10px] font-black px-1.5 py-0.2">
+                <span className="rounded bg-black text-cyan-400 text-[10px] font-black px-1.5 py-0.5 border border-cyan-400">
                   {pedidosDomicilioActivos}
                 </span>
               )}
@@ -785,13 +795,13 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
             <button
               type="button"
               onClick={() => setVista('menu')}
-              className={`flex items-center gap-1 sm:gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap active:translate-x-[1px] active:translate-y-[1px] ${
                 vista === 'menu'
-                  ? 'bg-orange-500 text-white shadow-md'
-                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                  ? 'bg-orange-500 text-black border-2 border-orange-400 shadow-[2px_2px_0px_0px_#fff]'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900 border-2 border-transparent'
               }`}
             >
-              <span>🍔</span>
+              <UtensilsCrossed className="h-3.5 w-3.5 stroke-[2.5]" />
               <span className="hidden sm:inline">
                 Menú ({tipoPedido === 'MESA' ? `Mesa ${mesa}` : tipoPedido === 'LLEVAR' ? 'Para Llevar' : 'Domicilio'})
               </span>
@@ -805,15 +815,24 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
           <button
             type="button"
             onClick={toggleSonido}
-            className={`flex items-center gap-1 sm:gap-1.5 rounded-xl border px-2 sm:px-3 py-1.5 text-xs font-semibold transition-all shrink-0 ${
+            className={`flex items-center gap-1.5 rounded-xl border-2 px-3 py-1.5 text-xs font-bold transition-all shrink-0 active:translate-x-[1px] active:translate-y-[1px] ${
               sonidoHabilitado
-                ? 'border-blue-800/80 bg-blue-950/40 text-blue-300 hover:bg-blue-900/50'
+                ? 'border-emerald-500 bg-emerald-950/60 text-emerald-300 shadow-[2px_2px_0px_0px_#10b981]'
                 : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:text-white'
             }`}
             title={sonidoHabilitado ? 'Timbre de cocina activo (clic para silenciar)' : 'Silenciado (clic para activar)'}
           >
-            <span>{sonidoHabilitado ? '🔔' : '🔇'}</span>
-            <span className="hidden md:inline">{sonidoHabilitado ? 'Timbre Activo' : 'Silencio'}</span>
+            {sonidoHabilitado ? (
+              <>
+                <Volume2 className="h-3.5 w-3.5" />
+                <span className="hidden md:inline font-black uppercase text-[10px]">Timbre Activo</span>
+              </>
+            ) : (
+              <>
+                <VolumeX className="h-3.5 w-3.5" />
+                <span className="hidden md:inline font-bold text-[10px]">Silencio</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -826,9 +845,9 @@ export function MeseroGrid({ productos: productosIniciales, nombreMesero }: Mese
                 else if (tipoPedido === 'DOMICILIO') setVista('domicilio');
                 else setVista('croquis');
               }}
-              className="flex items-center gap-1 rounded-xl bg-zinc-900 border border-zinc-800 px-2.5 py-1.5 text-xs font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-900 border-2 border-zinc-700 px-3 py-1.5 text-xs font-bold text-zinc-200 hover:text-white hover:border-zinc-500 transition-colors whitespace-nowrap active:translate-x-[1px] active:translate-y-[1px]"
             >
-              <span>←</span>
+              <ArrowLeft className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Volver a </span>
               <span>{tipoPedido === 'LLEVAR' ? 'Llevar' : tipoPedido === 'DOMICILIO' ? 'Domicilio' : 'Terraza'}</span>
             </button>

@@ -7,6 +7,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Sparkles, Camera, RotateCw, Image as ImageIcon, Box, ZoomIn, Play, Pause, RefreshCw } from 'lucide-react';
 import { Modelo3DConfig } from '../types/producto-interactivo';
 import { crearPlato3D, detectarTipoPlatillo, obtenerRutaModeloGLB } from '../utils/modelos-procedurales';
+import { CamaraMesaArModal } from './camara-mesa-ar-modal';
 
 interface Visor3DArProps {
   nombrePlato: string;
@@ -30,6 +31,7 @@ export function Visor3DAr({
   const [autoRotando, setAutoRotando] = useState(true);
   const [zoomNivel, setZoomNivel] = useState(1);
   const [modeloHDCargado, setModeloHDCargado] = useState(false);
+  const [mostrarModalAR, setMostrarModalAR] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const groupRef = useRef<THREE.Group | null>(null);
@@ -195,25 +197,9 @@ export function Visor3DAr({
     isDraggingRef.current = false;
   };
 
-  // Botón de Realidad Aumentada (Scene Viewer Android / Quick Look iOS)
+  // Botón de Realidad Aumentada (Abre la cámara en vivo en la mesa del cliente)
   const handleActivarAR = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const tipo = detectarTipoPlatillo(nombrePlato, categoria);
-    const rutaRelativa = obtenerRutaModeloGLB(tipo) || modelo3D?.glb || '/models/burger.glb';
-    const glbUrl = `${origin}${rutaRelativa}`;
-    const isAndroid = /android/i.test(navigator.userAgent);
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-    if (isAndroid) {
-      const intentUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(
-        glbUrl
-      )}&mode=ar_only&resizable=false#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;end;`;
-      window.location.href = intentUrl;
-    } else if (isIOS) {
-      alert('📱 Para ver en AR en iPhone: apunta la cámara hacia una superficie plana bien iluminada.');
-    } else {
-      alert('📱 Para proyectar en tu mesa con Realidad Aumentada (AR), abre esta página desde tu celular Android o iPhone.');
-    }
+    setMostrarModalAR(true);
   };
 
   return (
@@ -376,6 +362,16 @@ export function Visor3DAr({
           ))}
         </div>
       )}
+
+      {/* Modal de Realidad Aumentada Universal con Cámara en la Mesa */}
+      <CamaraMesaArModal
+        isOpen={mostrarModalAR}
+        onClose={() => setMostrarModalAR(false)}
+        nombrePlato={nombrePlato}
+        categoria={categoria}
+        adiciones={adiciones}
+        modelo3D={modelo3D}
+      />
     </div>
   );
 }

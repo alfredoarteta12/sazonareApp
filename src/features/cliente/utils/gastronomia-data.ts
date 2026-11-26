@@ -121,7 +121,7 @@ const MODELO_3D_HAMBURGUESA: Modelo3DConfig = {
   poster: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80',
   alt: 'Hamburguesa Artesanal Sazonare en 3D con Realidad Aumentada',
   scale: '1 1 1',
-  cameraOrbit: '45deg 55deg 2.5m',
+  cameraOrbit: 'auto auto auto',
 };
 
 const MODELO_3D_BEBIDA: Modelo3DConfig = {

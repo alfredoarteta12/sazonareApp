@@ -13,6 +13,7 @@ declare global {
         'auto-rotate'?: boolean | string;
         'rotation-per-second'?: string;
         'camera-orbit'?: string;
+        bounds?: string;
         'field-of-view'?: string;
         scale?: string;
         ar?: boolean | string;
@@ -40,6 +41,7 @@ declare global {
         'auto-rotate'?: boolean | string;
         'rotation-per-second'?: string;
         'camera-orbit'?: string;
+        bounds?: string;
         'field-of-view'?: string;
         scale?: string;
         ar?: boolean | string;

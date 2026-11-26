@@ -34,42 +34,48 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
     }
   }, []);
 
-  // 2. Detección infalible de carga para móviles y desktop con timeout de rescate
+  // 2. Configurar propiedades DOM directas de model-viewer para auto-rotación garantizada
   useEffect(() => {
     const el = modelViewerRef.current;
     if (!el) return;
 
-    // Si ya está en caché o cargado
+    el.autoRotate = autoRotando;
+    el.cameraControls = true;
+    el.rotationPerSecond = '30deg';
+
     if (el.loaded) {
       setModeloListo(true);
-      return;
     }
 
-    const handleLoad = () => setModeloListo(true);
+    const handleLoad = () => {
+      setModeloListo(true);
+      el.autoRotate = autoRotando;
+    };
+
     const handleError = () => {
-      console.warn('Aviso de carga 3D, mostrando fallback');
       setModeloListo(true);
     };
 
     el.addEventListener('load', handleLoad);
     el.addEventListener('error', handleError);
 
-    // Timeout de seguridad para móviles: nunca bloquear la UI más de 3 segundos
+    // Timeout de seguridad: quitar el spinner en máx 2.5s
     const timer = setTimeout(() => {
       setModeloListo(true);
-    }, 3000);
+    }, 2500);
 
     return () => {
       el.removeEventListener('load', handleLoad);
       el.removeEventListener('error', handleError);
       clearTimeout(timer);
     };
-  }, [modo, modelViewerCargado]);
+  }, [modo, modelViewerCargado, autoRotando]);
 
   const toggleAutoRotacion = () => {
+    const nuevo = !autoRotando;
+    setAutoRotando(nuevo);
     if (modelViewerRef.current) {
-      const nuevo = !autoRotando;
-      setAutoRotando(nuevo);
+      modelViewerRef.current.autoRotate = nuevo;
       if (nuevo) {
         modelViewerRef.current.setAttribute('auto-rotate', '');
       } else {
@@ -128,7 +134,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
       <div className="relative h-64 sm:h-80 w-full bg-gradient-to-b from-zinc-900 to-zinc-950 flex items-center justify-center">
         {modo === '3d' && modelo3D ? (
           <div className="relative h-full w-full">
-            {/* Indicador no invasivo de progreso (no bloquea toques ni pantalla) */}
+            {/* Indicador no invasivo de progreso (no bloquea interacción) */}
             {!modeloListo && (
               <div className="pointer-events-none absolute top-12 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-orange-500/50 bg-black/85 px-3 py-1 backdrop-blur-md animate-pulse shadow-lg">
                 <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin" />
@@ -146,9 +152,10 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
               alt={modelo3D.alt || `Modelo 3D de ${nombrePlato}`}
               camera-controls
               touch-action="pan-y"
-              auto-rotate={autoRotando ? '' : undefined}
+              auto-rotate=""
               rotation-per-second="30deg"
-              camera-orbit={modelo3D.cameraOrbit || '45deg 65deg 2.4m'}
+              camera-orbit="auto auto auto"
+              bounds="tight"
               scale={modelo3D.scale || '1 1 1'}
               ar
               ar-modes="webxr scene-viewer quick-look"

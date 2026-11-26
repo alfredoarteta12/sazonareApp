@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import Script from 'next/script';
 import './globals.css';
 import { PwaProvider } from '@/components/pwa-provider';
 import { AuthBfcacheGuard } from '@/components/auth-bfcache-guard';
@@ -59,6 +60,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col bg-black text-zinc-100">
         <AuthBfcacheGuard />
         <PwaProvider>{children}</PwaProvider>
+        <Script
+          type="module"
+          src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

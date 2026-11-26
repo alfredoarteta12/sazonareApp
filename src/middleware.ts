@@ -40,13 +40,34 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Rutas públicas que no requieren autenticación (La página principal '/', '/cliente' y '/login' son públicas)
+  // Rutas públicas que no requieren autenticación (La página principal '/', '/cliente', '/menu', modelos 3D y '/login' son públicas)
   // NOTA: '/cocina' ahora es una zona protegida que requiere login (rol COCINA o ADMIN)
-  const publicRoutes = ['/login', '/cliente', '/api/pedidos/activos', '/api/productos', '/auth'];
-  const isPublicRoute = pathname === '/' || publicRoutes.some((route) => pathname.startsWith(route));
+  const publicRoutes = [
+    '/login',
+    '/cliente',
+    '/menu',
+    '/models',
+    '/manifest.webmanifest',
+    '/sw.js',
+    '/api/pedidos/activos',
+    '/api/productos',
+    '/auth',
+  ];
+  const isPublicRoute =
+    pathname === '/' ||
+    pathname.startsWith('/models/') ||
+    pathname.endsWith('.glb') ||
+    pathname.endsWith('.gltf') ||
+    publicRoutes.some((route) => pathname.startsWith(route));
 
   // Helper para aplicar cabeceras que prohíben estrictamente el guardado en BFCache del navegador
   const aplicarHeadersSeguridad = (res: NextResponse) => {
+    // No aplicar no-store a modelos 3D ni recursos estáticos públicos para que el navegador y AR los carguen a máxima velocidad
+    if (pathname.startsWith('/models/') || pathname.endsWith('.glb')) {
+      res.headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      return res;
+    }
+
     res.headers.set(
       'Cache-Control',
       'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0, s-maxage=0'
@@ -88,10 +109,10 @@ export const config = {
   matcher: [
     /*
      * Aplica el middleware a todas las rutas EXCEPTO:
-     * - Archivos estáticos (_next/static, _next/image, favicon.ico, etc.)
-     * - Rutas de API internas
+     * - Archivos estáticos (_next/static, _next/image, favicon.ico, models/, etc.)
+     * - Modelos 3D y multimedia (.glb, .gltf, .usdz, .png, etc.)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|models/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|glb|gltf|usdz|bin|webmanifest)$).*)',
   ],
 };
 

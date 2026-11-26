@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sazonare-pwa-v2';
+const CACHE_NAME = 'sazonare-pwa-v3';
 
 // 1. Instalación del Service Worker
 self.addEventListener('install', () => {
@@ -33,10 +33,13 @@ self.addEventListener('fetch', (event) => {
   // Ignorar protocolos no soportados (chrome-extension, etc.)
   if (!url.protocol.startsWith('http')) return;
 
-  // NO interceptar API, Supabase, autenticación, ni peticiones internas de Next.js Server Actions / RSC
+  // NO interceptar API, Supabase, autenticación, modelos 3D ni peticiones internas de Next.js Server Actions / RSC
   if (
     url.pathname.startsWith('/api') ||
     url.pathname.startsWith('/auth') ||
+    url.pathname.startsWith('/models/') ||
+    url.pathname.endsWith('.glb') ||
+    url.pathname.endsWith('.gltf') ||
     url.hostname.includes('supabase') ||
     event.request.headers.get('RSC') ||
     event.request.headers.get('Next-Router-State-Tree') ||

@@ -9,6 +9,7 @@ declare global {
         poster?: string;
         alt?: string;
         'camera-controls'?: boolean | string;
+        'touch-action'?: string;
         'auto-rotate'?: boolean | string;
         'rotation-per-second'?: string;
         'camera-orbit'?: string;
@@ -21,6 +22,7 @@ declare global {
         'environment-image'?: string;
         exposure?: string;
         loading?: 'auto' | 'lazy' | 'eager';
+        reveal?: 'auto' | 'manual';
         slot?: string;
       };
     }
@@ -34,6 +36,7 @@ declare global {
         poster?: string;
         alt?: string;
         'camera-controls'?: boolean | string;
+        'touch-action'?: string;
         'auto-rotate'?: boolean | string;
         'rotation-per-second'?: string;
         'camera-orbit'?: string;
@@ -46,6 +49,7 @@ declare global {
         'environment-image'?: string;
         exposure?: string;
         loading?: 'auto' | 'lazy' | 'eager';
+        reveal?: 'auto' | 'manual';
         slot?: string;
       };
     }

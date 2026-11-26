@@ -21,7 +21,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
   const [zoomNivel, setZoomNivel] = useState(1);
   const modelViewerRef = useRef<any>(null);
 
-  // 1. Cargar e inicializar @google/model-viewer nativamente en el navegador cliente
+  // 1. Cargar e inicializar @google/model-viewer dinámicamente en el cliente
   useEffect(() => {
     if (typeof window !== 'undefined') {
       import('@google/model-viewer')
@@ -34,16 +34,35 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
     }
   }, []);
 
-  // 2. Escuchar cuando el modelo 3D termine de renderizarse
+  // 2. Detección infalible de carga para móviles y desktop con timeout de rescate
   useEffect(() => {
     const el = modelViewerRef.current;
     if (!el) return;
 
+    // Si ya está en caché o cargado
+    if (el.loaded) {
+      setModeloListo(true);
+      return;
+    }
+
     const handleLoad = () => setModeloListo(true);
+    const handleError = () => {
+      console.warn('Aviso de carga 3D, mostrando fallback');
+      setModeloListo(true);
+    };
+
     el.addEventListener('load', handleLoad);
+    el.addEventListener('error', handleError);
+
+    // Timeout de seguridad para móviles: nunca bloquear la UI más de 3 segundos
+    const timer = setTimeout(() => {
+      setModeloListo(true);
+    }, 3000);
 
     return () => {
       el.removeEventListener('load', handleLoad);
+      el.removeEventListener('error', handleError);
+      clearTimeout(timer);
     };
   }, [modo, modelViewerCargado]);
 
@@ -101,7 +120,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
       <div className="absolute top-3 right-3 z-20">
         <span className="neo-sticker text-[9px] bg-amber-400 text-black border-black shadow-[2px_2px_0px_0px_#000] flex items-center gap-1">
           <Sparkles className="w-3 h-3 fill-black" />
-          {modo === '3d' ? (modeloListo ? '360° Activo' : 'Cargando 3D...') : 'Ángulos HD'}
+          {modo === '3d' ? (modeloListo ? '360° Activo' : 'Cargando...') : 'Ángulos HD'}
         </span>
       </div>
 
@@ -109,12 +128,12 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
       <div className="relative h-64 sm:h-80 w-full bg-gradient-to-b from-zinc-900 to-zinc-950 flex items-center justify-center">
         {modo === '3d' && modelo3D ? (
           <div className="relative h-full w-full">
-            {/* Indicador de carga sutil si aún no está listo */}
+            {/* Indicador no invasivo de progreso (no bloquea toques ni pantalla) */}
             {!modeloListo && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-zinc-950/70 backdrop-blur-sm gap-2">
-                <Loader2 className="w-7 h-7 text-orange-500 animate-spin" />
-                <span className="font-display text-xs font-black uppercase tracking-wider text-orange-400">
-                  Cargando Modelo 3D...
+              <div className="pointer-events-none absolute top-12 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-orange-500/50 bg-black/85 px-3 py-1 backdrop-blur-md animate-pulse shadow-lg">
+                <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin" />
+                <span className="font-display text-[10px] font-black uppercase tracking-wider text-orange-300">
+                  Iniciando 3D...
                 </span>
               </div>
             )}
@@ -126,6 +145,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
               poster={modelo3D.poster || fotosHD[0]}
               alt={modelo3D.alt || `Modelo 3D de ${nombrePlato}`}
               camera-controls
+              touch-action="pan-y"
               auto-rotate={autoRotando ? '' : undefined}
               rotation-per-second="30deg"
               camera-orbit={modelo3D.cameraOrbit || '45deg 65deg 2.4m'}
@@ -136,6 +156,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
               shadow-intensity="1.5"
               exposure="1.1"
               loading="eager"
+              reveal="auto"
               style={{ width: '100%', height: '100%', outline: 'none' }}
             >
               {/* Slot para botón AR nativo */}
@@ -158,7 +179,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
 
               <div className="flex items-center gap-1 rounded-xl border-2 border-zinc-700 bg-zinc-900/90 px-2 py-1.5 text-[11px] font-bold text-zinc-400 backdrop-blur-md">
                 <RotateCw className="w-3 h-3 text-orange-400" />
-                <span className="text-[10px]">Arrastra para rotar en 360°</span>
+                <span className="text-[10px]">Arrastra con el dedo para rotar</span>
               </div>
             </div>
 

@@ -9,7 +9,14 @@ export function detectarTipoPlatillo(nombre: string, categoria: string = ''): Ti
   const texto = `${nombre} ${categoria}`.toLowerCase();
 
   if (texto.includes('pizza')) return 'pizza';
-  if (texto.includes('salchipapa') || texto.includes('salvajada') || texto.includes('papa francesa') || texto.includes('papas')) {
+  if (
+    texto.includes('salchipapa') ||
+    texto.includes('salchi') ||
+    texto.includes('salvajada') ||
+    texto.includes('papa francesa') ||
+    texto.includes('papas') ||
+    texto.includes('mazorca')
+  ) {
     return 'salchipapa';
   }
   if (texto.includes('perro') || texto.includes('hot dog') || texto.includes('choripan')) {

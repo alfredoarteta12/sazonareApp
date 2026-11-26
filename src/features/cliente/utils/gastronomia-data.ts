@@ -296,9 +296,15 @@ export function obtenerDetalleGastronomico(producto: {
     metaBase = PLATILLOS_METADATA_BASE['pizza'];
   } else if (nombreNormalizado.includes('hamburguesa') || nombreNormalizado.includes('burger')) {
     metaBase = PLATILLOS_METADATA_BASE['hamburguesa-sazonare'];
-  } else if (nombreNormalizado.includes('salvajada')) {
+  } else if (nombreNormalizado.includes('salvajada') || catNormalizada.includes('salvajada')) {
     metaBase = PLATILLOS_METADATA_BASE['salvajada'];
-  } else if (nombreNormalizado.includes('salchipapa')) {
+  } else if (
+    nombreNormalizado.includes('salchipapa') ||
+    nombreNormalizado.includes('salchi') ||
+    catNormalizada.includes('salchipapa') ||
+    catNormalizada.includes('salchi') ||
+    catNormalizada.includes('mazorca')
+  ) {
     metaBase = PLATILLOS_METADATA_BASE['salchipapa'];
   } else if (nombreNormalizado.includes('perro') || nombreNormalizado.includes('hot dog') || catNormalizada.includes('perro')) {
     metaBase = PLATILLOS_METADATA_BASE['perro'];
@@ -309,7 +315,15 @@ export function obtenerDetalleGastronomico(producto: {
   const esComidaRapida = !esBebida;
   const esPizza = nombreNormalizado.includes('pizza') || catNormalizada.includes('pizza');
   const esPerro = nombreNormalizado.includes('perro') || nombreNormalizado.includes('hot dog') || catNormalizada.includes('perro');
-  const esSalchipapa = nombreNormalizado.includes('salchipapa') || nombreNormalizado.includes('salvajada');
+  const esSalchipapa =
+    nombreNormalizado.includes('salchipapa') ||
+    nombreNormalizado.includes('salchi') ||
+    nombreNormalizado.includes('salvajada') ||
+    nombreNormalizado.includes('papa') ||
+    catNormalizada.includes('salchipapa') ||
+    catNormalizada.includes('salvajada') ||
+    catNormalizada.includes('salchi') ||
+    catNormalizada.includes('mazorca');
 
   const fotosHD: string[] = [];
   if (producto.imagen) {

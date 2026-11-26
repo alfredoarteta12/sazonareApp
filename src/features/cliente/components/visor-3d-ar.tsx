@@ -87,7 +87,8 @@ export function Visor3DAr({
 
     // 1.2 Si existe un modelo GLB profesional (pizza.glb, perro.glb, salchipapa.glb, burger.glb)
     const tipo = detectarTipoPlatillo(nombrePlato, categoria);
-    const rutaGLB = modelo3D?.glb || obtenerRutaModeloGLB(tipo);
+    // Priorizar el modelo GLB detectado específicamente para el tipo de plato (garantiza que salchipapa cargue salchipapa.glb)
+    const rutaGLB = obtenerRutaModeloGLB(tipo) || modelo3D?.glb;
 
     let estaMontado = true;
 
@@ -198,7 +199,7 @@ export function Visor3DAr({
   const handleActivarAR = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
     const tipo = detectarTipoPlatillo(nombrePlato, categoria);
-    const rutaRelativa = modelo3D?.glb || obtenerRutaModeloGLB(tipo) || '/models/burger.glb';
+    const rutaRelativa = obtenerRutaModeloGLB(tipo) || modelo3D?.glb || '/models/burger.glb';
     const glbUrl = `${origin}${rutaRelativa}`;
     const isAndroid = /android/i.test(navigator.userAgent);
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);

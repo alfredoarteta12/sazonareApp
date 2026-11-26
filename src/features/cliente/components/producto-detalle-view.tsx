@@ -119,6 +119,8 @@ export function ProductoDetalleView({
         {/* VISOR 3D & REALIDAD AUMENTADA A PANTALLA COMPLETA */}
         <Visor3DAr
           nombrePlato={producto.nombre}
+          categoria={producto.categoria?.nombre || ''}
+          adiciones={[]}
           modelo3D={detalle.modelo3D}
           fotosHD={detalle.fotosHD}
           className="shadow-[6px_6px_0px_0px_#f97316]"

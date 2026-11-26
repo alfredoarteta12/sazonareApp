@@ -5,15 +5,25 @@ import Image from 'next/image';
 import * as THREE from 'three';
 import { Sparkles, Camera, RotateCw, Image as ImageIcon, Box, ZoomIn, Play, Pause, RefreshCw } from 'lucide-react';
 import { Modelo3DConfig } from '../types/producto-interactivo';
+import { crearPlato3D } from '../utils/modelos-procedurales';
 
 interface Visor3DArProps {
   nombrePlato: string;
+  categoria?: string;
+  adiciones?: string[];
   modelo3D?: Modelo3DConfig;
   fotosHD: string[];
   className?: string;
 }
 
-export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Visor3DArProps) {
+export function Visor3DAr({
+  nombrePlato,
+  categoria = '',
+  adiciones = [],
+  modelo3D,
+  fotosHD,
+  className = '',
+}: Visor3DArProps) {
   const [modo, setModo] = useState<'3d' | 'fotos'>('3d');
   const [fotoActivaIndex, setFotoActivaIndex] = useState(0);
   const [autoRotando, setAutoRotando] = useState(true);
@@ -27,6 +37,9 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
   const previousPointerXRef = useRef(0);
   const previousPointerYRef = useRef(0);
 
+  // Serializar adiciones para recrear el modelo reactivamente si el cliente agrega extras
+  const adicionesKey = adiciones.sort().join(',');
+
   // 1. Inicialización y Render Loop 3D con Three.js
   useEffect(() => {
     if (modo !== '3d' || !canvasRef.current) return;
@@ -38,118 +51,33 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
     // Escena, Cámara y Renderizador
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 1.1, 2.7);
-    camera.lookAt(0, 0.05, 0);
+    camera.position.set(0, 1.25, 2.7);
+    camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     renderer.setSize(width, height, false);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    // Iluminación de estudio gastronómico (Garantiza cero pantallas oscuras)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 2.4);
+    // Iluminación de estudio gastronómico realista
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
     scene.add(ambientLight);
 
-    const mainLight = new THREE.DirectionalLight(0xfff3e0, 2.8);
+    const mainLight = new THREE.DirectionalLight(0xfff5ea, 2.8);
     mainLight.position.set(3, 5, 4);
     scene.add(mainLight);
 
-    const sideLight = new THREE.DirectionalLight(0xff9900, 1.8);
-    sideLight.position.set(-4, 2, -2);
-    scene.add(sideLight);
+    const rimLight = new THREE.DirectionalLight(0xff9900, 1.6);
+    rimLight.position.set(-4, 3, -3);
+    scene.add(rimLight);
 
-    // Grupo contenedor del platillo para rotación en 360°
-    const hamburguesa = new THREE.Group();
-    groupRef.current = hamburguesa;
+    const fillLight = new THREE.DirectionalLight(0xffffff, 1.2);
+    fillLight.position.set(0, -3, 2);
+    scene.add(fillLight);
 
-    // Pan Brioche Superior
-    const panGeo = new THREE.SphereGeometry(0.85, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.48);
-    const panMat = new THREE.MeshStandardMaterial({
-      color: 0xc8782a,
-      roughness: 0.35,
-      metalness: 0.08,
-    });
-    const panSuperior = new THREE.Mesh(panGeo, panMat);
-    panSuperior.position.y = 0.38;
-    hamburguesa.add(panSuperior);
-
-    // Semillas de sésamo
-    const sesamoGeo = new THREE.SphereGeometry(0.022, 6, 6);
-    const sesamoMat = new THREE.MeshStandardMaterial({ color: 0xfff4dc, roughness: 0.4 });
-    for (let i = 0; i < 24; i++) {
-      const sesamo = new THREE.Mesh(sesamoGeo, sesamoMat);
-      const theta = (i / 24) * Math.PI * 2 + (Math.sin(i) * 0.5);
-      const phi = 0.25 + (i % 3) * 0.15;
-      sesamo.position.set(
-        0.82 * Math.sin(phi) * Math.cos(theta),
-        0.38 + 0.82 * Math.cos(phi),
-        0.82 * Math.sin(phi) * Math.sin(theta)
-      );
-      sesamo.scale.set(1.5, 0.8, 1);
-      hamburguesa.add(sesamo);
-    }
-
-    // Queso Cheddar Fundido
-    const quesoGeo = new THREE.BoxGeometry(1.3, 0.06, 1.3);
-    const quesoMat = new THREE.MeshStandardMaterial({
-      color: 0xf59e0b,
-      roughness: 0.2,
-      metalness: 0.1,
-    });
-    const queso = new THREE.Mesh(quesoGeo, quesoMat);
-    queso.position.y = 0.25;
-    queso.rotation.y = Math.PI / 4;
-    hamburguesa.add(queso);
-
-    // Carne Artesanal a la Parrilla
-    const carneGeo = new THREE.CylinderGeometry(0.88, 0.9, 0.26, 32);
-    const carneMat = new THREE.MeshStandardMaterial({
-      color: 0x3d1d11,
-      roughness: 0.8,
-      metalness: 0.05,
-    });
-    const carne = new THREE.Mesh(carneGeo, carneMat);
-    carne.position.y = 0.1;
-    hamburguesa.add(carne);
-
-    // Rodaja de Tomate Fresco
-    const tomateGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.08, 24);
-    const tomateMat = new THREE.MeshStandardMaterial({
-      color: 0xd92d20,
-      roughness: 0.25,
-      metalness: 0.1,
-    });
-    const tomate = new THREE.Mesh(tomateGeo, tomateMat);
-    tomate.position.y = -0.07;
-    hamburguesa.add(tomate);
-
-    // Lechuga Ondulada
-    const lechugaGeo = new THREE.TorusGeometry(0.88, 0.09, 12, 32);
-    const lechugaMat = new THREE.MeshStandardMaterial({
-      color: 0x47a836,
-      roughness: 0.6,
-    });
-    const lechuga = new THREE.Mesh(lechugaGeo, lechugaMat);
-    lechuga.position.y = -0.14;
-    lechuga.rotation.x = Math.PI / 2;
-    hamburguesa.add(lechuga);
-
-    // Pan Brioche Inferior (Base)
-    const panInfGeo = new THREE.CylinderGeometry(0.85, 0.82, 0.22, 32);
-    const panInferior = new THREE.Mesh(panInfGeo, panMat);
-    panInferior.position.y = -0.27;
-    hamburguesa.add(panInferior);
-
-    // Tabla / Plato de Madera
-    const platoGeo = new THREE.CylinderGeometry(1.2, 1.25, 0.07, 36);
-    const platoMat = new THREE.MeshStandardMaterial({
-      color: 0x221a15,
-      roughness: 0.7,
-    });
-    const plato = new THREE.Mesh(platoGeo, platoMat);
-    plato.position.y = -0.42;
-    hamburguesa.add(plato);
-
-    scene.add(hamburguesa);
+    // Modelo 3D Procedural en WebGL generado al instante por código
+    const plato3D = crearPlato3D(nombrePlato, categoria, adiciones);
+    groupRef.current = plato3D;
+    scene.add(plato3D);
 
     // Ciclo de Animación a 60 FPS
     let estaMontado = true;
@@ -157,8 +85,8 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
       if (!estaMontado) return;
       animFrameRef.current = requestAnimationFrame(animate);
 
-      if (autoRotando && !isDraggingRef.current && hamburguesa) {
-        hamburguesa.rotation.y += 0.015;
+      if (autoRotando && !isDraggingRef.current && plato3D) {
+        plato3D.rotation.y += 0.014;
       }
 
       renderer.render(scene, camera);
@@ -186,7 +114,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
-  }, [modo, autoRotando]);
+  }, [modo, autoRotando, nombrePlato, categoria, adicionesKey]);
 
   // Controles de puntero táctil y ratón para rotar 360° con inercia
   const handlePointerDown = (e: React.PointerEvent) => {

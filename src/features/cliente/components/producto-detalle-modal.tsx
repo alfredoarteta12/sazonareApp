@@ -163,6 +163,8 @@ export function ProductoDetalleModal({
         {/* 1. VISOR 3D & REALIDAD AUMENTADA / GALERÍA */}
         <Visor3DAr
           nombrePlato={producto.nombre}
+          categoria={producto.categoria.nombre}
+          adiciones={Object.keys(adicionesSeleccionadas)}
           modelo3D={detalle.modelo3D}
           fotosHD={detalle.fotosHD}
         />

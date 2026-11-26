@@ -214,6 +214,49 @@ export const PLATILLOS_METADATA_BASE: Record<string, Partial<DetalleGastronomico
     ],
     modelo3D: MODELO_3D_HAMBURGUESA,
   },
+  pizza: {
+    nombre: 'Porción de Pizza Artesanal',
+    descripcionChef:
+      'Masa crujiente horneada a la piedra, bañada con salsa pomodoro napolitana, abundante queso mozzarella fundido, pepperoni doradito y toque de orégano y albahaca fresca.',
+    tiempoMinutos: 10,
+    caloriasAprox: 460,
+    nivelPicante: 0,
+    esEspecialidad: true,
+    ingredientes: [
+      'Masa artesanal de fermentación lenta',
+      'Salsa napolitana de tomates frescos',
+      'Queso mozzarella premium fundido',
+      'Pepperoni curado especiado',
+      'Hojas de albahaca fresca y orégano',
+    ],
+    alergenos: [ALERGENOS_CATALOGO.gluten, ALERGENOS_CATALOGO.lacteos],
+    fotosHD: [
+      'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1200&q=80',
+    ],
+  },
+  perro: {
+    nombre: 'Perro Caliente Especial Street',
+    descripcionChef:
+      'Pan suave al vapor con salchicha jumbo seleccionada a la plancha, lluvia abundante de papitas fósforo crujientes, queso costeño rallado, salsa tártara y salsa de piña casera.',
+    tiempoMinutos: 10,
+    caloriasAprox: 580,
+    nivelPicante: 0,
+    esEspecialidad: true,
+    ingredientes: [
+      'Pan brioche suave para perro',
+      'Salchicha jumbo ahumada',
+      'Papitas fósforo super crocantes',
+      'Queso costeño fresco rallado',
+      'Dúo de salsas especiales de la casa',
+    ],
+    alergenos: [ALERGENOS_CATALOGO.gluten, ALERGENOS_CATALOGO.lacteos, ALERGENOS_CATALOGO.huevo],
+    fotosHD: [
+      'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1627054234038-08579ad06c3a?auto=format&fit=crop&w=1200&q=80',
+    ],
+  },
 };
 
 /**
@@ -232,17 +275,24 @@ export function obtenerDetalleGastronomico(producto: {
   // 1. Coincidencia específica
   let metaBase: Partial<DetalleGastronomico> | undefined;
 
-  if (nombreNormalizado.includes('hamburguesa') || nombreNormalizado.includes('burger')) {
+  if (nombreNormalizado.includes('pizza') || catNormalizada.includes('pizza')) {
+    metaBase = PLATILLOS_METADATA_BASE['pizza'];
+  } else if (nombreNormalizado.includes('hamburguesa') || nombreNormalizado.includes('burger')) {
     metaBase = PLATILLOS_METADATA_BASE['hamburguesa-sazonare'];
   } else if (nombreNormalizado.includes('salvajada')) {
     metaBase = PLATILLOS_METADATA_BASE['salvajada'];
   } else if (nombreNormalizado.includes('salchipapa')) {
     metaBase = PLATILLOS_METADATA_BASE['salchipapa'];
+  } else if (nombreNormalizado.includes('perro') || nombreNormalizado.includes('hot dog') || catNormalizada.includes('perro')) {
+    metaBase = PLATILLOS_METADATA_BASE['perro'];
   }
 
   // 2. Fallback inteligente según categoría
   const esBebida = catNormalizada.includes('bebida') || catNormalizada.includes('jugo') || catNormalizada.includes('gaseosa');
   const esComidaRapida = !esBebida;
+  const esPizza = nombreNormalizado.includes('pizza') || catNormalizada.includes('pizza');
+  const esPerro = nombreNormalizado.includes('perro') || nombreNormalizado.includes('hot dog') || catNormalizada.includes('perro');
+  const esSalchipapa = nombreNormalizado.includes('salchipapa') || nombreNormalizado.includes('salvajada');
 
   const fotosHD: string[] = [];
   if (producto.imagen) {
@@ -252,11 +302,17 @@ export function obtenerDetalleGastronomico(producto: {
     fotosHD.push(...metaBase.fotosHD.filter((f) => !fotosHD.includes(f)));
   }
   if (fotosHD.length === 0) {
-    fotosHD.push(
-      esBebida
-        ? 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=1200&q=80'
-        : 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80'
-    );
+    if (esBebida) {
+      fotosHD.push('https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=1200&q=80');
+    } else if (esPizza) {
+      fotosHD.push('https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1200&q=80');
+    } else if (esPerro) {
+      fotosHD.push('https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=1200&q=80');
+    } else if (esSalchipapa) {
+      fotosHD.push('https://images.unsplash.com/photo-1585109649139-366815a0d713?auto=format&fit=crop&w=1200&q=80');
+    } else {
+      fotosHD.push('https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1200&q=80');
+    }
   }
 
   const ingredientesFallback = esBebida

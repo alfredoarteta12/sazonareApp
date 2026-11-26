@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Script from 'next/script';
 import Image from 'next/image';
-import { Sparkles, Camera, RotateCw, Image as ImageIcon, Box, ZoomIn, Play, Pause } from 'lucide-react';
+import { Sparkles, Camera, RotateCw, Image as ImageIcon, Box, ZoomIn, Play, Pause, Loader2 } from 'lucide-react';
 import { Modelo3DConfig } from '../types/producto-interactivo';
 
 interface Visor3DArProps {
@@ -17,16 +16,36 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
   const [modo, setModo] = useState<'3d' | 'fotos'>(modelo3D ? '3d' : 'fotos');
   const [fotoActivaIndex, setFotoActivaIndex] = useState(0);
   const [modelViewerCargado, setModelViewerCargado] = useState(false);
+  const [modeloListo, setModeloListo] = useState(false);
   const [autoRotando, setAutoRotando] = useState(true);
   const [zoomNivel, setZoomNivel] = useState(1);
   const modelViewerRef = useRef<any>(null);
 
-  // Comprobar si model-viewer ya fue registrado en CustomElements
+  // 1. Cargar e inicializar @google/model-viewer nativamente en el navegador cliente
   useEffect(() => {
-    if (typeof window !== 'undefined' && customElements.get('model-viewer')) {
-      setModelViewerCargado(true);
+    if (typeof window !== 'undefined') {
+      import('@google/model-viewer')
+        .then(() => {
+          setModelViewerCargado(true);
+        })
+        .catch((err) => {
+          console.error('Error al inicializar model-viewer:', err);
+        });
     }
   }, []);
+
+  // 2. Escuchar cuando el modelo 3D termine de renderizarse
+  useEffect(() => {
+    const el = modelViewerRef.current;
+    if (!el) return;
+
+    const handleLoad = () => setModeloListo(true);
+    el.addEventListener('load', handleLoad);
+
+    return () => {
+      el.removeEventListener('load', handleLoad);
+    };
+  }, [modo, modelViewerCargado]);
 
   const toggleAutoRotacion = () => {
     if (modelViewerRef.current) {
@@ -48,14 +67,6 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
 
   return (
     <div className={`relative overflow-hidden rounded-2xl border-2 border-zinc-700 bg-zinc-950 ${className}`}>
-      {/* Script oficial de Google Model-Viewer para 3D & Realidad Aumentada */}
-      <Script
-        type="module"
-        src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.5.0/model-viewer.min.js"
-        onLoad={() => setModelViewerCargado(true)}
-        strategy="afterInteractive"
-      />
-
       {/* Selector de Pestañas 3D / Galería */}
       <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-xl border-2 border-zinc-700 bg-zinc-900/95 p-1 backdrop-blur-md">
         {modelo3D && (
@@ -90,7 +101,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
       <div className="absolute top-3 right-3 z-20">
         <span className="neo-sticker text-[9px] bg-amber-400 text-black border-black shadow-[2px_2px_0px_0px_#000] flex items-center gap-1">
           <Sparkles className="w-3 h-3 fill-black" />
-          {modo === '3d' ? 'Gira en 360°' : 'Ángulos HD'}
+          {modo === '3d' ? (modeloListo ? '360° Activo' : 'Cargando 3D...') : 'Ángulos HD'}
         </span>
       </div>
 
@@ -98,6 +109,16 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
       <div className="relative h-64 sm:h-80 w-full bg-gradient-to-b from-zinc-900 to-zinc-950 flex items-center justify-center">
         {modo === '3d' && modelo3D ? (
           <div className="relative h-full w-full">
+            {/* Indicador de carga sutil si aún no está listo */}
+            {!modeloListo && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-zinc-950/70 backdrop-blur-sm gap-2">
+                <Loader2 className="w-7 h-7 text-orange-500 animate-spin" />
+                <span className="font-display text-xs font-black uppercase tracking-wider text-orange-400">
+                  Cargando Modelo 3D...
+                </span>
+              </div>
+            )}
+
             <model-viewer
               ref={modelViewerRef}
               src={modelo3D.glb}
@@ -106,7 +127,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
               alt={modelo3D.alt || `Modelo 3D de ${nombrePlato}`}
               camera-controls
               auto-rotate={autoRotando ? '' : undefined}
-              rotation-per-second="25deg"
+              rotation-per-second="30deg"
               camera-orbit={modelo3D.cameraOrbit || '45deg 65deg 2.4m'}
               scale={modelo3D.scale || '1 1 1'}
               ar
@@ -117,13 +138,8 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
               loading="eager"
               style={{ width: '100%', height: '100%', outline: 'none' }}
             >
-              {/* Slot para botón AR nativo de model-viewer */}
-              <button
-                slot="ar-button"
-                type="button"
-                className="hidden"
-                id="native-ar-button"
-              >
+              {/* Slot para botón AR nativo */}
+              <button slot="ar-button" type="button" className="hidden" id="native-ar-button">
                 AR
               </button>
             </model-viewer>
@@ -142,7 +158,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
 
               <div className="flex items-center gap-1 rounded-xl border-2 border-zinc-700 bg-zinc-900/90 px-2 py-1.5 text-[11px] font-bold text-zinc-400 backdrop-blur-md">
                 <RotateCw className="w-3 h-3 text-orange-400" />
-                <span className="text-[10px]">Arrastra para rotar</span>
+                <span className="text-[10px]">Arrastra para rotar en 360°</span>
               </div>
             </div>
 

@@ -117,8 +117,7 @@ export const PREFERENCIAS_COCINA_CHIPS: string[] = [
 
 // Modelos 3D optimizados en GLB / USDZ con soporte AR para Android (Scene Viewer) y iOS (Quick Look)
 const MODELO_3D_HAMBURGUESA: Modelo3DConfig = {
-  glb: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/Burger/glTF-Binary/Burger.glb',
-  usdz: 'https://modelviewer.dev/shared-assets/models/glTF-Sample-Assets/Models/Burger/glTF-Binary/Burger.usdz',
+  glb: '/models/burger.glb',
   poster: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80',
   alt: 'Hamburguesa Artesanal Sazonare en 3D con Realidad Aumentada',
   scale: '1 1 1',

@@ -32,6 +32,26 @@ export function detectarTipoPlatillo(nombre: string, categoria: string = ''): Ti
 }
 
 /**
+ * Retorna la ruta del archivo GLB profesional alojado en public/models si existe
+ */
+export function obtenerRutaModeloGLB(tipo: TipoPlatillo3D): string | null {
+  switch (tipo) {
+    case 'pizza':
+      return '/models/pizza.glb';
+    case 'perro':
+      return '/models/perro.glb';
+    case 'salchipapa':
+      return '/models/salchipapa.glb';
+    case 'hamburguesa':
+      return '/models/burger.glb';
+    case 'bebida':
+      return null;
+    default:
+      return null;
+  }
+}
+
+/**
  * Construye un modelo 3D procedural realista 100% mediante código WebGL/Three.js
  * Carga en 3ms, pesa 0 KB de descarga en red y responde a adiciones en tiempo real.
  */

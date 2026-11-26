@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Sparkles, Camera, RotateCw, Image as ImageIcon, Box, ZoomIn, Play, Pause, RefreshCw } from 'lucide-react';
 import { Modelo3DConfig } from '../types/producto-interactivo';
-import { crearPlato3D } from '../utils/modelos-procedurales';
+import { crearPlato3D, detectarTipoPlatillo, obtenerRutaModeloGLB } from '../utils/modelos-procedurales';
 
 interface Visor3DArProps {
   nombrePlato: string;
@@ -28,6 +29,7 @@ export function Visor3DAr({
   const [fotoActivaIndex, setFotoActivaIndex] = useState(0);
   const [autoRotando, setAutoRotando] = useState(true);
   const [zoomNivel, setZoomNivel] = useState(1);
+  const [modeloHDCargado, setModeloHDCargado] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animFrameRef = useRef<number | null>(null);
   const groupRef = useRef<THREE.Group | null>(null);
@@ -51,7 +53,7 @@ export function Visor3DAr({
     // Escena, Cámara y Renderizador
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 1.25, 2.7);
+    camera.position.set(0, 1.2, 2.7);
     camera.lookAt(0, 0, 0);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -59,7 +61,7 @@ export function Visor3DAr({
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     // Iluminación de estudio gastronómico realista
-    const ambientLight = new THREE.AmbientLight(0xffffff, 2.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.6);
     scene.add(ambientLight);
 
     const mainLight = new THREE.DirectionalLight(0xfff5ea, 2.8);
@@ -74,19 +76,72 @@ export function Visor3DAr({
     fillLight.position.set(0, -3, 2);
     scene.add(fillLight);
 
-    // Modelo 3D Procedural en WebGL generado al instante por código
-    const plato3D = crearPlato3D(nombrePlato, categoria, adiciones);
-    groupRef.current = plato3D;
-    scene.add(plato3D);
+    // Contenedor principal del modelo 3D
+    const rootGroup = new THREE.Group();
+    groupRef.current = rootGroup;
+    scene.add(rootGroup);
+
+    // 1.1 Modelo 3D Procedural inicial (Carga instantánea en 3ms, cero pantallas negras)
+    const proceduralMesh = crearPlato3D(nombrePlato, categoria, adiciones);
+    rootGroup.add(proceduralMesh);
+
+    // 1.2 Si existe un modelo GLB profesional (pizza.glb, perro.glb, salchipapa.glb, burger.glb)
+    const tipo = detectarTipoPlatillo(nombrePlato, categoria);
+    const rutaGLB = modelo3D?.glb || obtenerRutaModeloGLB(tipo);
+
+    let estaMontado = true;
+
+    if (rutaGLB) {
+      const loader = new GLTFLoader();
+      loader.load(
+        rutaGLB,
+        (gltf) => {
+          if (!estaMontado || !rootGroup) return;
+
+          // Centrado y escala uniforme inteligente con Bounding Box
+          const box = new THREE.Box3().setFromObject(gltf.scene);
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z);
+          const scale = 1.95 / (maxDim || 1);
+
+          gltf.scene.scale.setScalar(scale);
+          gltf.scene.position.x = -center.x * scale;
+          gltf.scene.position.y = -center.y * scale;
+          gltf.scene.position.z = -center.z * scale;
+
+          // Mejorar brillo y materiales PBR
+          gltf.scene.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+              if (child.material) {
+                child.material.roughness = Math.min(child.material.roughness ?? 0.5, 0.6);
+              }
+            }
+          });
+
+          // Reemplazo limpio y suave del modelo procedural
+          while (rootGroup.children.length > 0) {
+            rootGroup.remove(rootGroup.children[0]);
+          }
+          rootGroup.add(gltf.scene);
+          setModeloHDCargado(true);
+        },
+        undefined,
+        (err) => {
+          console.warn('Fallback a modelo procedural:', err);
+        }
+      );
+    }
 
     // Ciclo de Animación a 60 FPS
-    let estaMontado = true;
     const animate = () => {
       if (!estaMontado) return;
       animFrameRef.current = requestAnimationFrame(animate);
 
-      if (autoRotando && !isDraggingRef.current && plato3D) {
-        plato3D.rotation.y += 0.014;
+      if (autoRotando && !isDraggingRef.current && rootGroup) {
+        rootGroup.rotation.y += 0.014;
       }
 
       renderer.render(scene, camera);
@@ -114,7 +169,7 @@ export function Visor3DAr({
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
-  }, [modo, autoRotando, nombrePlato, categoria, adicionesKey]);
+  }, [modo, autoRotando, nombrePlato, categoria, adicionesKey, modelo3D?.glb]);
 
   // Controles de puntero táctil y ratón para rotar 360° con inercia
   const handlePointerDown = (e: React.PointerEvent) => {
@@ -142,7 +197,9 @@ export function Visor3DAr({
   // Botón de Realidad Aumentada (Scene Viewer Android / Quick Look iOS)
   const handleActivarAR = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const glbUrl = `${origin}/models/burger.glb`;
+    const tipo = detectarTipoPlatillo(nombrePlato, categoria);
+    const rutaRelativa = modelo3D?.glb || obtenerRutaModeloGLB(tipo) || '/models/burger.glb';
+    const glbUrl = `${origin}${rutaRelativa}`;
     const isAndroid = /android/i.test(navigator.userAgent);
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
@@ -190,9 +247,21 @@ export function Visor3DAr({
 
       {/* Badge Estado Interactivo */}
       <div className="absolute top-3 right-3 z-20">
-        <span className="neo-sticker text-[9px] bg-amber-400 text-black border-black shadow-[2px_2px_0px_0px_#000] flex items-center gap-1">
+        <span
+          className={`neo-sticker text-[9px] border-black shadow-[2px_2px_0px_0px_#000] flex items-center gap-1 ${
+            modeloHDCargado
+              ? 'bg-emerald-400 text-black'
+              : 'bg-amber-400 text-black'
+          }`}
+        >
           <Sparkles className="w-3 h-3 fill-black" />
-          {modo === '3d' ? (autoRotando ? '360° Girando' : '360° Manual') : 'Ángulos HD'}
+          {modo === '3d'
+            ? modeloHDCargado
+              ? '3D HD Pro'
+              : autoRotando
+              ? '360° Girando'
+              : '360° Manual'
+            : 'Ángulos HD'}
         </span>
       </div>
 

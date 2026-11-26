@@ -115,20 +115,35 @@ export const PREFERENCIAS_COCINA_CHIPS: string[] = [
   'Empaque para llevar',
 ];
 
-// Modelos 3D optimizados en GLB / USDZ con soporte AR para Android (Scene Viewer) y iOS (Quick Look)
+// Modelos 3D optimizados en GLB con soporte AR para Android (Scene Viewer) y iOS (Quick Look)
 const MODELO_3D_HAMBURGUESA: Modelo3DConfig = {
   glb: '/models/burger.glb',
   poster: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80',
   alt: 'Hamburguesa Artesanal Sazonare en 3D con Realidad Aumentada',
-  scale: '1 1 1',
-  cameraOrbit: 'auto auto auto',
+};
+
+const MODELO_3D_PIZZA: Modelo3DConfig = {
+  glb: '/models/pizza.glb',
+  poster: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=800&q=80',
+  alt: 'Porción de Pizza Artesanal en 3D con Realidad Aumentada',
+};
+
+const MODELO_3D_PERRO: Modelo3DConfig = {
+  glb: '/models/perro.glb',
+  poster: 'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=800&q=80',
+  alt: 'Perro Caliente Especial Street en 3D con Realidad Aumentada',
+};
+
+const MODELO_3D_SALCHIPAPA: Modelo3DConfig = {
+  glb: '/models/salchipapa.glb',
+  poster: 'https://images.unsplash.com/photo-1585109649139-366815a0d713?auto=format&fit=crop&w=800&q=80',
+  alt: 'Salchipapa Salvaje Street en 3D con Realidad Aumentada',
 };
 
 const MODELO_3D_BEBIDA: Modelo3DConfig = {
-  glb: 'https://modelviewer.dev/shared-assets/models/Astronaut.glb',
+  glb: '',
   poster: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=800&q=80',
   alt: 'Bebida fría refrescante Sazonare',
-  scale: '0.8 0.8 0.8',
 };
 
 export const PLATILLOS_METADATA_BASE: Record<string, Partial<DetalleGastronomico>> = {
@@ -189,7 +204,7 @@ export const PLATILLOS_METADATA_BASE: Record<string, Partial<DetalleGastronomico
       'https://images.unsplash.com/photo-1576107232684-1279f3908594?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=1200&q=80',
     ],
-    modelo3D: MODELO_3D_HAMBURGUESA,
+    modelo3D: MODELO_3D_SALCHIPAPA,
   },
   salchipapa: {
     nombre: 'Salchipapa Salvaje Street',
@@ -212,7 +227,7 @@ export const PLATILLOS_METADATA_BASE: Record<string, Partial<DetalleGastronomico
       'https://images.unsplash.com/photo-1585109649139-366815a0d713?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1541592106381-b31e9677c0e5?auto=format&fit=crop&w=1200&q=80',
     ],
-    modelo3D: MODELO_3D_HAMBURGUESA,
+    modelo3D: MODELO_3D_SALCHIPAPA,
   },
   pizza: {
     nombre: 'Porción de Pizza Artesanal',
@@ -235,6 +250,7 @@ export const PLATILLOS_METADATA_BASE: Record<string, Partial<DetalleGastronomico
       'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=1200&q=80',
     ],
+    modelo3D: MODELO_3D_PIZZA,
   },
   perro: {
     nombre: 'Perro Caliente Especial Street',
@@ -256,6 +272,7 @@ export const PLATILLOS_METADATA_BASE: Record<string, Partial<DetalleGastronomico
       'https://images.unsplash.com/photo-1619740455993-9e612b1af08a?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1627054234038-08579ad06c3a?auto=format&fit=crop&w=1200&q=80',
     ],
+    modelo3D: MODELO_3D_PERRO,
   },
 };
 
@@ -346,6 +363,16 @@ export function obtenerDetalleGastronomico(producto: {
       ? ['Con hielo', 'Sin hielo', 'Vaso aparte', 'Bien fría', 'Para llevar']
       : PREFERENCIAS_COCINA_CHIPS,
     fotosHD,
-    modelo3D: metaBase?.modelo3D || (esComidaRapida ? MODELO_3D_HAMBURGUESA : undefined),
+    modelo3D:
+      metaBase?.modelo3D ||
+      (esPizza
+        ? MODELO_3D_PIZZA
+        : esPerro
+        ? MODELO_3D_PERRO
+        : esSalchipapa
+        ? MODELO_3D_SALCHIPAPA
+        : esComidaRapida
+        ? MODELO_3D_HAMBURGUESA
+        : undefined),
   };
 }

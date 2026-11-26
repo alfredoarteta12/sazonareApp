@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     agentFeedback: true,
     agentUpgrade: "security",
   },
-  reactCompiler: true,
+  // reactCompiler: true,
   turbopack: {
     rules: {
       "*.css": {

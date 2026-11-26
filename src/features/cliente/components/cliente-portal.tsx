@@ -1,21 +1,23 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import React, { useState, useEffect, useTransition } from 'react';
 import Link from 'next/link';
 import { formatearCOP } from '@/lib/currency';
 import { crearPedidoCliente, ItemCarrito } from '@/features/orders/actions/order-mutations';
+import { ProductoDetalleModal } from './producto-detalle-modal';
+import { CarritoModal } from './carrito-modal';
+import { TrackerPedidoModal } from './tracker-pedido-modal';
+import { PersonalizacionProducto } from '../types/producto-interactivo';
 import {
   Flame,
   ShoppingBag,
   Search,
-  X,
   Plus,
-  Minus,
-  Clock,
   ArrowRight,
-  CheckCircle2,
   MapPin,
   Bell,
+  Box,
+  Sparkles,
 } from 'lucide-react';
 
 export interface ProductoCliente {
@@ -61,17 +63,6 @@ const PROMOCIONES_CASA = [
   },
 ];
 
-const CHIPS_NOTAS_RAPIDAS = [
-  'Sin salsas',
-  'Sin cebolla',
-  'Sin tomate',
-  'Sin lechuga',
-  'Salsas aparte',
-  'Término 3/4',
-  'Bien cocido',
-  'Sin hielo',
-];
-
 export function ClientePortal({
   productosIniciales,
   categorias,
@@ -89,12 +80,10 @@ export function ClientePortal({
   const [notasPedido, setNotasPedido] = useState('');
   const [isPending, startTransition] = useTransition();
 
-  // Modal para agregar platillo con notas personalizadas
-  const [platilloPersonalizar, setPlatilloPersonalizar] = useState<ProductoCliente | null>(null);
-  const [notaPlatillo, setNotaPlatillo] = useState('');
-  const [cantidadPersonalizar, setCantidadPersonalizar] = useState(1);
+  // Modal interactivo 3D / AR / Detalle gastronómico
+  const [platilloSeleccionado, setPlatilloSeleccionado] = useState<ProductoCliente | null>(null);
 
-  // Estado del pedido activo enviado
+  // Estado del pedido activo enviado (Live Tracker)
   const [pedidoActivo, setPedidoActivo] = useState<{
     id: string;
     mesa: number;
@@ -223,29 +212,47 @@ export function ClientePortal({
   const totalCarrito = carrito.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
   const totalItemsCarrito = carrito.reduce((acc, item) => acc + item.cantidad, 0);
 
-  // Manejador: Abrir modal de notas
-  const handleAbrirPersonalizar = (prod: ProductoCliente) => {
-    if (!prod.disponible) return;
-    setPlatilloPersonalizar(prod);
-    setNotaPlatillo('');
-    setCantidadPersonalizar(1);
+  // Abrir modal interactivo
+  const handleAbrirPlatillo = (prod: ProductoCliente) => {
+    setPlatilloSeleccionado(prod);
   };
 
-  // Manejador: Agregar al carrito
-  const handleConfirmarAgregarPlatillo = () => {
-    if (!platilloPersonalizar) return;
+  // Manejador: Agregar al carrito con personalizaciones completas en COP
+  const handleAgregarPersonalizado = (personalizacion: PersonalizacionProducto) => {
+    if (!platilloSeleccionado) return;
+
+    const partesNotas: string[] = [];
+
+    // Adiciones seleccionadas
+    if (personalizacion.adiciones.length > 0) {
+      const adicStr = personalizacion.adiciones
+        .map((a) => `${a.cantidad > 1 ? `${a.cantidad}x ` : ''}${a.adicion.nombre} (+${formatearCOP(a.adicion.precioCOP * a.cantidad)})`)
+        .join(', ');
+      partesNotas.push(`Extras: ${adicStr}`);
+    }
+
+    // Preferencias de cocina rápidas
+    if (personalizacion.preferencias.length > 0) {
+      partesNotas.push(personalizacion.preferencias.join(', '));
+    }
+
+    // Nota especial libre
+    if (personalizacion.notaEspecial) {
+      partesNotas.push(`Nota: ${personalizacion.notaEspecial}`);
+    }
 
     const nuevoItem: ItemCarrito = {
       id: `cli-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      productoId: platilloPersonalizar.id,
-      nombre: platilloPersonalizar.nombre,
-      precio: platilloPersonalizar.precio,
-      cantidad: cantidadPersonalizar,
-      notas: notaPlatillo.trim() || undefined,
+      productoId: platilloSeleccionado.id,
+      nombre: platilloSeleccionado.nombre,
+      precio: personalizacion.precioTotalUnitarioCOP,
+      cantidad: personalizacion.cantidad,
+      notas: partesNotas.length > 0 ? partesNotas.join(' | ') : undefined,
     };
 
     setCarrito((prev) => [...prev, nuevoItem]);
-    setPlatilloPersonalizar(null);
+    setMensajeExito(`¡${platilloSeleccionado.nombre} agregado al pedido!`);
+    setTimeout(() => setMensajeExito(null), 3000);
   };
 
   // Manejador: Modificar cantidad en carrito
@@ -294,7 +301,7 @@ export function ClientePortal({
 
   return (
     <div className="min-h-screen bg-[#08080a] text-[#f4f4f5] flex flex-col pb-28 selection:bg-orange-500 selection:text-black">
-      {/* 1. HEADER DEL CLIENTE NEO-BRUTALIST */}
+      {/* 1. HEADER NEO-BRUTALIST */}
       <header className="sticky top-0 z-40 w-full border-b-2 border-zinc-800 bg-[#08080a]/90 backdrop-blur-md px-4 py-3">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
@@ -305,7 +312,7 @@ export function ClientePortal({
               <h1 className="font-display text-base font-black uppercase tracking-tight text-white group-hover:text-orange-400 transition-colors">
                 Sazonare<span className="text-orange-500">Food</span>
               </h1>
-              <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Carta Digital en Mesa</p>
+              <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-wider">Carta Digital & 3D en Mesa</p>
             </div>
           </Link>
 
@@ -398,6 +405,8 @@ export function ClientePortal({
                         notas: 'Promoción especial',
                       };
                       setCarrito((prev) => [...prev, nuevoItem]);
+                      setMensajeExito(`¡${promo.titulo} agregado al pedido!`);
+                      setTimeout(() => setMensajeExito(null), 3000);
                     }}
                     className="neo-btn rounded-xl bg-orange-500 hover:bg-orange-400 text-black px-3.5 py-1.5 text-[11px] font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#fff] active:scale-95"
                   >
@@ -462,18 +471,22 @@ export function ClientePortal({
           </div>
         </div>
 
-        {/* 4. CUADRÍCULA DE PLATILLOS */}
+        {/* 4. CUADRÍCULA DE PLATILLOS CON VISOR INTERACTIVO 3D/AR */}
         <section className="space-y-3">
           <div className="flex items-center justify-between text-xs text-zinc-400">
-            <span className="font-display font-black uppercase">{productosFiltrados.length} platillos disponibles</span>
-            <span className="text-[11px] text-zinc-500 font-semibold">Toca un plato para personalizarlo</span>
+            <span className="font-display font-black uppercase">{productosFiltrados.length} platillos en la carta</span>
+            <span className="text-[11px] text-zinc-500 font-semibold flex items-center gap-1">
+              <Box className="w-3.5 h-3.5 text-orange-400" />
+              Toca para ver en 3D / AR y personalizar
+            </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {productosFiltrados.map((prod) => (
               <div
                 key={prod.id}
-                className={`neo-box rounded-2xl border-2 p-4 sm:p-5 flex flex-col justify-between transition-all ${
+                onClick={() => handleAbrirPlatillo(prod)}
+                className={`neo-box rounded-2xl border-2 p-4 sm:p-5 flex flex-col justify-between transition-all cursor-pointer group ${
                   prod.disponible
                     ? 'border-zinc-700 bg-zinc-900/90 shadow-[4px_4px_0px_0px_#f97316] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[6px_6px_0px_0px_#facc15]'
                     : 'border-zinc-800 bg-zinc-950/60 opacity-60 shadow-none'
@@ -484,14 +497,25 @@ export function ClientePortal({
                     <span className="font-display text-[10px] font-black uppercase tracking-wider text-orange-400 border border-orange-500/30 bg-orange-950/40 px-2 py-0.5 rounded-lg">
                       {prod.categoria.nombre}
                     </span>
-                    {!prod.disponible && (
-                      <span className="neo-sticker text-[8px] bg-rose-950 text-rose-300 border-rose-700 shadow-none">
-                        Agotado
+                    <div className="flex items-center gap-1.5">
+                      <span className="neo-sticker text-[8px] bg-amber-400 text-black border-black shadow-none flex items-center gap-0.5 group-hover:scale-105 transition-transform">
+                        <Sparkles className="w-2.5 h-2.5 fill-black" />
+                        3D & AR
                       </span>
-                    )}
+                      {!prod.disponible && (
+                        <span className="neo-sticker text-[8px] bg-rose-950 text-rose-300 border-rose-700 shadow-none">
+                          Agotado
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <h3 className="font-display text-lg font-black uppercase tracking-tight text-white">{prod.nombre}</h3>
+                  <h3 className="font-display text-lg font-black uppercase tracking-tight text-white group-hover:text-orange-400 transition-colors">
+                    {prod.nombre}
+                  </h3>
+                  <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2">
+                    Especialidad de la casa. Toca para rotar en 360°, ver en tu mesa en AR y personalizar adiciones.
+                  </p>
                 </div>
 
                 <div className="mt-5 pt-3 border-t-2 border-zinc-800 flex items-center justify-between">
@@ -500,14 +524,19 @@ export function ClientePortal({
                   </span>
 
                   {prod.disponible ? (
-                    <button
-                      type="button"
-                      onClick={() => handleAbrirPersonalizar(prod)}
-                      className="neo-btn rounded-xl bg-orange-500 hover:bg-orange-400 text-black px-3.5 py-1.5 text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#fff] flex items-center gap-1"
-                    >
-                      <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>Pedir</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAbrirPlatillo(prod);
+                        }}
+                        className="neo-btn rounded-xl bg-orange-500 hover:bg-orange-400 text-black px-3 py-1.5 text-xs font-black uppercase tracking-wider border-2 border-black shadow-[2px_2px_0px_0px_#fff] flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                        <span>Ver & Pedir</span>
+                      </button>
+                    </div>
                   ) : (
                     <span className="text-xs text-zinc-600 font-semibold">No disponible</span>
                   )}
@@ -542,364 +571,35 @@ export function ClientePortal({
         </div>
       )}
 
-      {/* 6. MODAL PARA PERSONALIZAR PLATILLO CON NOTAS */}
-      {platilloPersonalizar && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-          <div className="w-full max-w-md rounded-2xl border-2 border-zinc-700 bg-zinc-950 p-6 shadow-[6px_6px_0px_0px_#f97316] animate-in fade-in zoom-in-95 space-y-4">
-            <div className="flex items-start justify-between border-b-2 border-zinc-800 pb-3">
-              <div>
-                <span className="font-display text-[10px] font-black text-orange-400 uppercase tracking-wider">
-                  {platilloPersonalizar.categoria.nombre}
-                </span>
-                <h3 className="font-display text-xl font-black uppercase tracking-tight text-white mt-0.5">
-                  {platilloPersonalizar.nombre}
-                </h3>
-                <p className="font-display text-lg font-black text-amber-400 mt-1">
-                  {formatearCOP(platilloPersonalizar.precio)}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setPlatilloPersonalizar(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl border-2 border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
+      {/* 6. MODAL INTERACTIVO DE DETALLE, VISOR 3D/AR Y PERSONALIZACIÓN */}
+      <ProductoDetalleModal
+        isOpen={!!platilloSeleccionado}
+        onClose={() => setPlatilloSeleccionado(null)}
+        producto={platilloSeleccionado}
+        onAgregarAlCarrito={handleAgregarPersonalizado}
+      />
 
-            {/* Cantidad */}
-            <div className="flex items-center justify-between rounded-xl border-2 border-zinc-800 bg-zinc-900 p-3">
-              <span className="font-display text-xs font-black uppercase text-zinc-300">Cantidad</span>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => setCantidadPersonalizar((c) => Math.max(1, c - 1))}
-                  className="neo-btn h-8 w-8 rounded-lg bg-zinc-800 font-black text-white hover:bg-zinc-700 flex items-center justify-center"
-                >
-                  <Minus className="w-3.5 h-3.5 stroke-[3]" />
-                </button>
-                <span className="font-display text-base font-black text-white w-6 text-center">
-                  {cantidadPersonalizar}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setCantidadPersonalizar((c) => c + 1)}
-                  className="neo-btn h-8 w-8 rounded-lg bg-zinc-800 font-black text-white hover:bg-zinc-700 flex items-center justify-center"
-                >
-                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                </button>
-              </div>
-            </div>
-
-            {/* Chips de notas rápidas */}
-            <div>
-              <label className="block font-display text-xs font-black uppercase tracking-wider text-zinc-300 mb-1.5">
-                Indicaciones para la comanda:
-              </label>
-              <div className="flex flex-wrap gap-1.5 mb-2.5">
-                {CHIPS_NOTAS_RAPIDAS.map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => {
-                      setNotaPlatillo((prev) => {
-                        if (!prev.trim()) return chip;
-                        if (prev.toLowerCase().includes(chip.toLowerCase())) return prev;
-                        return `${prev.trim()}, ${chip}`;
-                      });
-                    }}
-                    className="neo-btn rounded-lg border-2 border-zinc-800 bg-zinc-900 px-2.5 py-1 text-[11px] font-black uppercase tracking-wider text-zinc-400 hover:border-orange-500 hover:text-white active:scale-95 transition-all"
-                  >
-                    + {chip}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="text"
-                placeholder="Ej: Término 3/4, salsa de ajo aparte..."
-                value={notaPlatillo}
-                onChange={(e) => setNotaPlatillo(e.target.value)}
-                className="w-full rounded-xl border-2 border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none"
-              />
-            </div>
-
-            <div className="flex gap-2 pt-2 border-t-2 border-zinc-800">
-              <button
-                type="button"
-                onClick={() => setPlatilloPersonalizar(null)}
-                className="neo-btn flex-1 rounded-xl bg-zinc-900 py-3 text-xs font-black uppercase text-zinc-400 hover:text-white"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmarAgregarPlatillo}
-                className="neo-btn-primary flex-1 rounded-xl py-3 text-xs font-black uppercase tracking-wider"
-              >
-                Agregar • {formatearCOP(platilloPersonalizar.precio * cantidadPersonalizar)}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 7. MODAL DEL CARRITO / CONFIRMAR PEDIDO AL MESERO */}
-      {mostrarModalCarrito && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-          <div className="w-full max-w-lg rounded-2xl border-2 border-zinc-700 bg-zinc-950 p-6 shadow-[6px_6px_0px_0px_#f97316] flex flex-col max-h-[90vh]">
-            <div className="flex items-center justify-between border-b-2 border-zinc-800 pb-3 mb-4 shrink-0">
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-orange-400" />
-                <h3 className="font-display text-base sm:text-lg font-black uppercase tracking-tight text-white">
-                  Tu Pedido para Mesa {mesa}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMostrarModalCarrito(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl border-2 border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Lista de platillos en el carrito */}
-            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 no-scrollbar">
-              {carrito.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-xl border-2 border-zinc-800 bg-zinc-900/80 p-3.5 flex items-center justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <p className="font-display text-xs font-black uppercase text-white truncate">{item.nombre}</p>
-                    {item.notas && (
-                      <p className="text-[10px] text-orange-400 font-bold italic mt-0.5">📝 {item.notas}</p>
-                    )}
-                    <p className="font-display text-xs font-black text-amber-400 mt-1">
-                      {formatearCOP(item.precio * item.cantidad)}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleCambiarCantidad(item.id, -1)}
-                      className="neo-btn h-7 w-7 rounded-lg bg-zinc-800 text-xs font-black text-white hover:bg-zinc-700 flex items-center justify-center"
-                    >
-                      <Minus className="w-3 h-3 stroke-[3]" />
-                    </button>
-                    <span className="font-display text-xs font-black text-white w-4 text-center">
-                      {item.cantidad}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleCambiarCantidad(item.id, 1)}
-                      className="neo-btn h-7 w-7 rounded-lg bg-zinc-800 text-xs font-black text-white hover:bg-zinc-700 flex items-center justify-center"
-                    >
-                      <Plus className="w-3 h-3 stroke-[3]" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Datos opcionales del cliente */}
-            <div className="mt-4 pt-3 border-t-2 border-zinc-800 space-y-2.5 shrink-0">
-              <div>
-                <label className="block font-display text-[11px] font-black uppercase tracking-wider text-zinc-400 mb-1">
-                  Tu Nombre (Opcional):
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: Carlos"
-                  value={nombreCliente}
-                  onChange={(e) => setNombreCliente(e.target.value)}
-                  className="w-full rounded-xl border-2 border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-display text-[11px] font-black uppercase tracking-wider text-zinc-400 mb-1">
-                  Nota general para el mesero:
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: Traer servilletas y vasos con hielo..."
-                  value={notasPedido}
-                  onChange={(e) => setNotasPedido(e.target.value)}
-                  className="w-full rounded-xl border-2 border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-orange-500 focus:outline-none"
-                />
-              </div>
-
-              {/* Total y botón de envío */}
-              <div className="flex items-center justify-between pt-2">
-                <span className="font-display text-xs font-black uppercase text-zinc-400">Total a Pagar:</span>
-                <span className="font-display text-xl font-black text-white">{formatearCOP(totalCarrito)}</span>
-              </div>
-
-              <div className="rounded-xl border-2 border-blue-900/60 bg-blue-950/30 p-2.5 text-[11px] text-blue-300 flex items-center gap-2">
-                <span>ℹ️</span>
-                <span>
-                  Tu pedido llegará primero al <strong>Mesero</strong>, quien lo revisará y enviará formalmente a Cocina.
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleEnviarPedido}
-                disabled={isPending}
-                className="neo-btn-primary w-full rounded-xl py-3.5 text-xs sm:text-sm font-black uppercase tracking-wider disabled:opacity-50"
-              >
-                {isPending ? 'Enviando...' : `🛎️ Enviar Pedido a mi Mesero (${formatearCOP(totalCarrito)})`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 7. MODAL DEL CARRITO / CONFIRMAR PEDIDO */}
+      <CarritoModal
+        isOpen={mostrarModalCarrito}
+        onClose={() => setMostrarModalCarrito(false)}
+        carrito={carrito}
+        mesa={mesa}
+        nombreCliente={nombreCliente}
+        setNombreCliente={setNombreCliente}
+        notasPedido={notasPedido}
+        setNotasPedido={setNotasPedido}
+        onCambiarCantidad={handleCambiarCantidad}
+        onEnviarPedido={handleEnviarPedido}
+        isPending={isPending}
+      />
 
       {/* 8. MODAL DE SEGUIMIENTO EN VIVO (LIVE TRACKER) */}
-      {mostrarTracker && pedidoActivo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
-          <div className="w-full max-w-md rounded-2xl border-2 border-zinc-700 bg-zinc-950 p-6 shadow-[6px_6px_0px_0px_#a855f7] animate-in fade-in space-y-4">
-            <div className="flex items-center justify-between border-b-2 border-zinc-800 pb-3">
-              <div>
-                <span className="neo-sticker text-[8px] bg-purple-500 text-black border-black mb-1">
-                  MESA {pedidoActivo.mesa} • COMANDA EN VIVO
-                </span>
-                <h3 className="font-display text-base sm:text-lg font-black uppercase tracking-tight text-white">
-                  Estado de tu Orden
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setMostrarTracker(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-xl border-2 border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Stepper Visual Neo-Brutalist */}
-            <div className="space-y-3 py-1">
-              <div
-                className={`flex items-start gap-3 rounded-xl border-2 p-3 transition-all ${
-                  pedidoActivo.estado === 'SOLICITADO'
-                    ? 'border-purple-500 bg-purple-950/40 text-purple-200 shadow-[2px_2px_0px_0px_#a855f7]'
-                    : 'border-zinc-800/80 bg-zinc-900/40 opacity-70'
-                }`}
-              >
-                <span className="text-xl">🛎️</span>
-                <div>
-                  <p className="font-display text-xs font-black uppercase text-white">
-                    Paso 1: Solicitud Recibida por Mesero
-                  </p>
-                  <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">
-                    {pedidoActivo.estado === 'SOLICITADO'
-                      ? 'Tu mesero tiene tu comanda en pantalla y la está revisando para mandarla a Cocina.'
-                      : '✓ Comanda aprobada por el mesero.'}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className={`flex items-start gap-3 rounded-xl border-2 p-3 transition-all ${
-                  pedidoActivo.estado === 'PENDIENTE' || pedidoActivo.estado === 'PREPARANDO'
-                    ? 'border-amber-500 bg-amber-950/40 text-amber-200 shadow-[2px_2px_0px_0px_#f59e0b]'
-                    : pedidoActivo.estado === 'HECHO' || pedidoActivo.estado === 'ENTREGADO' || pedidoActivo.estado === 'PAGADO'
-                    ? 'border-zinc-800/80 bg-zinc-900/40 opacity-70'
-                    : 'border-zinc-900 bg-zinc-950 opacity-40'
-                }`}
-              >
-                <span className="text-xl">👨‍🍳</span>
-                <div>
-                  <p className="font-display text-xs font-black uppercase text-white">
-                    Paso 2: En Cocina
-                  </p>
-                  <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">
-                    {pedidoActivo.estado === 'PREPARANDO'
-                      ? '🔥 El chef está cocinando tus platillos en este momento.'
-                      : pedidoActivo.estado === 'PENDIENTE'
-                      ? 'Comanda enviada a cocina. Esperando turno de preparación.'
-                      : pedidoActivo.estado === 'HECHO' || pedidoActivo.estado === 'ENTREGADO' || pedidoActivo.estado === 'PAGADO'
-                      ? '✓ Preparación finalizada.'
-                      : 'En espera de aprobación del mesero.'}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className={`flex items-start gap-3 rounded-xl border-2 p-3 transition-all ${
-                  pedidoActivo.estado === 'HECHO'
-                    ? 'border-blue-500 bg-blue-950/40 text-blue-200 shadow-[2px_2px_0px_0px_#3b82f6]'
-                    : pedidoActivo.estado === 'ENTREGADO' || pedidoActivo.estado === 'PAGADO'
-                    ? 'border-zinc-800/80 bg-zinc-900/40 opacity-70'
-                    : 'border-zinc-900 bg-zinc-950 opacity-40'
-                }`}
-              >
-                <span className="text-xl">🍽️</span>
-                <div>
-                  <p className="font-display text-xs font-black uppercase text-white">
-                    Paso 3: Listo para Servir
-                  </p>
-                  <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">
-                    {pedidoActivo.estado === 'HECHO'
-                      ? '🛎️ ¡Tu comida está lista! El mesero la está trayendo a tu mesa.'
-                      : pedidoActivo.estado === 'ENTREGADO' || pedidoActivo.estado === 'PAGADO'
-                      ? '✓ Comida entregada en mesa.'
-                      : 'En espera de que cocina termine.'}
-                  </p>
-                </div>
-              </div>
-
-              <div
-                className={`flex items-start gap-3 rounded-xl border-2 p-3 transition-all ${
-                  pedidoActivo.estado === 'ENTREGADO'
-                    ? 'border-emerald-500 bg-emerald-950/40 text-emerald-200 shadow-[2px_2px_0px_0px_#10b981]'
-                    : pedidoActivo.estado === 'PAGADO'
-                    ? 'border-zinc-800 bg-zinc-900 text-zinc-400'
-                    : 'border-zinc-900 bg-zinc-950 opacity-40'
-                }`}
-              >
-                <span className="text-xl">🍷</span>
-                <div>
-                  <p className="font-display text-xs font-black uppercase text-white">
-                    Paso 4: Servido en Mesa
-                  </p>
-                  <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">
-                    {pedidoActivo.estado === 'ENTREGADO'
-                      ? '¡Buen provecho! Cuando desees la cuenta, pídesela a tu mesero (pago en efectivo o transferencia).'
-                      : pedidoActivo.estado === 'PAGADO'
-                      ? '💰 ¡Cuenta pagada! Gracias por tu visita.'
-                      : 'En espera de ser servido.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Detalle del Pedido */}
-            <div className="rounded-xl border-2 border-zinc-800 bg-[#08080a] p-3.5 space-y-1 text-xs">
-              <span className="font-display text-[10px] font-black text-zinc-400 uppercase tracking-wider">Resumen</span>
-              <p className="text-zinc-300 text-[11px] leading-relaxed line-clamp-3">
-                {pedidoActivo.detalle}
-              </p>
-              <div className="flex items-center justify-between pt-2 border-t-2 border-zinc-800 font-bold">
-                <span className="font-display text-xs uppercase text-zinc-400">Total:</span>
-                <span className="font-display text-base font-black text-amber-400">
-                  {formatearCOP(pedidoActivo.total)}
-                </span>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setMostrarTracker(false)}
-              className="neo-btn w-full rounded-xl bg-zinc-900 hover:bg-zinc-800 py-3 text-xs font-black uppercase text-zinc-300 border-2 border-zinc-700"
-            >
-              Seguir Viendo la Carta
-            </button>
-          </div>
-        </div>
-      )}
+      <TrackerPedidoModal
+        isOpen={mostrarTracker}
+        onClose={() => setMostrarTracker(false)}
+        pedido={pedidoActivo}
+      />
     </div>
   );
 }

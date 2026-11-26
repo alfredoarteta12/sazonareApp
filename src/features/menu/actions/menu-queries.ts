@@ -62,6 +62,31 @@ export async function getTodosLosProductos() {
 }
 
 /**
+ * Obtiene un producto por su ID para la página interactiva 3D/AR
+ */
+export async function getProductoPorId(id: string) {
+  try {
+    const producto = await prisma.producto.findUnique({
+      where: { id },
+      include: { categoria: true },
+    });
+    if (!producto) {
+      return { success: false, error: 'Producto no encontrado.' };
+    }
+    return {
+      success: true,
+      data: {
+        ...producto,
+        precio: Number(producto.precio),
+      },
+    };
+  } catch (error) {
+    console.error('Error al obtener producto por ID:', error);
+    return { success: false, error: 'Error al consultar el producto.' };
+  }
+}
+
+/**
  * Obtiene todas las categorías con el conteo de sus productos
  */
 export async function getCategorias() {

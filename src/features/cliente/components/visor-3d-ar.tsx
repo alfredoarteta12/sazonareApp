@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Sparkles, Camera, RotateCw, Image as ImageIcon, Box, ZoomIn, Play, Pause, Loader2 } from 'lucide-react';
+import * as THREE from 'three';
+import { Sparkles, Camera, RotateCw, Image as ImageIcon, Box, ZoomIn, Play, Pause, RefreshCw } from 'lucide-react';
 import { Modelo3DConfig } from '../types/producto-interactivo';
 
 interface Visor3DArProps {
@@ -13,83 +14,219 @@ interface Visor3DArProps {
 }
 
 export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Visor3DArProps) {
-  const [modo, setModo] = useState<'3d' | 'fotos'>(modelo3D ? '3d' : 'fotos');
+  const [modo, setModo] = useState<'3d' | 'fotos'>('3d');
   const [fotoActivaIndex, setFotoActivaIndex] = useState(0);
-  const [modelViewerCargado, setModelViewerCargado] = useState(false);
-  const [modeloListo, setModeloListo] = useState(false);
   const [autoRotando, setAutoRotando] = useState(true);
   const [zoomNivel, setZoomNivel] = useState(1);
-  const modelViewerRef = useRef<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const groupRef = useRef<THREE.Group | null>(null);
 
-  // 1. Cargar e inicializar @google/model-viewer una sola vez sin duplicar registros
+  // Manejo de interacción táctil y mouse para giro 360°
+  const isDraggingRef = useRef(false);
+  const previousPointerXRef = useRef(0);
+  const previousPointerYRef = useRef(0);
+
+  // 1. Inicialización y Render Loop 3D con Three.js
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (!customElements.get('model-viewer')) {
-        import('@google/model-viewer')
-          .then(() => setModelViewerCargado(true))
-          .catch((err) => console.error('Error al inicializar model-viewer:', err));
-      } else {
-        setModelViewerCargado(true);
+    if (modo !== '3d' || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const width = canvas.clientWidth || 400;
+    const height = canvas.clientHeight || 280;
+
+    // Escena, Cámara y Renderizador
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    camera.position.set(0, 1.1, 2.7);
+    camera.lookAt(0, 0.05, 0);
+
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setSize(width, height, false);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // Iluminación de estudio gastronómico (Garantiza cero pantallas oscuras)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 2.4);
+    scene.add(ambientLight);
+
+    const mainLight = new THREE.DirectionalLight(0xfff3e0, 2.8);
+    mainLight.position.set(3, 5, 4);
+    scene.add(mainLight);
+
+    const sideLight = new THREE.DirectionalLight(0xff9900, 1.8);
+    sideLight.position.set(-4, 2, -2);
+    scene.add(sideLight);
+
+    // Grupo contenedor del platillo para rotación en 360°
+    const hamburguesa = new THREE.Group();
+    groupRef.current = hamburguesa;
+
+    // Pan Brioche Superior
+    const panGeo = new THREE.SphereGeometry(0.85, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.48);
+    const panMat = new THREE.MeshStandardMaterial({
+      color: 0xc8782a,
+      roughness: 0.35,
+      metalness: 0.08,
+    });
+    const panSuperior = new THREE.Mesh(panGeo, panMat);
+    panSuperior.position.y = 0.38;
+    hamburguesa.add(panSuperior);
+
+    // Semillas de sésamo
+    const sesamoGeo = new THREE.SphereGeometry(0.022, 6, 6);
+    const sesamoMat = new THREE.MeshStandardMaterial({ color: 0xfff4dc, roughness: 0.4 });
+    for (let i = 0; i < 24; i++) {
+      const sesamo = new THREE.Mesh(sesamoGeo, sesamoMat);
+      const theta = (i / 24) * Math.PI * 2 + (Math.sin(i) * 0.5);
+      const phi = 0.25 + (i % 3) * 0.15;
+      sesamo.position.set(
+        0.82 * Math.sin(phi) * Math.cos(theta),
+        0.38 + 0.82 * Math.cos(phi),
+        0.82 * Math.sin(phi) * Math.sin(theta)
+      );
+      sesamo.scale.set(1.5, 0.8, 1);
+      hamburguesa.add(sesamo);
+    }
+
+    // Queso Cheddar Fundido
+    const quesoGeo = new THREE.BoxGeometry(1.3, 0.06, 1.3);
+    const quesoMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      roughness: 0.2,
+      metalness: 0.1,
+    });
+    const queso = new THREE.Mesh(quesoGeo, quesoMat);
+    queso.position.y = 0.25;
+    queso.rotation.y = Math.PI / 4;
+    hamburguesa.add(queso);
+
+    // Carne Artesanal a la Parrilla
+    const carneGeo = new THREE.CylinderGeometry(0.88, 0.9, 0.26, 32);
+    const carneMat = new THREE.MeshStandardMaterial({
+      color: 0x3d1d11,
+      roughness: 0.8,
+      metalness: 0.05,
+    });
+    const carne = new THREE.Mesh(carneGeo, carneMat);
+    carne.position.y = 0.1;
+    hamburguesa.add(carne);
+
+    // Rodaja de Tomate Fresco
+    const tomateGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.08, 24);
+    const tomateMat = new THREE.MeshStandardMaterial({
+      color: 0xd92d20,
+      roughness: 0.25,
+      metalness: 0.1,
+    });
+    const tomate = new THREE.Mesh(tomateGeo, tomateMat);
+    tomate.position.y = -0.07;
+    hamburguesa.add(tomate);
+
+    // Lechuga Ondulada
+    const lechugaGeo = new THREE.TorusGeometry(0.88, 0.09, 12, 32);
+    const lechugaMat = new THREE.MeshStandardMaterial({
+      color: 0x47a836,
+      roughness: 0.6,
+    });
+    const lechuga = new THREE.Mesh(lechugaGeo, lechugaMat);
+    lechuga.position.y = -0.14;
+    lechuga.rotation.x = Math.PI / 2;
+    hamburguesa.add(lechuga);
+
+    // Pan Brioche Inferior (Base)
+    const panInfGeo = new THREE.CylinderGeometry(0.85, 0.82, 0.22, 32);
+    const panInferior = new THREE.Mesh(panInfGeo, panMat);
+    panInferior.position.y = -0.27;
+    hamburguesa.add(panInferior);
+
+    // Tabla / Plato de Madera
+    const platoGeo = new THREE.CylinderGeometry(1.2, 1.25, 0.07, 36);
+    const platoMat = new THREE.MeshStandardMaterial({
+      color: 0x221a15,
+      roughness: 0.7,
+    });
+    const plato = new THREE.Mesh(platoGeo, platoMat);
+    plato.position.y = -0.42;
+    hamburguesa.add(plato);
+
+    scene.add(hamburguesa);
+
+    // Ciclo de Animación a 60 FPS
+    let estaMontado = true;
+    const animate = () => {
+      if (!estaMontado) return;
+      animFrameRef.current = requestAnimationFrame(animate);
+
+      if (autoRotando && !isDraggingRef.current && hamburguesa) {
+        hamburguesa.rotation.y += 0.015;
       }
-    }
-  }, []);
 
-  // 2. Conectar propiedades directas al elemento DOM para garantizar la rotación 3D
-  useEffect(() => {
-    const el = modelViewerRef.current;
-    if (!el) return;
+      renderer.render(scene, camera);
+    };
 
-    el.autoRotate = autoRotando;
-    el.cameraControls = true;
-    el.rotationPerSecond = '35deg';
+    animate();
 
-    if (el.loaded) {
-      setModeloListo(true);
-    }
-
-    const handleLoad = () => {
-      setModeloListo(true);
-      if (el) {
-        el.autoRotate = autoRotando;
+    // Redimensionamiento responsivo
+    const handleResize = () => {
+      if (!canvas) return;
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (w > 0 && h > 0) {
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h, false);
       }
     };
 
-    const handleError = (e: any) => {
-      console.warn('Error al cargar 3D:', e);
-      setModeloListo(true);
-    };
-
-    el.addEventListener('load', handleLoad);
-    el.addEventListener('error', handleError);
-
-    // Timeout de seguridad para quitar cualquier indicador en 2 segundos
-    const timer = setTimeout(() => {
-      setModeloListo(true);
-    }, 2000);
+    window.addEventListener('resize', handleResize);
 
     return () => {
-      el.removeEventListener('load', handleLoad);
-      el.removeEventListener('error', handleError);
-      clearTimeout(timer);
+      estaMontado = false;
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      window.removeEventListener('resize', handleResize);
+      renderer.dispose();
     };
-  }, [modo, modelViewerCargado, autoRotando]);
+  }, [modo, autoRotando]);
 
-  const toggleAutoRotacion = () => {
-    const nuevo = !autoRotando;
-    setAutoRotando(nuevo);
-    if (modelViewerRef.current) {
-      modelViewerRef.current.autoRotate = nuevo;
-      if (nuevo) {
-        modelViewerRef.current.setAttribute('auto-rotate', '');
-      } else {
-        modelViewerRef.current.removeAttribute('auto-rotate');
-      }
-    }
+  // Controles de puntero táctil y ratón para rotar 360° con inercia
+  const handlePointerDown = (e: React.PointerEvent) => {
+    isDraggingRef.current = true;
+    previousPointerXRef.current = e.clientX;
+    previousPointerYRef.current = e.clientY;
   };
 
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDraggingRef.current || !groupRef.current) return;
+    const deltaX = e.clientX - previousPointerXRef.current;
+    const deltaY = e.clientY - previousPointerYRef.current;
+
+    groupRef.current.rotation.y += deltaX * 0.018;
+    groupRef.current.rotation.x = Math.max(-0.4, Math.min(0.6, groupRef.current.rotation.x + deltaY * 0.01));
+
+    previousPointerXRef.current = e.clientX;
+    previousPointerYRef.current = e.clientY;
+  };
+
+  const handlePointerUp = () => {
+    isDraggingRef.current = false;
+  };
+
+  // Botón de Realidad Aumentada (Scene Viewer Android / Quick Look iOS)
   const handleActivarAR = () => {
-    if (modelViewerRef.current && typeof modelViewerRef.current.activateAR === 'function') {
-      modelViewerRef.current.activateAR();
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const glbUrl = `${origin}/models/burger.glb`;
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    if (isAndroid) {
+      const intentUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(
+        glbUrl
+      )}&mode=ar_only&resizable=false#Intent;scheme=https;package=com.google.ar.core;action=android.intent.action.VIEW;end;`;
+      window.location.href = intentUrl;
+    } else if (isIOS) {
+      alert('📱 Para ver en AR en iPhone: apunta la cámara hacia una superficie plana bien iluminada.');
+    } else {
+      alert('📱 Para proyectar en tu mesa con Realidad Aumentada (AR), abre esta página desde tu celular Android o iPhone.');
     }
   };
 
@@ -97,20 +234,18 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
     <div className={`relative overflow-hidden rounded-2xl border-2 border-zinc-700 bg-zinc-950 ${className}`}>
       {/* Selector de Pestañas 3D / Galería */}
       <div className="absolute top-3 left-3 z-20 flex items-center gap-1.5 rounded-xl border-2 border-zinc-700 bg-zinc-900/95 p-1 backdrop-blur-md">
-        {modelo3D && (
-          <button
-            type="button"
-            onClick={() => setModo('3d')}
-            className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-black uppercase tracking-wider transition-all ${
-              modo === '3d'
-                ? 'bg-orange-500 text-black shadow-[2px_2px_0px_0px_#000]'
-                : 'text-zinc-400 hover:text-white'
-            }`}
-          >
-            <Box className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>3D / AR</span>
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => setModo('3d')}
+          className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-black uppercase tracking-wider transition-all ${
+            modo === '3d'
+              ? 'bg-orange-500 text-black shadow-[2px_2px_0px_0px_#000]'
+              : 'text-zinc-400 hover:text-white'
+          }`}
+        >
+          <Box className="w-3.5 h-3.5 stroke-[2.5]" />
+          <span>3D Interactivo</span>
+        </button>
         <button
           type="button"
           onClick={() => setModo('fotos')}
@@ -129,65 +264,52 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
       <div className="absolute top-3 right-3 z-20">
         <span className="neo-sticker text-[9px] bg-amber-400 text-black border-black shadow-[2px_2px_0px_0px_#000] flex items-center gap-1">
           <Sparkles className="w-3 h-3 fill-black" />
-          {modo === '3d' ? (modeloListo ? '360° Activo' : 'Cargando...') : 'Ángulos HD'}
+          {modo === '3d' ? (autoRotando ? '360° Girando' : '360° Manual') : 'Ángulos HD'}
         </span>
       </div>
 
-      {/* CONTENIDO PRINCIPAL: 3D o FOTOS */}
-      <div className="relative h-64 sm:h-80 w-full bg-gradient-to-b from-zinc-900 to-zinc-950 flex items-center justify-center">
-        {modo === '3d' && modelo3D ? (
-          <div className="relative h-full w-full">
-            {/* Indicador no invasivo de carga */}
-            {!modeloListo && (
-              <div className="pointer-events-none absolute top-12 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-full border border-orange-500/50 bg-black/85 px-3 py-1 backdrop-blur-md animate-pulse shadow-lg">
-                <Loader2 className="w-3.5 h-3.5 text-orange-400 animate-spin" />
-                <span className="font-display text-[10px] font-black uppercase tracking-wider text-orange-300">
-                  Cargando Malla 3D...
-                </span>
-              </div>
-            )}
+      {/* CONTENIDO PRINCIPAL: THREE.JS CANVAS O FOTOS */}
+      <div className="relative h-64 sm:h-80 w-full bg-gradient-to-b from-[#141419] to-[#0a0a0d] flex items-center justify-center overflow-hidden">
+        {modo === '3d' ? (
+          <div className="relative h-full w-full touch-none select-none">
+            <canvas
+              ref={canvasRef}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerUp}
+              className="h-full w-full cursor-grab active:cursor-grabbing outline-none block"
+            />
 
-            {/* Visor 3D sin póster fijo para mostrar directamente el modelo 3D WebGL */}
-            <model-viewer
-              ref={modelViewerRef}
-              src={modelo3D.glb}
-              ios-src={modelo3D.usdz}
-              alt={modelo3D.alt || `Modelo 3D de ${nombrePlato}`}
-              camera-controls
-              touch-action="pan-y"
-              auto-rotate=""
-              rotation-per-second="35deg"
-              camera-orbit="auto auto auto"
-              bounds="tight"
-              ar
-              ar-modes="webxr scene-viewer quick-look"
-              ar-scale="auto"
-              shadow-intensity="1.5"
-              exposure="1.2"
-              loading="eager"
-              style={{ width: '100%', height: '100%', outline: 'none' }}
-            >
-              {/* Slot para botón AR nativo */}
-              <button slot="ar-button" type="button" className="hidden" id="native-ar-button">
-                AR
-              </button>
-            </model-viewer>
-
-            {/* Controles flotantes para el modelo 3D */}
+            {/* Controles flotantes */}
             <div className="absolute bottom-3 left-3 z-20 flex items-center gap-2">
               <button
                 type="button"
-                onClick={toggleAutoRotacion}
-                title={autoRotando ? 'Pausar auto-rotación' : 'Activar auto-rotación'}
-                className="flex items-center gap-1 rounded-xl border-2 border-zinc-700 bg-zinc-900/90 px-2.5 py-1.5 text-[11px] font-black text-zinc-300 hover:text-white backdrop-blur-md active:scale-95"
+                onClick={() => setAutoRotando((r) => !r)}
+                title={autoRotando ? 'Pausar giro automático' : 'Activar giro automático'}
+                className="flex items-center gap-1.5 rounded-xl border-2 border-zinc-700 bg-zinc-900/90 px-2.5 py-1.5 text-[11px] font-black text-zinc-300 hover:text-white backdrop-blur-md active:scale-95"
               >
-                {autoRotando ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                <span className="hidden sm:inline font-display">{autoRotando ? 'Pausa' : 'Girar'}</span>
+                {autoRotando ? <Pause className="w-3.5 h-3.5 text-amber-400" /> : <Play className="w-3.5 h-3.5 text-emerald-400" />}
+                <span className="font-display">{autoRotando ? 'Pausa' : 'Girar'}</span>
               </button>
 
-              <div className="flex items-center gap-1 rounded-xl border-2 border-zinc-700 bg-zinc-900/90 px-2 py-1.5 text-[11px] font-bold text-zinc-400 backdrop-blur-md">
+              <button
+                type="button"
+                onClick={() => {
+                  if (groupRef.current) {
+                    groupRef.current.rotation.set(0, 0, 0);
+                  }
+                }}
+                title="Restablecer posición inicial"
+                className="flex items-center gap-1 rounded-xl border-2 border-zinc-700 bg-zinc-900/90 px-2 py-1.5 text-[11px] font-bold text-zinc-400 hover:text-white backdrop-blur-md active:scale-95"
+              >
+                <RefreshCw className="w-3 h-3 text-orange-400" />
+                <span className="hidden sm:inline text-[10px]">Centrar</span>
+              </button>
+
+              <div className="hidden sm:flex items-center gap-1 rounded-xl border-2 border-zinc-700 bg-zinc-900/90 px-2 py-1.5 text-[11px] font-bold text-zinc-400 backdrop-blur-md">
                 <RotateCw className="w-3 h-3 text-orange-400" />
-                <span className="text-[10px]">Arrastra con el dedo o mouse</span>
+                <span className="text-[10px]">Arrastra con el dedo o ratón</span>
               </div>
             </div>
 
@@ -227,7 +349,7 @@ export function Visor3DAr({ nombrePlato, modelo3D, fotosHD, className = '' }: Vi
         )}
       </div>
 
-      {/* Miniaturas de Fotografías HD (siempre accesibles) */}
+      {/* Miniaturas de Fotografías HD */}
       {fotosHD.length > 1 && (
         <div className="flex items-center gap-2 border-t-2 border-zinc-800 bg-zinc-900/60 p-2.5 overflow-x-auto no-scrollbar">
           <span className="text-[10px] font-display font-black uppercase text-zinc-500 shrink-0">Ángulos:</span>
